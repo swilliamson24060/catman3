@@ -36,5 +36,15 @@ func _run() -> void:
 	assert(not bool(player.call("toggle_camera_closeup")), "Second close-up action must restore overview")
 	assert(hud.has_node("MarginContainer/PanelContainer/MarginContainer/HBoxContainer/CameraControls/ReturnCursor"), "HUD must expose a Return Cursor menu item")
 
+	var picnic_prompt := hud.get_node("PlacementInstructions") as Label
+	var building_status := hud.get_node("BuildStatus") as Label
+	game_state.set_placement_mode(true)
+	assert(picnic_prompt.visible, "Generic placement prompt must remain available for picnic placement")
+	game_state.set_build_selection("Test Structure")
+	assert(building_status.visible, "Construction placement must show its validity status")
+	assert(not picnic_prompt.visible, "Construction status and generic placement text must never overlap")
+	game_state.set_placement_mode(false)
+	game_state.set_build_selection("")
+
 	print("CAMERA_CURSOR_REGRESSION_TEST_PASS")
 	quit(0)

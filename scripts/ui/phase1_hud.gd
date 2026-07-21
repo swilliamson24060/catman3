@@ -51,6 +51,7 @@ var _show_work_debug: bool = false
 var _inspected_mouse: Phase1WildMouse
 var _managed_site: ConstructionSite
 var _resonance_banner_generation: int = 0
+var _placement_mode_active: bool = false
 
 
 func _ready() -> void:
@@ -231,7 +232,8 @@ func _on_decline_pressed() -> void:
 
 
 func _on_placement_mode_changed(is_active: bool) -> void:
-	placement_instructions.visible = is_active
+	_placement_mode_active = is_active
+	placement_instructions.visible = is_active and not build_selection_label.visible
 	interaction_prompt.visible = not is_active and not interaction_prompt.text.is_empty() and not dialogue_panel.visible
 
 
@@ -280,6 +282,9 @@ func _on_build_menu_changed(is_open: bool) -> void:
 func _on_build_selection_changed(display_name: String) -> void:
 	build_selection_label.text = "Building: %s" % display_name
 	build_selection_label.visible = not display_name.is_empty()
+	# Building status already includes placement instructions and validity. Keep
+	# the generic orange prompt exclusively for picnic placement.
+	placement_instructions.visible = _placement_mode_active and display_name.is_empty()
 
 
 func _on_build_placement_message(message: String, is_valid: bool) -> void:
