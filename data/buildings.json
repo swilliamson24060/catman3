@@ -29,6 +29,26 @@
       "build_cost": { "wood": 6, "twigs": 4 },
       "build_time": 8.0,
       "locked_by_default": true
+    },
+    {
+      "id": "catnip_garden",
+      "display_name": "Catnip Garden (Phase 2)",
+      "footprint": { "width": 1, "height": 1 },
+      "tier": "cardboard",
+      "waterproof": true,
+      "build_cost": {},
+      "build_time": 125.0,
+      "produces": { "output": "catnip", "duration": 20.0 }
+    },
+    {
+      "id": "mouse_hut",
+      "display_name": "Mouse Hut (Phase 2)",
+      "footprint": { "width": 1, "height": 1 },
+      "tier": "cardboard",
+      "waterproof": false,
+      "build_cost": {},
+      "build_time": 100.0,
+      "housing_capacity": 2
     }
   ]
 }

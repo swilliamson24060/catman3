@@ -7,6 +7,7 @@ signal production_status_changed(status: String)
 
 @onready var game_state: Phase1GameState = get_node("/root/GameState") as Phase1GameState
 @onready var simulation_clock: Phase2SimulationClock = get_node("/root/SimulationClock") as Phase2SimulationClock
+@onready var stats_service: Node = get_node("/root/StatsService")
 
 var production_elapsed_seconds: float = 0.0
 var _production_status: String = "Inactive"
@@ -71,7 +72,8 @@ func get_interaction_priority() -> int:
 func _on_simulation_advanced(simulation_delta: float) -> void:
 	if not is_producer() or simulation_delta <= 0.0:
 		return
-	production_elapsed_seconds += simulation_delta
+	var production_rate := float(stats_service.call("get_effective", str(building_definition.id), "production_rate", 1.0))
+	production_elapsed_seconds += simulation_delta * maxf(production_rate, 0.0)
 	while production_elapsed_seconds >= building_definition.production_interval_seconds:
 		if not game_state.spend_resources(building_definition.production_inputs):
 			production_elapsed_seconds = building_definition.production_interval_seconds

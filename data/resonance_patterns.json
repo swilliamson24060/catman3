@@ -15,6 +15,22 @@
         { "target": "building_catnip_garden", "stat": "production_rate", "modifier_type": "multiplier", "value": 1.50 },
         { "target": "global_mice", "stat": "movement_speed", "modifier_type": "additive", "value": 0.15 }
       ]
+    },
+    {
+      "id": "pattern_phase2_catnip_triangle",
+      "display_name": "The Herbal Triad",
+      "description": "Three Mouse Huts focus their bustling energy onto a Catnip Garden.",
+      "max_stacks": 1,
+      "anchor_building_type": "catnip_garden",
+      "required_offsets": [
+        { "building_type": "mouse_hut", "x_offset": 0, "z_offset": 2 },
+        { "building_type": "mouse_hut", "x_offset": -2, "z_offset": -1 },
+        { "building_type": "mouse_hut", "x_offset": 2, "z_offset": -1 }
+      ],
+      "bonuses": [
+        { "target": "catnip_garden", "stat": "production_rate", "modifier_type": "multiplier", "value": 1.50 },
+        { "target": "global_mice", "stat": "movement_speed", "modifier_type": "additive", "value": 0.15 }
+      ]
     }
   ]
 }

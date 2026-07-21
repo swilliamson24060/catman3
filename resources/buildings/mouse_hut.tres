@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="BuildingDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://resources/buildings/building_definition.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/buildings/mouse_hut.tscn" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"mouse_hut"
+display_name = "Mouse Hut"
+description = "A snug little home whose placement can contribute to Architectural Resonance."
+completed_scene = ExtResource("2")
+footprint_radius = 1.25
+work_required = 100.0
+minimum_workers = 1
+preferred_worker_count = 2
+tags = Array[StringName]([&"housing", &"mouse", &"resonance"])

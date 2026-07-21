@@ -4,6 +4,7 @@ extends Node
 const SITE_SCENE: PackedScene = preload("res://scenes/construction/construction_site.tscn")
 const TEST_STRUCTURE: BuildingDefinition = preload("res://resources/buildings/test_structure.tres")
 const CATNIP_GARDEN: BuildingDefinition = preload("res://resources/buildings/catnip_garden.tres")
+const MOUSE_HUT: BuildingDefinition = preload("res://resources/buildings/mouse_hut.tres")
 const VALID_COLOR := Color(0.2, 0.95, 0.4, 0.5)
 const INVALID_COLOR := Color(0.95, 0.2, 0.16, 0.5)
 
@@ -47,6 +48,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event.is_action_pressed("select_building_2"):
 		begin_placement(CATNIP_GARDEN)
+		get_viewport().set_input_as_handled()
+		return
+	if event.is_action_pressed("select_building_3"):
+		begin_placement(MOUSE_HUT)
 		get_viewport().set_input_as_handled()
 		return
 	if _preview == null:
@@ -122,7 +127,7 @@ func _update_preview() -> void:
 	_validation_message = "No valid ground detected."
 	_preview.visible = not hit.is_empty()
 	if not hit.is_empty():
-		var position: Vector3 = hit["position"]
+		var position: Vector3 = settlement_manager.snap_to_resonance_grid(hit["position"])
 		var normal: Vector3 = hit["normal"]
 		_preview.global_position = position + normal * 0.04
 		var slope_ok := normal.dot(Vector3.UP) >= cos(deg_to_rad(maximum_slope_degrees))

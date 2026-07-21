@@ -21,6 +21,7 @@ extends Node
 
 func _ready() -> void:
 	EventBus.building_constructed.connect(_on_building_constructed)
+	SettlementManager.building_registered.connect(_on_phase2_building_registered)
 
 func _on_building_constructed(building_id: String, anchor: Vector2i) -> void:
 	for pattern in DataRegistry.get_all_resonance_patterns():
@@ -65,3 +66,36 @@ func _has_built_building(anchor_pos: Vector2i, building_type: String) -> bool:
 	if info.is_empty() or not info.get("built", false):
 		return false
 	return info.get("anchor") == anchor_pos and info.get("building_id", "") == building_type
+
+
+## Phase 2 uses the same JSON schema over a snapped 3D-world grid. Recheck
+## every eligible anchor whenever any building completes so construction order
+## does not force the Catnip Garden anchor to be built last.
+func _on_phase2_building_registered(_new_building: Node3D) -> void:
+	for pattern: Dictionary in DataRegistry.get_all_resonance_patterns():
+		var pattern_id := str(pattern.get("id", ""))
+		if pattern_id in SaveService.current.discovered_patterns:
+			continue
+		var anchor_type := StringName(str(pattern.get("anchor_building_type", "")))
+		for anchor: CompletedBuilding in SettlementManager.get_completed_buildings_of_type(anchor_type):
+			var anchor_grid := SettlementManager.world_to_resonance_grid(anchor.global_position)
+			if _phase2_offsets_match(anchor_grid, pattern.get("required_offsets", [])):
+				SaveService.current.discovered_patterns.append(pattern_id)
+				DataRegistry.apply_global_bonuses(pattern.get("bonuses", []))
+				EventBus.pattern_discovered.emit(pattern_id)
+				print("[ResonanceService] Phase 2 discovered pattern '%s' at %s" % [pattern_id, anchor_grid])
+				return
+
+
+func _phase2_offsets_match(anchor: Vector2i, required_offsets: Array) -> bool:
+	for rotation: int in range(4):
+		var all_match := true
+		for offset: Dictionary in required_offsets:
+			var raw := Vector2i(int(offset.get("x_offset", 0)), int(offset.get("z_offset", 0)))
+			var target := anchor + _rotate(raw, rotation)
+			if not SettlementManager.has_completed_building_at(target, StringName(str(offset.get("building_type", "")))):
+				all_match = false
+				break
+		if all_match:
+			return true
+	return false

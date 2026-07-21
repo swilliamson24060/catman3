@@ -45,3 +45,14 @@
 - [x] Add production pause reasons and in-world status inspection.
 - [x] Persist completed buildings and partial production progress.
 - [x] Validate multiple producers, debug acceleration, and state recovery with an automated smoke test.
+
+## Milestone 5 — Architectural Resonance
+
+- [x] Add stable resonance-grid coordinates to Phase 2 building placement.
+- [x] Add a buildable Mouse Hut for the first documented pattern.
+- [x] Detect Phase 2 patterns across all four cardinal rotations.
+- [x] Enforce one-time discovery through SaveData.
+- [x] Apply the Herbal Triad production bonus live to Catnip Gardens.
+- [ ] Add a dedicated discovery banner and pattern details.
+- [ ] Reapply discovered bonuses when loading a save.
+- [ ] Validate rotation, one-time rewards, persistence, and live production changes with an automated smoke test.

@@ -7,6 +7,7 @@ signal building_registered(building: Node3D)
 const INITIAL_RADIUS: float = 10.0
 const SETTLEMENT_ORIGIN := Vector3.ZERO
 const BUILDING_DEFINITION_DIRECTORY := "res://resources/buildings"
+const RESONANCE_GRID_SIZE: float = 3.0
 
 var _influence_sources: Dictionary = {}
 var _completed_buildings: Array[Node3D] = []
@@ -28,6 +29,21 @@ func get_nearest_settlement_edge(world_position: Vector3) -> Vector3:
 	if direction.is_zero_approx():
 		direction = Vector3.FORWARD
 	return SETTLEMENT_ORIGIN + direction.normalized() * INITIAL_RADIUS
+
+
+func world_to_resonance_grid(world_position: Vector3) -> Vector2i:
+	return Vector2i(
+		roundi(world_position.x / RESONANCE_GRID_SIZE),
+		roundi(world_position.z / RESONANCE_GRID_SIZE)
+	)
+
+
+func resonance_grid_to_world(grid_position: Vector2i, height: float = 0.0) -> Vector3:
+	return Vector3(grid_position.x * RESONANCE_GRID_SIZE, height, grid_position.y * RESONANCE_GRID_SIZE)
+
+
+func snap_to_resonance_grid(world_position: Vector3) -> Vector3:
+	return resonance_grid_to_world(world_to_resonance_grid(world_position), world_position.y)
 
 
 func register_influence_source(source: Node3D, radius: float) -> void:
@@ -57,6 +73,22 @@ func get_completed_buildings() -> Array[Node3D]:
 		if is_instance_valid(building) and not building.is_queued_for_deletion():
 			result.append(building)
 	return result
+
+
+func get_completed_buildings_of_type(definition_id: StringName) -> Array[CompletedBuilding]:
+	var result: Array[CompletedBuilding] = []
+	for node: Node3D in get_completed_buildings():
+		var building := node as CompletedBuilding
+		if building != null and building.building_definition != null and building.building_definition.id == definition_id:
+			result.append(building)
+	return result
+
+
+func has_completed_building_at(grid_position: Vector2i, definition_id: StringName) -> bool:
+	for building: CompletedBuilding in get_completed_buildings_of_type(definition_id):
+		if world_to_resonance_grid(building.global_position) == grid_position:
+			return true
+	return false
 
 
 func serialize_completed_buildings() -> Array:
