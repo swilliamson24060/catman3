@@ -1,10 +1,10 @@
 extends CanvasLayer
 
-@onready var cheese_label: Label = $MarginContainer/PanelContainer/MarginContainer/VBoxContainer/CheeseLabel
-@onready var catnip_label: Label = $MarginContainer/PanelContainer/MarginContainer/VBoxContainer/CatnipLabel
-@onready var recruited_label: Label = $MarginContainer/PanelContainer/MarginContainer/VBoxContainer/RecruitedLabel
-@onready var debug_time_label: Label = $MarginContainer/PanelContainer/MarginContainer/VBoxContainer/DebugTimeLabel
-@onready var founder_label: Label = $MarginContainer/PanelContainer/MarginContainer/VBoxContainer/FounderLabel
+@onready var cheese_label: Label = $MarginContainer/PanelContainer/MarginContainer/HBoxContainer/Resources/CheeseLabel
+@onready var catnip_label: Label = $MarginContainer/PanelContainer/MarginContainer/HBoxContainer/Resources/CatnipLabel
+@onready var recruited_label: Label = $MarginContainer/PanelContainer/MarginContainer/HBoxContainer/Settlement/RecruitedLabel
+@onready var debug_time_label: Label = $MarginContainer/PanelContainer/MarginContainer/HBoxContainer/World/DebugTimeLabel
+@onready var founder_label: Label = $MarginContainer/PanelContainer/MarginContainer/HBoxContainer/World/FounderLabel
 @onready var placement_instructions: Label = $PlacementInstructions
 @onready var interaction_prompt: Label = $InteractionPrompt
 @onready var feedback_label: Label = $FeedbackLabel
@@ -23,7 +23,7 @@ extends CanvasLayer
 @onready var decline_button: Button = $DialoguePanel/MarginContainer/VBoxContainer/Buttons/DeclineButton
 @onready var build_menu: PanelContainer = $BuildMenu
 @onready var build_selection_label: Label = $BuildStatus
-@onready var construction_count_label: Label = $MarginContainer/PanelContainer/MarginContainer/VBoxContainer/ConstructionCountLabel
+@onready var construction_count_label: Label = $MarginContainer/PanelContainer/MarginContainer/HBoxContainer/Settlement/ConstructionCountLabel
 @onready var site_panel: PanelContainer = $ConstructionSitePanel
 @onready var site_title: Label = $ConstructionSitePanel/MarginContainer/VBoxContainer/Title
 @onready var site_progress: Label = $ConstructionSitePanel/MarginContainer/VBoxContainer/Progress
@@ -37,8 +37,11 @@ extends CanvasLayer
 @onready var event_bus: Node = get_node("/root/EventBus")
 @onready var data_registry: Node = get_node("/root/DataRegistry")
 @onready var scaffold_service: Node = get_node("/root/ScaffoldService")
-@onready var weather_label: Label = $MarginContainer/PanelContainer/MarginContainer/VBoxContainer/WeatherLabel
+@onready var weather_label: Label = $MarginContainer/PanelContainer/MarginContainer/HBoxContainer/World/WeatherLabel
 @onready var scaffold_status: Label = $ScaffoldStatus
+@onready var camera_adjust_button: Button = $MarginContainer/PanelContainer/MarginContainer/HBoxContainer/CameraControls/AdjustCamera
+@onready var return_cursor_button: Button = $MarginContainer/PanelContainer/MarginContainer/HBoxContainer/CameraControls/ReturnCursor
+@onready var camera_view_button: Button = $MarginContainer/PanelContainer/MarginContainer/HBoxContainer/CameraControls/ToggleView
 
 var _feedback_time_remaining: float = 0.0
 var _dialogue_mouse: Phase1WildMouse
@@ -76,6 +79,9 @@ func _ready() -> void:
 	accept_button.pressed.connect(_on_accept_pressed)
 	decline_button.pressed.connect(_on_decline_pressed)
 	inspection_close_button.pressed.connect(inspection_panel.hide)
+	camera_adjust_button.pressed.connect(_on_camera_adjust_pressed)
+	return_cursor_button.pressed.connect(_on_return_cursor_pressed)
+	camera_view_button.pressed.connect(_on_camera_view_pressed)
 	placement_instructions.hide()
 	interaction_prompt.hide()
 	feedback_label.hide()
@@ -198,8 +204,7 @@ func _on_dialogue_opened(mouse: Phase1WildMouse) -> void:
 func _on_dialogue_closed() -> void:
 	dialogue_panel.hide()
 	_dialogue_mouse = null
-	if game_state.has_founder():
-		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 
 func _on_accept_pressed() -> void:
@@ -301,8 +306,30 @@ func _on_construction_site_closed() -> void:
 	site_panel.hide()
 	_managed_site = null
 	call_deferred("_on_construction_site_count_changed", null)
-	if game_state.has_founder():
-		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+
+func _get_player() -> Node:
+	return get_tree().get_first_node_in_group("player")
+
+
+func _on_camera_adjust_pressed() -> void:
+	var player := _get_player()
+	if player != null and player.has_method("enable_camera_adjustment"):
+		player.call("enable_camera_adjustment")
+
+
+func _on_return_cursor_pressed() -> void:
+	var player := _get_player()
+	if player != null and player.has_method("return_cursor_control"):
+		player.call("return_cursor_control")
+
+
+func _on_camera_view_pressed() -> void:
+	var player := _get_player()
+	if player != null and player.has_method("toggle_camera_closeup"):
+		var closeup := bool(player.call("toggle_camera_closeup"))
+		camera_view_button.text = "Settlement View" if closeup else "Close-up View"
 
 
 func _on_site_progress_changed(_work: float, _required: float) -> void:

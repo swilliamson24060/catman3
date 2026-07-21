@@ -25,60 +25,104 @@ corner_radius_bottom_left = 12
 script = ExtResource("1")
 
 [node name="MarginContainer" type="MarginContainer" parent="."]
-offset_right = 320.0
-offset_bottom = 232.0
-theme_override_constants/margin_left = 18
-theme_override_constants/margin_top = 18
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = -144.0
+offset_right = -16.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 0
 
 [node name="PanelContainer" type="PanelContainer" parent="MarginContainer"]
 theme_override_styles/panel = SubResource("PanelStyle")
 
 [node name="MarginContainer" type="MarginContainer" parent="MarginContainer/PanelContainer"]
-theme_override_constants/margin_left = 18
-theme_override_constants/margin_top = 12
-theme_override_constants/margin_right = 18
-theme_override_constants/margin_bottom = 12
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 10
 
-[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/PanelContainer/MarginContainer"]
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/PanelContainer/MarginContainer"]
+theme_override_constants/separation = 16
 
-[node name="Title" type="Label" parent="MarginContainer/PanelContainer/MarginContainer/VBoxContainer"]
-theme_override_font_sizes/font_size = 22
-text = "CATMANDO — Phase 2"
-
-[node name="CheeseLabel" type="Label" parent="MarginContainer/PanelContainer/MarginContainer/VBoxContainer"]
-theme_override_colors/font_color = Color(1, 0.82, 0.25, 1)
+[node name="Title" type="Label" parent="MarginContainer/PanelContainer/MarginContainer/HBoxContainer"]
+custom_minimum_size = Vector2(110, 0)
+theme_override_colors/font_color = Color(1, 0.84, 0.36, 1)
 theme_override_font_sizes/font_size = 20
+text = "CATMANDO\nPHASE 2"
+vertical_alignment = 1
+
+[node name="Resources" type="VBoxContainer" parent="MarginContainer/PanelContainer/MarginContainer/HBoxContainer"]
+custom_minimum_size = Vector2(115, 0)
+alignment = 1
+
+[node name="CheeseLabel" type="Label" parent="MarginContainer/PanelContainer/MarginContainer/HBoxContainer/Resources"]
+theme_override_colors/font_color = Color(1, 0.82, 0.25, 1)
+theme_override_font_sizes/font_size = 18
 text = "Cheese: 20"
 
-[node name="CatnipLabel" type="Label" parent="MarginContainer/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="CatnipLabel" type="Label" parent="MarginContainer/PanelContainer/MarginContainer/HBoxContainer/Resources"]
 theme_override_colors/font_color = Color(0.62, 0.88, 0.55, 1)
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 16
 text = "Catnip: 0"
 
-[node name="RecruitedLabel" type="Label" parent="MarginContainer/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="Settlement" type="VBoxContainer" parent="MarginContainer/PanelContainer/MarginContainer/HBoxContainer"]
+custom_minimum_size = Vector2(190, 0)
+alignment = 1
+
+[node name="RecruitedLabel" type="Label" parent="MarginContainer/PanelContainer/MarginContainer/HBoxContainer/Settlement"]
 theme_override_colors/font_color = Color(0.75, 0.9, 1, 1)
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 16
 text = "Recruited mice: 0"
 
-[node name="ConstructionCountLabel" type="Label" parent="MarginContainer/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="ConstructionCountLabel" type="Label" parent="MarginContainer/PanelContainer/MarginContainer/HBoxContainer/Settlement"]
 theme_override_colors/font_color = Color(0.95, 0.72, 0.38, 1)
 text = "Active construction sites: 0"
 
-[node name="WeatherLabel" type="Label" parent="MarginContainer/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="World" type="VBoxContainer" parent="MarginContainer/PanelContainer/MarginContainer/HBoxContainer"]
+custom_minimum_size = Vector2(150, 0)
+alignment = 1
+
+[node name="WeatherLabel" type="Label" parent="MarginContainer/PanelContainer/MarginContainer/HBoxContainer/World"]
 theme_override_colors/font_color = Color(0.66, 0.84, 1, 1)
 text = "Weather: Clear"
 
-[node name="FounderLabel" type="Label" parent="MarginContainer/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="FounderLabel" type="Label" parent="MarginContainer/PanelContainer/MarginContainer/HBoxContainer/World"]
 theme_override_colors/font_color = Color(0.82, 0.84, 0.86, 1)
 text = "Founder: Not chosen"
 
-[node name="DebugTimeLabel" type="Label" parent="MarginContainer/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="DebugTimeLabel" type="Label" parent="MarginContainer/PanelContainer/MarginContainer/HBoxContainer/World"]
 visible = false
 theme_override_colors/font_color = Color(0.65, 0.72, 0.78, 1)
 text = "Debug: F8 needs  •  F9 speed  •  F10 work scores"
 
-[node name="Controls" type="Label" parent="MarginContainer/PanelContainer/MarginContainer/VBoxContainer"]
-text = "WASD: Move  •  Mouse: Look  •  P: Place / pack picnic  •  B: Build menu  •  Esc: Release cursor\nBuild: 1 Test  •  2 Catnip Garden  •  3 Mouse Hut  •  4 Cheese Vault  •  E Place\nRelease cursor, then left-click a mouse to inspect contentment"
+[node name="Controls" type="Label" parent="MarginContainer/PanelContainer/MarginContainer/HBoxContainer"]
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.82, 0.84, 0.86, 1)
+theme_override_font_sizes/font_size = 14
+text = "WASD Move  •  E Interact / Place\nP Place / pack picnic  •  B Build menu\nBuildings: 1 Test  •  2 Garden  •  3 Hut  •  4 Vault"
+vertical_alignment = 1
+autowrap_mode = 2
+
+[node name="CameraControls" type="VBoxContainer" parent="MarginContainer/PanelContainer/MarginContainer/HBoxContainer"]
+custom_minimum_size = Vector2(150, 0)
+alignment = 1
+theme_override_constants/separation = 2
+
+[node name="AdjustCamera" type="Button" parent="MarginContainer/PanelContainer/MarginContainer/HBoxContainer/CameraControls"]
+text = "Adjust Camera"
+tooltip_text = "Enable right-drag camera rotation while keeping the cursor visible."
+
+[node name="ReturnCursor" type="Button" parent="MarginContainer/PanelContainer/MarginContainer/HBoxContainer/CameraControls"]
+text = "Return Cursor"
+tooltip_text = "Lock camera movement and return full pointer control."
+
+[node name="ToggleView" type="Button" parent="MarginContainer/PanelContainer/MarginContainer/HBoxContainer/CameraControls"]
+text = "Close-up View"
+tooltip_text = "Toggle between the raised settlement overview and a closer camera."
 
 [node name="PlacementInstructions" type="Label" parent="."]
 anchors_preset = 7
@@ -87,9 +131,9 @@ anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = -360.0
-offset_top = -112.0
+offset_top = -196.0
 offset_right = 360.0
-offset_bottom = -70.0
+offset_bottom = -154.0
 grow_horizontal = 2
 grow_vertical = 0
 theme_override_colors/font_color = Color(1, 0.95, 0.75, 1)
@@ -106,9 +150,9 @@ anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = -300.0
-offset_top = -76.0
+offset_top = -194.0
 offset_right = 300.0
-offset_bottom = -38.0
+offset_bottom = -156.0
 grow_horizontal = 2
 grow_vertical = 0
 theme_override_colors/font_color = Color(1, 0.88, 0.36, 1)
@@ -308,9 +352,9 @@ anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = -330.0
-offset_top = -150.0
+offset_top = -220.0
 offset_right = 330.0
-offset_bottom = -90.0
+offset_bottom = -160.0
 grow_horizontal = 2
 grow_vertical = 0
 theme_override_colors/font_outline_color = Color(0.03, 0.03, 0.03, 1)

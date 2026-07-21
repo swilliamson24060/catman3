@@ -1,6 +1,7 @@
 extends SceneTree
 
 const MOUSE_SCENE: PackedScene = preload("res://scenes/mice/wild_mouse.tscn")
+const PICNIC_SCENE: PackedScene = preload("res://scenes/picnic/picnic.tscn")
 const SITE_SCENE: PackedScene = preload("res://scenes/construction/construction_site.tscn")
 const TEST_STRUCTURE: BuildingDefinition = preload("res://resources/buildings/test_structure.tres")
 
@@ -27,11 +28,21 @@ func _run() -> void:
 
 	var mouse := MOUSE_SCENE.instantiate() as Phase1WildMouse
 	root.add_child(mouse)
+	var picnic := PICNIC_SCENE.instantiate() as Phase1Picnic
+	root.add_child(picnic)
 	await process_frame
+	assert(mouse.respond_to_picnic(picnic, mouse.global_position), "Mouse must be attending a picnic before recruitment")
+	var reserved_marker := Marker3D.new()
+	picnic.add_child(reserved_marker)
+	picnic.set("_reservations", {mouse: reserved_marker})
+	picnic.set("_event_active", true)
 	assert(mouse.try_recruit(), "Mouse must recruit through the real transaction")
+	assert(mouse.get_state_name() == "RECRUITED", "A new recruit must wait at an active picnic")
 	assert(game_state.is_build_menu_open, "Recruitment must open the next-step build menu")
 	assert(mouse.get_node("RecruitmentBadge").visible, "Recruited mouse needs an in-world badge")
 	assert(mouse.get_node("RecruitmentBadge").text.contains(mouse.get_display_name()), "Recruitment badge must identify the mouse")
+	picnic.end_picnic_event(false)
+	assert(mouse.get_state_name() == "FOLLOW_PLAYER", "Recruit must leave patiently when the picnic ends")
 
 	var site := SITE_SCENE.instantiate() as ConstructionSite
 	site_container.add_child(site)

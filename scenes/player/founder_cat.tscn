@@ -38,11 +38,11 @@ position = Vector3(0, 0, 0)
 [node name="YawPivot" type="Node3D" parent="CameraRig"]
 
 [node name="PitchPivot" type="Node3D" parent="CameraRig/YawPivot"]
-position = Vector3(0, 1.45, 0)
-rotation_degrees = Vector3(-14, 0, 0)
+position = Vector3(0, 2.6, 0)
+rotation_degrees = Vector3(-25, 0, 0)
 
 [node name="SpringArm3D" type="SpringArm3D" parent="CameraRig/YawPivot/PitchPivot"]
-spring_length = 5.8
+spring_length = 7.5
 shape = SubResource("CameraProbeShape")
 margin = 0.18
 collision_mask = 1

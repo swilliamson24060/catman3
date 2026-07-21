@@ -4,6 +4,12 @@ const CAT_SCENE: PackedScene = preload("res://kenney_cube-pets_1/Models/GLB form
 const TABBY_SHADER: Shader = preload("res://founder/tabby_stripes.gdshader")
 const WHISPER_FACE_SHADER: Shader = preload("res://founder/whisper_face.gdshader")
 const MODEL_SCALE: Vector3 = Vector3(1.08, 1.08, 1.08)
+const OVERVIEW_HEIGHT: float = 2.6
+const OVERVIEW_PITCH_DEGREES: float = -25.0
+const OVERVIEW_DISTANCE: float = 7.5
+const CLOSEUP_HEIGHT: float = 1.65
+const CLOSEUP_PITCH_DEGREES: float = -15.0
+const CLOSEUP_DISTANCE: float = 4.2
 
 @export_category("Movement")
 @export var move_speed: float = 5.5
@@ -18,6 +24,7 @@ const MODEL_SCALE: Vector3 = Vector3(1.08, 1.08, 1.08)
 @onready var camera_rig: Node3D = $CameraRig
 @onready var yaw_pivot: Node3D = $CameraRig/YawPivot
 @onready var pitch_pivot: Node3D = $CameraRig/YawPivot/PitchPivot
+@onready var spring_arm: SpringArm3D = $CameraRig/YawPivot/PitchPivot/SpringArm3D
 @onready var camera: Camera3D = $CameraRig/YawPivot/PitchPivot/SpringArm3D/Camera3D
 @onready var game_state: Phase1GameState = get_node("/root/GameState") as Phase1GameState
 @onready var placement_controller: PicnicPlacementController = $PicnicPlacementController
@@ -28,16 +35,19 @@ const MODEL_SCALE: Vector3 = Vector3(1.08, 1.08, 1.08)
 
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity", 9.8)
 var _interaction_target: Node
+var _camera_adjustment_enabled: bool = false
+var _camera_dragging: bool = false
+var _camera_closeup_enabled: bool = false
 
 
 func _ready() -> void:
 	add_to_group("player")
 	add_to_group("player_cat")
 	game_state.founder_selected.connect(_on_founder_selected)
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	_apply_camera_view(false)
 	if game_state.has_founder():
 		_on_founder_selected(game_state.selected_founder)
-	else:
-		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -59,7 +69,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		_interaction_target.call("interact", self)
 		get_viewport().set_input_as_handled()
 		return
-	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and _camera_adjustment_enabled:
+		_camera_dragging = event.pressed
+		get_viewport().set_input_as_handled()
+	elif event is InputEventMouseMotion and _camera_adjustment_enabled and _camera_dragging:
 		var motion := event as InputEventMouseMotion
 		yaw_pivot.rotate_y(-motion.relative.x * mouse_sensitivity)
 		pitch_pivot.rotation.x = clampf(
@@ -67,10 +80,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			deg_to_rad(minimum_pitch_degrees),
 			deg_to_rad(maximum_pitch_degrees)
 		)
-	elif event.is_action_pressed("release_mouse"):
-		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	elif event is InputEventMouseButton and event.pressed and Input.mouse_mode == Input.MOUSE_MODE_VISIBLE:
-		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		get_viewport().set_input_as_handled()
 
 
 func _process(_delta: float) -> void:
@@ -170,7 +180,42 @@ func _set_interaction_target(target: Node) -> void:
 
 func _on_founder_selected(founder: FounderData) -> void:
 	_apply_founder_visual(founder)
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+
+func enable_camera_adjustment() -> void:
+	_camera_adjustment_enabled = true
+	_camera_dragging = false
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	game_state.request_feedback("Camera adjustment enabled. Right-drag to rotate, then choose Return Cursor.")
+
+
+func return_cursor_control() -> void:
+	_camera_adjustment_enabled = false
+	_camera_dragging = false
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	game_state.request_feedback("Cursor control returned. Camera movement is locked.")
+
+
+func toggle_camera_closeup() -> bool:
+	_camera_closeup_enabled = not _camera_closeup_enabled
+	_apply_camera_view(_camera_closeup_enabled)
+	game_state.request_feedback("Close-up camera enabled." if _camera_closeup_enabled else "Settlement overview restored.")
+	return _camera_closeup_enabled
+
+
+func is_camera_adjustment_enabled() -> bool:
+	return _camera_adjustment_enabled
+
+
+func is_camera_closeup_enabled() -> bool:
+	return _camera_closeup_enabled
+
+
+func _apply_camera_view(closeup: bool) -> void:
+	pitch_pivot.position.y = CLOSEUP_HEIGHT if closeup else OVERVIEW_HEIGHT
+	pitch_pivot.rotation.x = deg_to_rad(CLOSEUP_PITCH_DEGREES if closeup else OVERVIEW_PITCH_DEGREES)
+	spring_arm.spring_length = CLOSEUP_DISTANCE if closeup else OVERVIEW_DISTANCE
 
 
 func _apply_founder_visual(founder: FounderData) -> void:

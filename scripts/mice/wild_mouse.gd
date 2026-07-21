@@ -292,17 +292,17 @@ func try_recruit() -> bool:
 		revise_price_after_decline()
 		return false
 	is_recruited = true
-	if _picnic != null:
-		_picnic.release_mouse(self)
-	_picnic = null
 	_state = MouseState.RECRUITED
 	navigation_agent.target_position = global_position
 	remove_from_group("wild_mice")
 	add_to_group("recruited_mice")
-	recruitment_badge.text = "✓ RECRUITED\n%s • ready to build" % generated_name
+	recruitment_badge.text = "✓ RECRUITED\n%s • waiting patiently" % generated_name
 	recruitment_badge.show()
 	_work_evaluation_remaining = 0.15
-	_begin_following()
+	# A picnic attendee stays at the gathering until the host ends or packs it.
+	# Direct/scripted recruitment outside a picnic can begin following immediately.
+	if _picnic == null:
+		_begin_following()
 	game_state.mouse_recruited.emit(self)
 	game_state.recruited_mouse_count_changed.emit(game_state.get_recruited_mouse_count())
 	game_state.set_build_menu_open(true)
@@ -481,7 +481,12 @@ func release_from_picnic(picnic: Phase1Picnic) -> void:
 		return
 	_picnic = null
 	visual_root.position.y = 0.0
-	_begin_idle(_random.randf_range(minimum_pause, maximum_pause))
+	if is_recruited:
+		recruitment_badge.text = "✓ RECRUITED\n%s • ready to build" % generated_name
+		_work_evaluation_remaining = 0.15
+		_begin_following()
+	else:
+		_begin_idle(_random.randf_range(minimum_pause, maximum_pause))
 
 
 func get_state_name() -> String:
