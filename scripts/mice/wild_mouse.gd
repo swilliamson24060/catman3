@@ -36,7 +36,7 @@ const WORK_ARRIVAL_DISTANCE: float = 0.7
 const BASE_WORK_RATE: float = 8.0
 const FATIGUE_GAIN_PER_WORK_SECOND: float = 0.045
 const BREAK_RECOVERY_PER_SECOND: float = 0.12
-const WORK_JOIN_THRESHOLD: float = 45.0
+const WORK_JOIN_THRESHOLD: float = 20.0
 const GIVEN_NAMES: Array[String] = ["Pip", "Mallow", "Nib", "Tansy", "Button", "Cricket", "Pebble", "Mochi", "Thimble", "Clover", "Biscuit", "Juniper"]
 const FAMILY_NAMES: Array[String] = ["Whisker", "Quickpaw", "Softstep", "Cheesenose", "Brambletail", "Dewdrop", "Nettle", "Acorn"]
 const DEFAULT_PERSONALITY: MousePersonalityData = preload("res://resources/personalities/builder.tres")
@@ -62,6 +62,7 @@ const DEFAULT_PERSONALITY: MousePersonalityData = preload("res://resources/perso
 @onready var needs: MouseNeeds = $MouseNeeds
 @onready var need_debug: Label3D = $NeedDebug
 @onready var work_debug: Label3D = $WorkDebug
+@onready var recruitment_badge: Label3D = $RecruitmentBadge
 @onready var stats_service: Node = get_node("/root/StatsService")
 @onready var catnip_drift_service: Node = get_node("/root/CatnipDriftService")
 @onready var settlement_manager: Phase2SettlementManager = get_node("/root/SettlementManager") as Phase2SettlementManager
@@ -116,6 +117,7 @@ func _ready() -> void:
 	needs.hunger_changed.connect(_on_need_value_changed)
 	needs.fatigue_changed.connect(_on_need_value_changed)
 	interaction_area.input_event.connect(_on_interaction_area_input_event)
+	game_state.construction_site_placed.connect(_on_construction_site_placed)
 	call_deferred("_wait_for_navigation")
 
 
@@ -297,11 +299,20 @@ func try_recruit() -> bool:
 	navigation_agent.target_position = global_position
 	remove_from_group("wild_mice")
 	add_to_group("recruited_mice")
+	recruitment_badge.text = "✓ RECRUITED\n%s • ready to build" % generated_name
+	recruitment_badge.show()
+	_work_evaluation_remaining = 0.15
 	_begin_following()
 	game_state.mouse_recruited.emit(self)
 	game_state.recruited_mouse_count_changed.emit(game_state.get_recruited_mouse_count())
-	game_state.request_feedback("%s joined your settlement!" % generated_name)
+	game_state.set_build_menu_open(true)
+	game_state.request_feedback("%s joined! Choose a building (1–4), aim its marker, then press E. Recruited mice build automatically." % generated_name)
 	return true
+
+
+func _on_construction_site_placed(_site: ConstructionSite) -> void:
+	if is_recruited:
+		_work_evaluation_remaining = 0.1
 
 
 ## Assigns a stable formation slot and starts navigation toward the founder.

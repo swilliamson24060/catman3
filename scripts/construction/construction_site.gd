@@ -15,6 +15,7 @@ enum SiteState { WAITING_FOR_WORKERS, UNDER_CONSTRUCTION, PAUSED, COMPLETED, CAN
 @onready var settlement_manager: Phase2SettlementManager = get_node("/root/SettlementManager") as Phase2SettlementManager
 @onready var progress_fill: MeshInstance3D = $ProgressFill
 @onready var frame: MeshInstance3D = $PlaceholderFrame
+@onready var world_status: Label3D = $WorldStatus
 
 var completed_work: float = 0.0
 var bribe_cheese: int = 0
@@ -81,12 +82,14 @@ func reserve_worker(worker: Node3D) -> Marker3D:
 				site_completed.connect(completed_callable)
 			if not site_cancelled.is_connected(cancelled_callable):
 				site_cancelled.connect(cancelled_callable)
+			_update_visuals()
 			return slot
 	return null
 
 
 func release_worker(worker: Node3D) -> void:
 	_reserved_workers.erase(worker)
+	_update_visuals()
 
 
 func get_bribe_willingness_value() -> float:
@@ -159,11 +162,25 @@ func _complete_site() -> void:
 		container = get_tree().current_scene
 	container.add_child(building)
 	building.global_transform = global_transform
+	_add_completion_marker(building)
 	settlement_manager.register_completed_building(building, building_definition)
 	site_completed.emit(self, building)
 	game_state.close_construction_site()
 	game_state.request_feedback("%s completed.%s" % [get_display_name(), " %d bowl cheese returned." % remainder if remainder > 0 else ""])
 	queue_free()
+
+
+func _add_completion_marker(building: Node3D) -> void:
+	var marker := Label3D.new()
+	marker.name = "CompletionMarker"
+	marker.position = Vector3(0.0, 2.0, 0.0)
+	marker.text = "✓ %s COMPLETE" % get_display_name().to_upper()
+	marker.modulate = Color(0.55, 1.0, 0.62)
+	marker.font_size = 32
+	marker.outline_size = 10
+	marker.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	marker.no_depth_test = true
+	building.add_child(marker)
 
 
 func _update_visuals() -> void:
@@ -175,3 +192,6 @@ func _update_visuals() -> void:
 	progress_fill.position.x = -0.6 + 0.6 * ratio
 	var bowl_ratio := clampf(float(bribe_cheese) / 6.0, 0.0, 1.0)
 	$BribeBowl/CheeseFill.scale.y = maxf(bowl_ratio, 0.03)
+	if world_status != null:
+		var status := "WAITING FOR MICE" if get_worker_count() == 0 else "%d MICE BUILDING" % get_worker_count()
+		world_status.text = "%s\n%s • %d%%" % [get_display_name(), status, roundi(ratio * 100.0)]

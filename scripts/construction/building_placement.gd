@@ -18,6 +18,7 @@ const INVALID_COLOR := Color(0.95, 0.2, 0.16, 0.5)
 @onready var achievement_service: Node = get_node("/root/AchievementService")
 
 var _preview: MeshInstance3D
+var _preview_label: Label3D
 var _preview_material := StandardMaterial3D.new()
 var _selected_definition: BuildingDefinition
 var _is_valid: bool = false
@@ -91,6 +92,13 @@ func begin_placement(definition: BuildingDefinition) -> void:
 	_preview.mesh = mesh
 	_preview.material_override = _preview_material
 	get_tree().current_scene.add_child(_preview)
+	_preview_label = Label3D.new()
+	_preview_label.position = Vector3(0.0, 0.75, 0.0)
+	_preview_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	_preview_label.no_depth_test = true
+	_preview_label.font_size = 28
+	_preview_label.outline_size = 9
+	_preview.add_child(_preview_label)
 	game_state.set_placement_mode(true)
 	game_state.set_build_selection(definition.display_name)
 	_set_boundary_visible(true)
@@ -107,6 +115,7 @@ func cancel_placement(show_feedback: bool = true) -> void:
 		return
 	_preview.queue_free()
 	_preview = null
+	_preview_label = null
 	_selected_definition = null
 	_is_valid = false
 	game_state.set_placement_mode(false)
@@ -131,7 +140,7 @@ func confirm_placement() -> void:
 	site.global_transform = _preview.global_transform
 	site.configure(_selected_definition)
 	game_state.construction_site_placed.emit(site)
-	game_state.request_feedback("%s marker placed. Press E nearby to manage its bowl or add debug work." % _selected_definition.display_name)
+	game_state.request_feedback("%s site placed. Recruited mice will choose it and build on their own." % _selected_definition.display_name)
 	cancel_placement(false)
 
 
@@ -161,6 +170,12 @@ func _update_preview() -> void:
 		else:
 			_validation_message = "Valid placement — press E to place construction marker."
 	_preview_material.albedo_color = VALID_COLOR if _is_valid else INVALID_COLOR
+	if _preview_label != null:
+		_preview_label.modulate = Color(0.55, 1.0, 0.62) if _is_valid else Color(1.0, 0.48, 0.42)
+		_preview_label.text = "%s\n%s" % [
+			_selected_definition.display_name,
+			"PRESS E TO BUILD HERE" if _is_valid else _validation_message.to_upper(),
+		]
 	game_state.set_placement_validity(_validation_message, _is_valid)
 
 

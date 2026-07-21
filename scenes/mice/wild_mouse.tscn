@@ -52,6 +52,16 @@ outline_size = 7
 billboard = 1
 no_depth_test = true
 
+[node name="RecruitmentBadge" type="Label3D" parent="."]
+position = Vector3(0, 1.35, 0)
+visible = false
+modulate = Color(0.45, 1, 0.58, 1)
+text = "✓ RECRUITED"
+font_size = 26
+outline_size = 8
+billboard = 1
+no_depth_test = true
+
 [node name="MouseContentment" type="Node" parent="."]
 script = ExtResource("3")
 
