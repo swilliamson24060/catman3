@@ -34,7 +34,7 @@ func _on_building_constructed(building_id: String, anchor: Vector2i) -> void:
 
 		if _offsets_match(anchor, pattern.get("required_offsets", [])):
 			SaveService.current.discovered_patterns.append(pattern_id)
-			DataRegistry.apply_global_bonuses(pattern.get("bonuses", []))
+			_apply_pattern_bonuses(pattern)
 			EventBus.pattern_discovered.emit(pattern_id)
 			print("[ResonanceService] Discovered pattern '%s' at %s" % [pattern_id, anchor])
 			break
@@ -81,7 +81,7 @@ func _on_phase2_building_registered(_new_building: Node3D) -> void:
 			var anchor_grid := SettlementManager.world_to_resonance_grid(anchor.global_position)
 			if _phase2_offsets_match(anchor_grid, pattern.get("required_offsets", [])):
 				SaveService.current.discovered_patterns.append(pattern_id)
-				DataRegistry.apply_global_bonuses(pattern.get("bonuses", []))
+				_apply_pattern_bonuses(pattern)
 				EventBus.pattern_discovered.emit(pattern_id)
 				print("[ResonanceService] Phase 2 discovered pattern '%s' at %s" % [pattern_id, anchor_grid])
 				return
@@ -99,3 +99,19 @@ func _phase2_offsets_match(anchor: Vector2i, required_offsets: Array) -> bool:
 		if all_match:
 			return true
 	return false
+
+
+## Rebuilds all persisted resonance rewards without rediscovering patterns or
+## replaying banners/achievements. Named modifier sources prevent stacking.
+func reapply_discovered_bonuses() -> void:
+	for pattern_id: String in SaveService.current.discovered_patterns:
+		var pattern := DataRegistry.get_resonance_pattern(pattern_id)
+		if pattern.is_empty():
+			push_warning("[ResonanceService] Save references unknown pattern '%s'." % pattern_id)
+			continue
+		_apply_pattern_bonuses(pattern)
+
+
+func _apply_pattern_bonuses(pattern: Dictionary) -> void:
+	var pattern_id := str(pattern.get("id", ""))
+	DataRegistry.apply_global_bonuses(pattern.get("bonuses", []), "resonance:%s" % pattern_id)

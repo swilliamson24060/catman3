@@ -68,6 +68,7 @@ func load_game(save_path: String = SAVE_PATH) -> bool:
 	AnimalManager.restore_roster(_as_array(parsed.get("animals", [])))
 	GameState.restore_economy(_as_dictionary(parsed.get("phase2_economy", {})))
 	SettlementManager.restore_completed_buildings(_as_array(parsed.get("phase2_completed_buildings", [])))
+	ResonanceService.reapply_discovered_bonuses()
 
 	print("[SaveService] Loaded game.")
 	return true

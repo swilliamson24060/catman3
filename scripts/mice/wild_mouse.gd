@@ -62,6 +62,7 @@ const DEFAULT_PERSONALITY: MousePersonalityData = preload("res://resources/perso
 @onready var needs: MouseNeeds = $MouseNeeds
 @onready var need_debug: Label3D = $NeedDebug
 @onready var work_debug: Label3D = $WorkDebug
+@onready var stats_service: Node = get_node("/root/StatsService")
 
 var _state: MouseState = MouseState.WAIT_FOR_NAVIGATION
 var _spawn_position: Vector3
@@ -365,7 +366,7 @@ func _update_follow_player(delta: float) -> void:
 		_stop_planar_motion(delta)
 		return
 	var direction := flat_direction.normalized()
-	var active_speed := move_speed * personality.move_speed_multiplier * _get_contentment_move_multiplier()
+	var active_speed := move_speed * personality.move_speed_multiplier * _get_contentment_move_multiplier() * _get_resonance_move_multiplier()
 	velocity.x = direction.x * active_speed
 	velocity.z = direction.z * active_speed
 	var target_yaw := atan2(-direction.x, -direction.z)
@@ -608,7 +609,7 @@ func _update_navigation(delta: float, moving_to_picnic: bool) -> void:
 		return
 
 	var direction := flat_direction.normalized()
-	var active_speed := move_speed * personality.move_speed_multiplier * _get_contentment_move_multiplier()
+	var active_speed := move_speed * personality.move_speed_multiplier * _get_contentment_move_multiplier() * _get_resonance_move_multiplier()
 	velocity.x = direction.x * active_speed
 	velocity.z = direction.z * active_speed
 	var target_yaw := atan2(-direction.x, -direction.z)
@@ -650,7 +651,7 @@ func _find_nearest_interest_point() -> Node3D:
 
 
 func _stop_planar_motion(delta: float) -> void:
-	var active_speed := move_speed * personality.move_speed_multiplier * _get_contentment_move_multiplier()
+	var active_speed := move_speed * personality.move_speed_multiplier * _get_contentment_move_multiplier() * _get_resonance_move_multiplier()
 	velocity.x = move_toward(velocity.x, 0.0, active_speed * 5.0 * delta)
 	velocity.z = move_toward(velocity.z, 0.0, active_speed * 5.0 * delta)
 
@@ -744,7 +745,7 @@ func _update_move_to_worksite(delta: float) -> void:
 	if direction.is_zero_approx():
 		return
 	direction = direction.normalized()
-	var active_speed := move_speed * personality.move_speed_multiplier * _get_contentment_move_multiplier()
+	var active_speed := move_speed * personality.move_speed_multiplier * _get_contentment_move_multiplier() * _get_resonance_move_multiplier()
 	velocity.x = direction.x * active_speed
 	velocity.z = direction.z * active_speed
 	rotation.y = lerp_angle(rotation.y, atan2(-direction.x, -direction.z), rotation_speed * delta)
@@ -859,6 +860,10 @@ func _get_contentment_move_multiplier() -> float:
 			return 0.72
 		_:
 			return 1.0
+
+
+func _get_resonance_move_multiplier() -> float:
+	return maxf(float(stats_service.call("get_effective", "global_mice", "movement_speed", 1.0)), 0.0)
 
 
 func _update_contentment_presentation(delta: float) -> void:

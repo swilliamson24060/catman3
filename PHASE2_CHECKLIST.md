@@ -56,6 +56,7 @@
 - [x] Detect Phase 2 patterns across all four cardinal rotations.
 - [x] Enforce one-time discovery through SaveData.
 - [x] Apply the Herbal Triad production bonus live to Catnip Gardens.
-- [ ] Add a dedicated discovery banner and pattern details.
-- [ ] Reapply discovered bonuses when loading a save.
-- [ ] Validate rotation, one-time rewards, persistence, and live production changes with an automated smoke test.
+- [x] Add a dedicated discovery banner and pattern details.
+- [x] Reapply discovered bonuses when loading a save.
+- [x] Apply the Herbal Triad movement bonus live to all mouse navigation states.
+- [x] Validate rotation, one-time rewards, persistence, and live production changes with an automated smoke test.

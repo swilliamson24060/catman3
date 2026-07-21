@@ -127,6 +127,48 @@ theme_override_font_sizes/font_size = 18
 text = "Feedback"
 horizontal_alignment = 1
 
+[node name="ResonanceBanner" type="PanelContainer" parent="."]
+visible = false
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 360.0
+offset_top = 72.0
+offset_right = -360.0
+offset_bottom = 250.0
+grow_horizontal = 2
+theme_override_styles/panel = SubResource("DialogueStyle")
+
+[node name="MarginContainer" type="MarginContainer" parent="ResonanceBanner"]
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 16
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ResonanceBanner/MarginContainer"]
+theme_override_constants/separation = 8
+
+[node name="Discovery" type="Label" parent="ResonanceBanner/MarginContainer/VBoxContainer"]
+theme_override_colors/font_color = Color(0.62, 0.95, 0.58, 1)
+theme_override_font_sizes/font_size = 16
+text = "ARCHITECTURAL RESONANCE DISCOVERED"
+horizontal_alignment = 1
+
+[node name="PatternName" type="Label" parent="ResonanceBanner/MarginContainer/VBoxContainer"]
+theme_override_colors/font_color = Color(1, 0.86, 0.34, 1)
+theme_override_font_sizes/font_size = 26
+text = "The Herbal Triad"
+horizontal_alignment = 1
+
+[node name="Description" type="Label" parent="ResonanceBanner/MarginContainer/VBoxContainer"]
+text = "Pattern description"
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="Bonuses" type="Label" parent="ResonanceBanner/MarginContainer/VBoxContainer"]
+theme_override_colors/font_color = Color(0.76, 0.9, 1, 1)
+text = "Bonuses"
+horizontal_alignment = 1
+
 [node name="DialoguePanel" type="PanelContainer" parent="."]
 visible = false
 anchors_preset = 8

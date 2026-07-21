@@ -8,6 +8,7 @@ signal modifiers_changed()
 
 var _multipliers: Dictionary = {}  # "target|stat" -> Array[float]
 var _additives: Dictionary = {}    # "target|stat" -> float
+var _source_modifiers: Dictionary = {} # source_id -> Array[Dictionary]
 
 # Named, removable modifiers -- for transient effects (standing on a warm
 # tile, a temporary strike penalty, wind-buffed drift) that need to come
@@ -22,6 +23,15 @@ func add_modifiers(bonuses: Array) -> void:
 		return
 	for bonus in bonuses:
 		_add_modifier(bonus)
+	modifiers_changed.emit()
+
+## Installs an idempotent permanent bonus source. Reapplying the same source
+## replaces its previous values, which makes save loading safe to repeat.
+func set_source_modifiers(source_id: String, bonuses: Array) -> void:
+	if source_id.is_empty():
+		add_modifiers(bonuses)
+		return
+	_source_modifiers[source_id] = bonuses.duplicate(true)
 	modifiers_changed.emit()
 
 func _add_modifier(bonus: Dictionary) -> void:
@@ -71,14 +81,25 @@ func get_effective(target: String, stat: String, base_value: float) -> float:
 		result *= m
 	for m in _temp_multipliers.get(key, {}).values():
 		result *= m
+	for source_bonuses: Array in _source_modifiers.values():
+		for bonus: Dictionary in source_bonuses:
+			if "%s|%s" % [bonus.get("target", ""), bonus.get("stat", "")] == key \
+					and bonus.get("modifier_type", "multiplier") == "multiplier":
+				result *= float(bonus.get("value", 0.0))
 	result += _additives.get(key, 0.0)
 	for a in _temp_additives.get(key, {}).values():
 		result += a
+	for source_bonuses: Array in _source_modifiers.values():
+		for bonus: Dictionary in source_bonuses:
+			if "%s|%s" % [bonus.get("target", ""), bonus.get("stat", "")] == key \
+					and bonus.get("modifier_type", "multiplier") != "multiplier":
+				result += float(bonus.get("value", 0.0))
 	return result
 
 func reset() -> void:
 	_multipliers.clear()
 	_additives.clear()
+	_source_modifiers.clear()
 	_temp_multipliers.clear()
 	_temp_additives.clear()
 	modifiers_changed.emit()

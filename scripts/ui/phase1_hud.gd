@@ -28,8 +28,14 @@ extends CanvasLayer
 @onready var site_title: Label = $ConstructionSitePanel/MarginContainer/VBoxContainer/Title
 @onready var site_progress: Label = $ConstructionSitePanel/MarginContainer/VBoxContainer/Progress
 @onready var site_bowl: Label = $ConstructionSitePanel/MarginContainer/VBoxContainer/Bowl
+@onready var resonance_banner: PanelContainer = $ResonanceBanner
+@onready var resonance_name: Label = $ResonanceBanner/MarginContainer/VBoxContainer/PatternName
+@onready var resonance_description: Label = $ResonanceBanner/MarginContainer/VBoxContainer/Description
+@onready var resonance_bonuses: Label = $ResonanceBanner/MarginContainer/VBoxContainer/Bonuses
 @onready var game_state: Phase1GameState = get_node("/root/GameState") as Phase1GameState
 @onready var simulation_clock: Phase2SimulationClock = get_node("/root/SimulationClock") as Phase2SimulationClock
+@onready var event_bus: Node = get_node("/root/EventBus")
+@onready var data_registry: Node = get_node("/root/DataRegistry")
 
 var _feedback_time_remaining: float = 0.0
 var _dialogue_mouse: Phase1WildMouse
@@ -38,6 +44,7 @@ var _show_need_debug: bool = false
 var _show_work_debug: bool = false
 var _inspected_mouse: Phase1WildMouse
 var _managed_site: ConstructionSite
+var _resonance_banner_generation: int = 0
 
 
 func _ready() -> void:
@@ -57,6 +64,7 @@ func _ready() -> void:
 	game_state.construction_site_placed.connect(_on_construction_site_count_changed)
 	game_state.construction_site_opened.connect(_on_construction_site_opened)
 	game_state.construction_site_closed.connect(_on_construction_site_closed)
+	event_bus.pattern_discovered.connect(_on_pattern_discovered)
 	accept_button.pressed.connect(_on_accept_pressed)
 	decline_button.pressed.connect(_on_decline_pressed)
 	inspection_close_button.pressed.connect(inspection_panel.hide)
@@ -68,6 +76,7 @@ func _ready() -> void:
 	build_menu.hide()
 	build_selection_label.hide()
 	site_panel.hide()
+	resonance_banner.hide()
 	_on_construction_site_count_changed(null)
 	_on_cheese_changed(game_state.get_cheese())
 	_on_catnip_changed(game_state.get_catnip())
@@ -300,3 +309,33 @@ func _refresh_site_panel() -> void:
 	site_title.text = _managed_site.get_display_name()
 	site_progress.text = "Construction: %d%%" % roundi(_managed_site.get_progress_ratio() * 100.0)
 	site_bowl.text = "Bribe bowl: %d cheese" % _managed_site.bribe_cheese
+
+
+func _on_pattern_discovered(pattern_id: String) -> void:
+	var pattern: Dictionary = data_registry.call("get_resonance_pattern", pattern_id)
+	if pattern.is_empty():
+		return
+	resonance_name.text = str(pattern.get("display_name", pattern_id))
+	resonance_description.text = str(pattern.get("description", ""))
+	var lines: Array[String] = []
+	for bonus: Dictionary in pattern.get("bonuses", []):
+		var value := float(bonus.get("value", 0.0))
+		var value_text := "x%.2f" % value if bonus.get("modifier_type", "multiplier") == "multiplier" else "%+.0f%%" % (value * 100.0)
+		lines.append("%s %s: %s" % [
+			str(bonus.get("target", "")).replace("_", " ").capitalize(),
+			str(bonus.get("stat", "")).replace("_", " ").capitalize(),
+			value_text,
+		])
+	resonance_bonuses.text = "\n".join(lines)
+	_resonance_banner_generation += 1
+	var generation := _resonance_banner_generation
+	resonance_banner.modulate.a = 1.0
+	resonance_banner.show()
+	await get_tree().create_timer(5.0).timeout
+	if generation != _resonance_banner_generation:
+		return
+	var tween := create_tween()
+	tween.tween_property(resonance_banner, "modulate:a", 0.0, 0.6)
+	await tween.finished
+	if generation == _resonance_banner_generation:
+		resonance_banner.hide()

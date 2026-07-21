@@ -284,8 +284,11 @@ func make_inventory_item(id: String) -> InventoryItem:
 ## same shape used for Founder Cat traits and Resonance Pattern bonuses.
 ## This is the single entry point both use, so a bonus behaves identically
 ## regardless of what triggered it.
-func apply_global_bonuses(bonuses: Array) -> void:
-	StatsService.add_modifiers(bonuses)
+func apply_global_bonuses(bonuses: Array, source_id: String = "") -> void:
+	if source_id.is_empty():
+		StatsService.add_modifiers(bonuses)
+	else:
+		StatsService.set_source_modifiers(source_id, bonuses)
 	for bonus in bonuses:
 		print("[DataRegistry] Applying bonus -> target=%s stat=%s type=%s value=%s" % [
 			bonus.get("target"), bonus.get("stat"), bonus.get("modifier_type"), bonus.get("value")
