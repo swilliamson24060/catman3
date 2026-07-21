@@ -9,6 +9,8 @@ const INITIAL_WALLED_HALF_EXTENT: float = 14.5
 const SETTLEMENT_ORIGIN := Vector3.ZERO
 const BUILDING_DEFINITION_DIRECTORY := "res://resources/buildings"
 const RESONANCE_GRID_SIZE: float = 3.0
+const INFLUENCE_RING_WIDTH: float = 0.16
+const INFLUENCE_RING_SEGMENTS: int = 64
 
 var _influence_sources: Dictionary = {}
 var _completed_buildings: Array[Node3D] = []
@@ -53,6 +55,7 @@ func register_influence_source(source: Node3D, radius: float) -> void:
 	if source == null or radius <= 0.0:
 		return
 	_influence_sources[source] = radius
+	_add_influence_ring(source, radius)
 	influence_changed.emit()
 
 
@@ -68,6 +71,30 @@ func register_completed_building(building: Node3D, definition: BuildingDefinitio
 	if definition != null and definition.settlement_influence_radius > 0.0:
 		register_influence_source(building, definition.settlement_influence_radius)
 	building_registered.emit(building)
+
+
+func _add_influence_ring(source: Node3D, radius: float) -> void:
+	var existing := source.get_node_or_null("SettlementInfluenceRing")
+	if existing != null:
+		existing.queue_free()
+	var mesh := ImmediateMesh.new()
+	mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLE_STRIP)
+	for index: int in range(INFLUENCE_RING_SEGMENTS + 1):
+		var angle := TAU * float(index) / float(INFLUENCE_RING_SEGMENTS)
+		var direction := Vector3(cos(angle), 0.0, sin(angle))
+		mesh.surface_add_vertex(direction * (radius - INFLUENCE_RING_WIDTH))
+		mesh.surface_add_vertex(direction * radius)
+	mesh.surface_end()
+	var material := StandardMaterial3D.new()
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.albedo_color = Color(0.28, 0.72, 1.0, 0.62)
+	var ring := MeshInstance3D.new()
+	ring.name = "SettlementInfluenceRing"
+	ring.position.y = 0.035
+	ring.mesh = mesh
+	ring.material_override = material
+	source.add_child(ring)
 
 
 func unregister_completed_building(building: Node3D) -> void:

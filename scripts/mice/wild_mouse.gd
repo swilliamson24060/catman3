@@ -33,7 +33,6 @@ const STUCK_RECOVERY_TIME: float = 3.0
 const WORK_EVALUATION_INTERVAL: float = 2.0
 const WORK_REPATH_INTERVAL: float = 0.5
 const WORK_ARRIVAL_DISTANCE: float = 0.7
-const BASE_WORK_RATE: float = 8.0
 const FATIGUE_GAIN_PER_WORK_SECOND: float = 0.045
 const BREAK_RECOVERY_PER_SECOND: float = 0.12
 const WORK_JOIN_THRESHOLD: float = 20.0
@@ -753,6 +752,7 @@ func _update_move_to_worksite(delta: float) -> void:
 	var target := _work_slot.global_position
 	if global_position.distance_to(target) <= WORK_ARRIVAL_DISTANCE:
 		navigation_agent.target_position = global_position
+		_worksite.set_worker_active(self, true)
 		_state = MouseState.WORK
 		_stop_planar_motion(delta)
 		return
@@ -790,12 +790,6 @@ func _update_work(delta: float) -> void:
 		return
 	_stop_planar_motion(delta)
 	_face_position(_worksite.global_position, delta)
-	var contentment_multiplier := clampf(0.7 + float(get_contentment_score()) / 20.0 * 0.6, 0.65, 1.3)
-	var hunger_multiplier := clampf(1.0 - needs.hunger * 0.55, 0.35, 1.0)
-	var fatigue_multiplier := clampf(1.0 - needs.fatigue * 0.65, 0.25, 1.0)
-	var personality_multiplier := personality.get_effect(&"construction_speed_multiplier", 1.0)
-	var drift_multiplier := get_catnip_drift_work_multiplier()
-	_worksite.contribute_work(BASE_WORK_RATE * personality_multiplier * contentment_multiplier * hunger_multiplier * fatigue_multiplier * drift_multiplier * delta)
 	needs.add_fatigue(FATIGUE_GAIN_PER_WORK_SECOND * delta)
 	if needs.fatigue >= personality.get_effect(&"fatigue_break_threshold", 0.7):
 		_start_work_break()

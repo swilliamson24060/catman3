@@ -9,6 +9,7 @@ extends Resource
 @export var work_required: float = 100.0
 @export var minimum_workers: int = 1
 @export var preferred_worker_count: int = 2
+@export var base_construction_turns: float = 5.0
 @export var settlement_influence_radius: float = 0.0
 @export var tags: Array[StringName] = []
 @export var tier: StringName = &"cardboard"

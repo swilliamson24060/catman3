@@ -25,14 +25,14 @@ ambient_light_energy = 0.8
 tonemap_mode = 2
 
 [sub_resource type="BoxMesh" id="GroundMesh"]
-size = Vector3(30, 0.2, 30)
+size = Vector3(70, 0.2, 70)
 
 [sub_resource type="StandardMaterial3D" id="GroundMaterial"]
 albedo_color = Color(0.25, 0.55, 0.26, 1)
 roughness = 1.0
 
 [sub_resource type="BoxShape3D" id="GroundShape"]
-size = Vector3(30, 0.2, 30)
+size = Vector3(70, 0.2, 70)
 
 [sub_resource type="CylinderMesh" id="TrunkMesh"]
 top_radius = 0.32
@@ -65,16 +65,16 @@ roughness = 0.95
 size = Vector3(2.1, 0.95, 1.5)
 
 [sub_resource type="BoxMesh" id="BoundaryLongMesh"]
-size = Vector3(30, 1.1, 0.35)
+size = Vector3(70, 1.1, 0.35)
 
 [sub_resource type="BoxMesh" id="BoundarySideMesh"]
-size = Vector3(0.35, 1.1, 30)
+size = Vector3(0.35, 1.1, 70)
 
 [sub_resource type="BoxShape3D" id="BoundaryLongShape"]
-size = Vector3(30, 1.1, 0.35)
+size = Vector3(70, 1.1, 0.35)
 
 [sub_resource type="BoxShape3D" id="BoundarySideShape"]
-size = Vector3(0.35, 1.1, 30)
+size = Vector3(0.35, 1.1, 70)
 
 [sub_resource type="StandardMaterial3D" id="BoundaryMaterial"]
 albedo_color = Color(0.29, 0.18, 0.08, 1)
@@ -164,7 +164,7 @@ shape = SubResource("RockShape")
 [node name="Boundaries" type="Node3D" parent="."]
 
 [node name="North" type="StaticBody3D" parent="Boundaries"]
-position = Vector3(0, 0.55, -14.8)
+position = Vector3(0, 0.55, -34.8)
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Boundaries/North"]
 mesh = SubResource("BoundaryLongMesh")
@@ -174,7 +174,7 @@ material_override = SubResource("BoundaryMaterial")
 shape = SubResource("BoundaryLongShape")
 
 [node name="South" type="StaticBody3D" parent="Boundaries"]
-position = Vector3(0, 0.55, 14.8)
+position = Vector3(0, 0.55, 34.8)
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Boundaries/South"]
 mesh = SubResource("BoundaryLongMesh")
@@ -184,7 +184,7 @@ material_override = SubResource("BoundaryMaterial")
 shape = SubResource("BoundaryLongShape")
 
 [node name="West" type="StaticBody3D" parent="Boundaries"]
-position = Vector3(-14.8, 0.55, 0)
+position = Vector3(-34.8, 0.55, 0)
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Boundaries/West"]
 mesh = SubResource("BoundarySideMesh")
@@ -194,7 +194,7 @@ material_override = SubResource("BoundaryMaterial")
 shape = SubResource("BoundarySideShape")
 
 [node name="East" type="StaticBody3D" parent="Boundaries"]
-position = Vector3(14.8, 0.55, 0)
+position = Vector3(34.8, 0.55, 0)
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Boundaries/East"]
 mesh = SubResource("BoundarySideMesh")
@@ -224,7 +224,6 @@ script = ExtResource("12")
 script = ExtResource("13")
 
 [node name="TerritoryBoundary" type="Node3D" parent="." groups=["settlement_boundary"]]
-visible = false
 position = Vector3(0, 0.025, 0)
 
 [node name="North" type="MeshInstance3D" parent="TerritoryBoundary"]

@@ -126,11 +126,6 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 			return
 		if event.is_action_pressed("select_building_4"):
-			_managed_site.debug_contribute_work(20.0)
-			_refresh_site_panel()
-			get_viewport().set_input_as_handled()
-			return
-		if event.is_action_pressed("select_building_5"):
 			_managed_site.cancel_site()
 			get_viewport().set_input_as_handled()
 			return
@@ -349,7 +344,11 @@ func _refresh_site_panel() -> void:
 	if not is_instance_valid(_managed_site):
 		return
 	site_title.text = _managed_site.get_display_name()
-	site_progress.text = "Construction: %d%%" % roundi(_managed_site.get_progress_ratio() * 100.0)
+	var definition := _managed_site.building_definition
+	var crew_text := ""
+	if definition != null:
+		crew_text = " • crew %d/%d • %.0f turns" % [_managed_site.get_active_worker_count(), definition.minimum_workers, definition.base_construction_turns]
+	site_progress.text = "Construction: %d%%%s" % [roundi(_managed_site.get_progress_ratio() * 100.0), crew_text]
 	site_bowl.text = "Bribe bowl: %d cheese" % _managed_site.bribe_cheese
 
 

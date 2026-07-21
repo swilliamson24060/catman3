@@ -140,7 +140,7 @@ func confirm_placement() -> void:
 	site.global_transform = _preview.global_transform
 	site.configure(_selected_definition)
 	game_state.construction_site_placed.emit(site)
-	game_state.request_feedback("%s site placed. Recruited mice will choose it and build on their own." % _selected_definition.display_name)
+	game_state.request_feedback("%s site placed. It needs %d mice for 5 turns; extra mice can reduce that to 3." % [_selected_definition.display_name, _selected_definition.minimum_workers])
 	cancel_placement(false)
 
 
@@ -173,7 +173,7 @@ func _update_preview() -> void:
 	if _preview_label != null:
 		_preview_label.modulate = Color(0.55, 1.0, 0.62) if _is_valid else Color(1.0, 0.48, 0.42)
 		_preview_label.text = "%s\n%s" % [
-			_selected_definition.display_name,
+			"%s • %d MICE • +%.0fM TERRITORY" % [_selected_definition.display_name, _selected_definition.minimum_workers, _selected_definition.settlement_influence_radius],
 			"PRESS E TO BUILD HERE" if _is_valid else _validation_message.to_upper(),
 		]
 	game_state.set_placement_validity(_validation_message, _is_valid)

@@ -180,7 +180,7 @@ func _complete_conversation_cycle(was_packed: bool) -> void:
 			recruited_count += 1
 	end_picnic_event(false)
 	if recruited_count > 0:
-		game_state.set_build_menu_open(true)
+		game_state.begin_build_decision()
 		var reason := "Picnic packed" if was_packed else "Everyone has had a turn"
 		game_state.request_feedback("%s. Choose what your %d new mice should build (1–4)." % [reason, recruited_count])
 	elif was_packed:

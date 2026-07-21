@@ -393,17 +393,18 @@ text = "Build Menu"
 
 [node name="Instructions" type="Label" parent="BuildMenu/MarginContainer/VBoxContainer"]
 text = "CHOOSE WHAT TO BUILD
-1 — Test Structure
-2 — Catnip Garden
-3 — Mouse Hut
-4 — Cheese Vault (recruit 5 mice)
+1 — Test Structure (2 mice, 5 turns)
+2 — Catnip Garden (3 mice, 5 turns)
+3 — Mouse Hut (4 mice, 5 turns)
+4 — Cheese Vault (5 mice, 5 turns; recruit 5)
 
 Then face the desired location.
 The world marker follows in front of you.
 E — Place the site there
 B — Cancel / close
 
-Recruited mice build placed sites automatically."
+Build at the blue edge to expand the settlement.
+Extra mice can reduce construction to 3 turns."
 autowrap_mode = 2
 
 [node name="ConstructionSitePanel" type="PanelContainer" parent="."]
@@ -444,7 +445,6 @@ text = "Bribe bowl: 0 cheese"
 text = "1 — Add 1 cheese
 2 — Add 3 cheese
 3 — Return all bowl cheese
-4 — Development: contribute 20 work
-5 — Cancel site and refund
+4 — Cancel site and refund
 Esc — Close"
 autowrap_mode = 2

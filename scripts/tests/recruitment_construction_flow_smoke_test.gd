@@ -52,24 +52,45 @@ func _run() -> void:
 	assert(second_mouse.try_recruit(), "The founder must be able to recruit the next picnic attendee")
 	second_mouse.close_negotiation()
 	assert(game_state.is_build_menu_open, "The final completed conversation must open building selection")
+	assert(game_state.is_build_decision_pending(), "Completed recruitment must lock picnic relocation until construction starts")
 	assert(mouse.get_state_name() == "FOLLOW_PLAYER", "Recruit must leave patiently when the picnic ends")
 	assert(second_mouse.get_state_name() == "FOLLOW_PLAYER", "Every recruit must leave together after the final conversation")
+	var placement_owner := CharacterBody3D.new()
+	root.add_child(placement_owner)
+	var picnic_placement := PicnicPlacementController.new()
+	placement_owner.add_child(picnic_placement)
+	await process_frame
+	picnic_placement.begin_placement()
+	assert(not picnic_placement.is_placing(), "Picnic placement must remain locked while the build decision is pending")
 
 	var site := SITE_SCENE.instantiate() as ConstructionSite
 	site_container.add_child(site)
-	site.global_position = mouse.global_position
+	site.global_position = Vector3(14.0, 0.0, 0.0)
 	site.configure(TEST_STRUCTURE)
 	game_state.construction_site_placed.emit(site)
+	assert(not game_state.is_build_decision_pending(), "Starting the selected construction site must unlock picnic relocation")
 	mouse.call("_evaluate_work_opportunities")
 	assert(site.get_worker_count() == 1, "A healthy nearby recruit must autonomously claim a placed site")
-	assert(site.get_node("WorldStatus").text.contains("1 MICE BUILDING"), "Site must show worker activity in-world")
+	assert(site.get_node("WorldStatus").text.contains("0/2 MICE READY"), "Site must show the minimum crew requirement in-world")
 
-	site.contribute_work(TEST_STRUCTURE.work_required)
+	var first_slot := site.get("_reserved_workers")[mouse] as Marker3D
+	mouse.global_position = first_slot.global_position
+	site.set_worker_active(mouse, true)
+	assert(site.reserve_worker(second_mouse) != null, "A second mouse must be able to complete the minimum crew")
+	site.set_worker_active(second_mouse, true)
+	assert(site.get_node("WorldStatus").text.contains("2 MICE BUILDING"), "A complete crew must begin construction")
+	site.call("_on_simulation_advanced", Phase2SimulationClock.NEED_CYCLE_SECONDS * 4.99)
+	assert(building_container.get_child_count() == 0, "The minimum crew must not finish before five game turns")
+	site.call("_on_simulation_advanced", Phase2SimulationClock.NEED_CYCLE_SECONDS * 0.01)
 	await process_frame
 	var completed: Array[Node] = building_container.get_children()
 	assert(completed.size() == 1, "Autonomous construction must produce the completed building")
 	assert(completed[0].has_node("CompletionMarker"), "Completed building must show a world-space notification")
 	assert(completed[0].get_node("CompletionMarker").text.contains("COMPLETE"), "Completion notification must be explicit")
+	assert(completed[0].has_node("SettlementInfluenceRing"), "An expanding building must show its new settlement boundary")
+	var settlement_manager := root.get_node("SettlementManager") as Phase2SettlementManager
+	assert(settlement_manager.is_position_inside_settlement(Vector3(20.0, 0.0, 0.0)), "A completed edge building must expand valid placement territory")
+	assert(not settlement_manager.is_position_inside_settlement(Vector3(22.0, 0.0, 0.0)), "Expansion must stop at the building's influence radius")
 
 	print("RECRUITMENT_CONSTRUCTION_FLOW_SMOKE_TEST_PASS")
 	quit(0)

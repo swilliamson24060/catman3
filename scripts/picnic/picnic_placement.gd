@@ -29,7 +29,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not game_state.has_founder():
 		return
 	if event.is_action_pressed("place_picnic"):
-		if _preview == null and not game_state.has_picnic():
+		if game_state.is_build_decision_pending():
+			game_state.request_feedback("Place the selected construction site before moving the picnic.")
+		elif _preview == null and not game_state.has_picnic():
 			begin_placement()
 		elif game_state.has_picnic():
 			pack_current_picnic()
@@ -47,6 +49,9 @@ func is_placing() -> bool:
 
 
 func begin_placement() -> void:
+	if game_state.is_build_decision_pending():
+		game_state.request_feedback("Place the selected construction site before moving the picnic.")
+		return
 	if _preview != null or game_state.has_picnic():
 		return
 	_preview = PICNIC_SCENE.instantiate() as Phase1Picnic
@@ -58,6 +63,9 @@ func begin_placement() -> void:
 
 
 func pack_current_picnic() -> void:
+	if game_state.is_build_decision_pending():
+		game_state.request_feedback("Place the selected construction site before moving the picnic.")
+		return
 	var picnic := game_state.placed_picnic as Phase1Picnic
 	if picnic == null:
 		return

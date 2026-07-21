@@ -92,6 +92,21 @@ position = Vector3(1.5, 0, 0)
 [node name="Slot3" type="Marker3D" parent="WorkerSlots"]
 position = Vector3(0, 0, 1.5)
 
+[node name="Slot4" type="Marker3D" parent="WorkerSlots"]
+position = Vector3(0, 0, -1.5)
+
+[node name="Slot5" type="Marker3D" parent="WorkerSlots"]
+position = Vector3(-1.1, 0, 1.1)
+
+[node name="Slot6" type="Marker3D" parent="WorkerSlots"]
+position = Vector3(1.1, 0, 1.1)
+
+[node name="Slot7" type="Marker3D" parent="WorkerSlots"]
+position = Vector3(-1.1, 0, -1.1)
+
+[node name="Slot8" type="Marker3D" parent="WorkerSlots"]
+position = Vector3(1.1, 0, -1.1)
+
 [node name="InteractionArea" type="Area3D" parent="."]
 position = Vector3(0, 0.5, 0)
 collision_layer = 2

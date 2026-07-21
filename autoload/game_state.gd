@@ -15,6 +15,7 @@ signal dialogue_closed
 signal mouse_recruited(mouse: Phase1WildMouse)
 signal mouse_inspected(mouse: Phase1WildMouse)
 signal build_menu_changed(is_open: bool)
+signal build_decision_pending_changed(is_pending: bool)
 signal build_selection_changed(display_name: String)
 signal placement_validity_message_changed(message: String, is_valid: bool)
 signal construction_site_placed(site: ConstructionSite)
@@ -46,7 +47,12 @@ var placed_picnic: Node3D
 var active_dialogue_mouse: Phase1WildMouse
 var active_construction_site: ConstructionSite
 var is_build_menu_open: bool = false
+var _build_decision_pending: bool = false
 var _extra_resources: Dictionary = {}
+
+
+func _ready() -> void:
+	construction_site_placed.connect(_on_construction_site_placed)
 
 
 ## Returns whether the current inventory can cover an amount.
@@ -237,6 +243,24 @@ func set_build_menu_open(is_open: bool) -> void:
 	build_menu_changed.emit(is_open)
 
 
+func begin_build_decision() -> void:
+	if not _build_decision_pending:
+		_build_decision_pending = true
+		build_decision_pending_changed.emit(true)
+	set_build_menu_open(true)
+
+
+func is_build_decision_pending() -> bool:
+	return _build_decision_pending
+
+
+func _on_construction_site_placed(_site: ConstructionSite) -> void:
+	if not _build_decision_pending:
+		return
+	_build_decision_pending = false
+	build_decision_pending_changed.emit(false)
+
+
 func set_build_selection(display_name: String) -> void:
 	build_selection_changed.emit(display_name)
 
@@ -314,6 +338,7 @@ func reset() -> void:
 	active_dialogue_mouse = null
 	active_construction_site = null
 	is_build_menu_open = false
+	_build_decision_pending = false
 	_extra_resources.clear()
 
 
