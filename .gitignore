@@ -1,0 +1,14 @@
+# Godot 4+ specific ignores
+.godot/
+/android/
+
+# Exported builds
+/builds/
+
+# macOS
+.DS_Store
+
+# Leftover debug scratch files from development
+/debug_*.png
+/debug_*.png.import
+/body_mesh_dump*.json

@@ -1,0 +1,34 @@
+{
+  "founder_cats": [
+    {
+      "id": "comet",
+      "display_name": "Comet the Astronaut",
+      "description": "A bonus DLC founder from the Space Mice expansion -- an alien-green tabby in a tiny space helmet, always staring at the stars.",
+      "bonus": true,
+      "coat": { "pattern": "solid", "body_color": "#3FA34D", "secondary_color": "#1F5C2A", "eye_color": "#7FDBFF" },
+      "modifiers": [
+        { "target": "global_player", "stat": "movement_speed", "modifier_type": "multiplier", "value": 1.10 },
+        { "target": "global_mice", "stat": "recruitment_rate", "modifier_type": "multiplier", "value": 1.10 }
+      ]
+    }
+  ],
+  "items": [
+    {
+      "id": "moon_cheese",
+      "display_name": "Moon Cheese",
+      "icon_path": "res://inventory/icons/moon_cheese.png",
+      "max_stack": 50,
+      "description": "A rare lunar cheese variant. Stays fresh far longer than the mild kind.",
+      "properties": { "variety": "lunar", "perishable": true, "spoil_time": 360.0 }
+    }
+  ],
+  "achievements": [
+    {
+      "id": "spacefarers_first_hut",
+      "display_name": "One Small Hut for Mouse-kind",
+      "description": "Cross-namespace smoke test: this expansion's achievement references a core building by its bare id.",
+      "condition": { "type": "building_constructed_count", "building_id": "building_mouse_hut", "count": 1 },
+      "unlocks": []
+    }
+  ]
+}

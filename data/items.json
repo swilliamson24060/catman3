@@ -1,0 +1,76 @@
+{
+  "items": [
+    {
+      "id": "wood",
+      "display_name": "Wood",
+      "icon_path": "res://inventory/icons/wood.png",
+      "max_stack": 99,
+      "description": "Sturdy branches, good for building.",
+      "properties": {}
+    },
+    {
+      "id": "twigs",
+      "display_name": "Twigs",
+      "icon_path": "res://inventory/icons/twigs.png",
+      "max_stack": 99,
+      "description": "Small sticks for lightweight construction.",
+      "properties": {}
+    },
+    {
+      "id": "yarn",
+      "display_name": "Yarn",
+      "icon_path": "res://inventory/icons/yarn.png",
+      "max_stack": 99,
+      "description": "Soft thread, cats can't resist it.",
+      "properties": {}
+    },
+    {
+      "id": "catnip",
+      "display_name": "Catnip",
+      "icon_path": "res://inventory/icons/catnip.png",
+      "max_stack": 99,
+      "description": "Aromatic herb loved by cats.",
+      "properties": {}
+    },
+    {
+      "id": "moonstone",
+      "display_name": "Moonstone",
+      "icon_path": "res://inventory/icons/moonstone.png",
+      "max_stack": 20,
+      "description": "A rare, faintly glowing pebble. The Whisker-Radar tingles nearby.",
+      "properties": { "rare": true }
+    },
+    {
+      "id": "lint",
+      "display_name": "Lint",
+      "icon_path": "res://inventory/icons/lint.png",
+      "max_stack": 99,
+      "description": "Fluffy crafting fuzz, swatted loose from a dust bunny.",
+      "properties": {}
+    },
+    {
+      "id": "cheese_mild",
+      "display_name": "Mild Cheese",
+      "icon_path": "res://inventory/icons/cheese_mild.png",
+      "max_stack": 50,
+      "description": "A gentle, crowd-pleasing cheese.",
+      "properties": { "variety": "mild", "perishable": true, "spoil_time": 180.0 }
+    },
+    {
+      "id": "thimble_helmet",
+      "display_name": "Thimble Helmet",
+      "icon_path": "res://inventory/icons/thimble_helmet.png",
+      "max_stack": 5,
+      "description": "A tiny helmet crafted from lint and wood. Equipped animals work faster.",
+      "properties": { "tool_effect": "speed_boost", "value": 0.2, "craft_cost": { "lint": 3, "wood": 2 } }
+    },
+    {
+      "id": "button_shield",
+      "display_name": "Button Shield",
+      "icon_path": "res://inventory/icons/button_shield.png",
+      "max_stack": 5,
+      "description": "A polished button crafted from lint and twigs. Equipped animals gather extra.",
+      "properties": { "tool_effect": "yield_boost", "value": 1, "craft_cost": { "lint": 2, "twigs": 3 } }
+    }
+  ]
+}

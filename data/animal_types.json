@@ -1,0 +1,18 @@
+{
+  "animal_types": [
+    {
+      "id": "mouse",
+      "display_name": "Mouse",
+      "stat_group": "global_mice",
+      "housing_building_type": "building_mouse_hut",
+      "movement_speed": 3.5,
+      "job_roles": [
+        { "id": "gather_wood", "duration": 4.0, "output": "wood" },
+        { "id": "gather_twigs", "duration": 3.0, "output": "twigs" },
+        { "id": "gather_yarn", "duration": 5.0, "output": "yarn" }
+      ],
+      "upkeep": { "item": "cheese_mild", "amount": 1, "interval": 60.0 },
+      "attracts": { "stray_cat": 0.15 }
+    }
+  ]
+}

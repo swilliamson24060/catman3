@@ -1,0 +1,34 @@
+{
+  "buildings": [
+    {
+      "id": "building_mouse_hut",
+      "display_name": "Mouse Hut",
+      "footprint": { "width": 1, "height": 1 },
+      "tier": "cardboard",
+      "waterproof": false,
+      "build_cost": { "wood": 5, "twigs": 3 },
+      "build_time": 6.0,
+      "housing_capacity": 2
+    },
+    {
+      "id": "building_catnip_garden",
+      "display_name": "Catnip Garden",
+      "footprint": { "width": 2, "height": 2 },
+      "tier": "cardboard",
+      "waterproof": true,
+      "build_cost": { "wood": 8, "yarn": 2 },
+      "build_time": 10.0,
+      "produces": { "output": "catnip", "duration": 20.0 }
+    },
+    {
+      "id": "building_cheese_vault",
+      "display_name": "Cheese Vault",
+      "footprint": { "width": 1, "height": 1 },
+      "tier": "cardboard",
+      "waterproof": true,
+      "build_cost": { "wood": 6, "twigs": 4 },
+      "build_time": 8.0,
+      "locked_by_default": true
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "items": [
+    {
+      "id": "kelp",
+      "display_name": "Kelp",
+      "icon_path": "res://inventory/icons/kelp.png",
+      "max_stack": 99,
+      "description": "Slippery seaweed, harvested by crabs.",
+      "properties": {}
+    }
+  ],
+  "buildings": [
+    {
+      "id": "building_crab_burrow",
+      "display_name": "Crab Burrow",
+      "footprint": { "width": 1, "height": 1 },
+      "tier": "cardboard",
+      "waterproof": true,
+      "build_cost": { "wood": 4, "twigs": 2 },
+      "build_time": 5.0,
+      "housing_capacity": 2
+    }
+  ],
+  "animal_types": [
+    {
+      "id": "crab",
+      "display_name": "Crab",
+      "stat_group": "expansion_undersea_crabs",
+      "housing_building_type": "building_crab_burrow",
+      "mesh_scene_path": "res://kenney_cube-pets_1/Models/GLB format/animal-crab.glb",
+      "movement_speed": 2.5,
+      "job_roles": [
+        { "id": "gather_kelp", "duration": 4.0, "output": "kelp" }
+      ],
+      "upkeep": { "item": "kelp", "amount": 1, "interval": 60.0 },
+      "attracts": {}
+    }
+  ]
+}

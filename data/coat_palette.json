@@ -1,0 +1,22 @@
+{
+  "body_colors": [
+    { "id": "ginger", "hex": "#CE7A3E" },
+    { "id": "charcoal", "hex": "#2E2E33" },
+    { "id": "cream", "hex": "#F0E4C8" },
+    { "id": "slate", "hex": "#6E7B8B" },
+    { "id": "chestnut", "hex": "#8B4A2E" }
+  ],
+  "eye_colors": [
+    { "id": "amber", "hex": "#FFC93C" },
+    { "id": "sky", "hex": "#3CA7FF" },
+    { "id": "moss", "hex": "#39FF6A" },
+    { "id": "violet", "hex": "#B08CFF" }
+  ],
+  "decorations": [
+    { "id": "none", "pattern": "none", "hex": "" },
+    { "id": "stripes_charcoal", "pattern": "stripes", "hex": "#2E2E33" },
+    { "id": "stripes_cream", "pattern": "stripes", "hex": "#F0E4C8" },
+    { "id": "spots_charcoal", "pattern": "spots", "hex": "#2E2E33" },
+    { "id": "spots_cream", "pattern": "spots", "hex": "#F0E4C8" }
+  ]
+}

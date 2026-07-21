@@ -1,0 +1,35 @@
+{
+  "founder_cats": [
+    {
+      "id": "barnaby",
+      "display_name": "Barnaby the Mayor",
+      "description": "Plump British Shorthair wearing a tiny hi-vis construction vest.",
+      "coat": { "pattern": "solid", "body_color": "#E08A3E", "secondary_color": "#B8672A", "eye_color": "#3CA7FF" },
+      "modifiers": [
+        { "target": "global_mice", "stat": "recruitment_rate", "modifier_type": "multiplier", "value": 1.20 },
+        { "target": "global_construction", "stat": "speed", "modifier_type": "multiplier", "value": 0.85 }
+      ]
+    },
+    {
+      "id": "whisper",
+      "display_name": "Whisper the Mystic",
+      "description": "Sleek black cat with glowing eyes sitting in a meditative pose.",
+      "coat": { "pattern": "solid", "body_color": "#1C1C1F", "secondary_color": "#0E0E10", "eye_color": "#39FF6A" },
+      "modifiers": [
+        { "target": "global_night_phase", "stat": "yield", "modifier_type": "multiplier", "value": 2.0 },
+        { "target": "global_mice", "stat": "pay_requirement", "modifier_type": "multiplier", "value": 1.10 }
+      ]
+    },
+    {
+      "id": "turbo",
+      "display_name": "Turbo the Scrapper",
+      "description": "Ginger tabby with a notched ear, twitching tail, and restless pacing.",
+      "coat": { "pattern": "tabby", "body_color": "#CE7A3E", "secondary_color": "#4A2E1C", "eye_color": "#FFC93C" },
+      "modifiers": [
+        { "target": "global_player", "stat": "resource_harvest", "modifier_type": "multiplier", "value": 1.30 },
+        { "target": "global_player", "stat": "movement_speed", "modifier_type": "multiplier", "value": 1.25 },
+        { "target": "global_construction", "stat": "failure_rate", "modifier_type": "additive", "value": 0.05 }
+      ]
+    }
+  ]
+}
