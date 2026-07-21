@@ -28,21 +28,32 @@ func _run() -> void:
 
 	var mouse := MOUSE_SCENE.instantiate() as Phase1WildMouse
 	root.add_child(mouse)
+	var second_mouse := MOUSE_SCENE.instantiate() as Phase1WildMouse
+	root.add_child(second_mouse)
 	var picnic := PICNIC_SCENE.instantiate() as Phase1Picnic
 	root.add_child(picnic)
 	await process_frame
 	assert(mouse.respond_to_picnic(picnic, mouse.global_position), "Mouse must be attending a picnic before recruitment")
+	assert(second_mouse.respond_to_picnic(picnic, second_mouse.global_position), "Every picnic attendee must enter the same conversation cycle")
 	var reserved_marker := Marker3D.new()
 	picnic.add_child(reserved_marker)
-	picnic.set("_reservations", {mouse: reserved_marker})
+	var second_marker := Marker3D.new()
+	picnic.add_child(second_marker)
+	picnic.set("_reservations", {mouse: reserved_marker, second_mouse: second_marker})
 	picnic.set("_event_active", true)
 	assert(mouse.try_recruit(), "Mouse must recruit through the real transaction")
 	assert(mouse.get_state_name() == "RECRUITED", "A new recruit must wait at an active picnic")
-	assert(game_state.is_build_menu_open, "Recruitment must open the next-step build menu")
+	assert(not game_state.is_build_menu_open, "Recruiting one mouse must not interrupt the picnic with building selection")
 	assert(mouse.get_node("RecruitmentBadge").visible, "Recruited mouse needs an in-world badge")
 	assert(mouse.get_node("RecruitmentBadge").text.contains(mouse.get_display_name()), "Recruitment badge must identify the mouse")
-	picnic.end_picnic_event(false)
+	mouse.close_negotiation()
+	assert(not game_state.is_build_menu_open, "Building selection must wait until every attendee has had a turn")
+	assert(mouse.get_state_name() == "RECRUITED", "First recruit must remain patient while another attendee awaits conversation")
+	assert(second_mouse.try_recruit(), "The founder must be able to recruit the next picnic attendee")
+	second_mouse.close_negotiation()
+	assert(game_state.is_build_menu_open, "The final completed conversation must open building selection")
 	assert(mouse.get_state_name() == "FOLLOW_PLAYER", "Recruit must leave patiently when the picnic ends")
+	assert(second_mouse.get_state_name() == "FOLLOW_PLAYER", "Every recruit must leave together after the final conversation")
 
 	var site := SITE_SCENE.instantiate() as ConstructionSite
 	site_container.add_child(site)

@@ -250,6 +250,9 @@ func interact(_interactor: Node3D) -> void:
 	if is_recruited:
 		game_state.request_feedback("%s has already joined your settlement." % generated_name)
 		return
+	if _picnic != null and _picnic.has_completed_conversation(self):
+		game_state.request_feedback("You have already spoken with %s at this picnic." % generated_name)
+		return
 	if _state != MouseState.PICNIC_IDLE:
 		game_state.request_feedback("This mouse is too busy to talk right now.")
 		return
@@ -260,13 +263,13 @@ func interact(_interactor: Node3D) -> void:
 
 
 func get_interaction_priority() -> int:
-	return 10 if _state == MouseState.PICNIC_IDLE and not is_recruited else 0
+	return 10 if _state == MouseState.PICNIC_IDLE and not is_recruited and (_picnic == null or not _picnic.has_completed_conversation(self)) else 0
 
 
 func get_interaction_prompt() -> String:
 	if is_recruited:
 		return ""
-	if _state == MouseState.PICNIC_IDLE:
+	if _state == MouseState.PICNIC_IDLE and (_picnic == null or not _picnic.has_completed_conversation(self)):
 		return "Press E to talk to %s" % generated_name
 	return ""
 
@@ -305,8 +308,7 @@ func try_recruit() -> bool:
 		_begin_following()
 	game_state.mouse_recruited.emit(self)
 	game_state.recruited_mouse_count_changed.emit(game_state.get_recruited_mouse_count())
-	game_state.set_build_menu_open(true)
-	game_state.request_feedback("%s joined! Choose a building (1–4), aim its marker, then press E. Recruited mice build automatically." % generated_name)
+	game_state.request_feedback("%s joined and will wait patiently. Talk to every mouse at the picnic, or pack it, before choosing a building." % generated_name)
 	return true
 
 
@@ -428,9 +430,12 @@ func revise_price_after_decline() -> int:
 
 
 func close_negotiation() -> void:
-	if _state != MouseState.NEGOTIATE:
+	var attended_picnic := _picnic
+	if _state == MouseState.NEGOTIATE:
+		_state = MouseState.PICNIC_IDLE if attended_picnic != null else MouseState.IDLE
+	elif not is_recruited or attended_picnic == null:
 		return
-	_state = MouseState.PICNIC_IDLE if _picnic != null else MouseState.IDLE
+	attended_picnic.complete_conversation(self)
 
 
 ## Returns whether this wild mouse can respond to a new picnic event.
