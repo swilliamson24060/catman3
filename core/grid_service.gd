@@ -28,6 +28,8 @@ var _rare_positions: Dictionary = {}    # Vector2i -> true, for nearest_hidden_r
 
 var _astar: AStarGrid2D
 var _astar_dirty: bool = true
+var _astar_rebuild_count: int = 0
+var _path_query_count: int = 0
 
 func _ready() -> void:
 	for x in grid_width:
@@ -131,6 +133,7 @@ func _ensure_astar() -> void:
 				var solid: bool = _tile_state.get(pos, TileState.EMPTY) != TileState.EMPTY
 				_astar.set_point_solid(pos, solid)
 		_astar_dirty = false
+		_astar_rebuild_count += 1
 
 ## Returns a path of grid cells from `from` to `to` (inclusive of `to`), or
 ## an empty array if no path exists. Both endpoints are treated as walkable
@@ -141,6 +144,7 @@ func find_path(from: Vector2i, to: Vector2i) -> Array:
 	if not in_bounds(from) or not in_bounds(to):
 		return []
 	_ensure_astar()
+	_path_query_count += 1
 
 	var was_solid_to := _astar.is_point_solid(to)
 	var was_solid_from := _astar.is_point_solid(from)
@@ -156,3 +160,14 @@ func find_path(from: Vector2i, to: Vector2i) -> Array:
 	for p in raw_path:
 		result.append(Vector2i(round(p.x), round(p.y)))
 	return result
+
+func get_pathfinding_diagnostics() -> Dictionary:
+	return {
+		"queries": _path_query_count,
+		"grid_rebuilds": _astar_rebuild_count,
+		"grid_instance_id": _astar.get_instance_id() if _astar != null else 0,
+	}
+
+func reset_pathfinding_diagnostics() -> void:
+	_path_query_count = 0
+	_astar_rebuild_count = 0

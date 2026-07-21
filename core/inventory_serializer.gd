@@ -34,8 +34,11 @@ static func restore_slots(data: Array, slot_count: int) -> Array:
 		var item := DataRegistry.make_inventory_item(str(entry.get("item_id", "")))
 		if item == null:
 			continue
-		var restored := {"item": item, "quantity": int(entry.get("quantity", 0))}
+		var quantity := clampi(int(entry.get("quantity", 0)), 0, item.max_stack)
+		if quantity <= 0:
+			continue
+		var restored := {"item": item, "quantity": quantity}
 		if entry.has("age"):
-			restored["age"] = float(entry.get("age", 0.0))
+			restored["age"] = maxf(float(entry.get("age", 0.0)), 0.0)
 		slots[i] = restored
 	return slots

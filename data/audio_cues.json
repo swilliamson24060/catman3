@@ -1,8 +1,8 @@
 {
   "audio_cues": [
-    { "id": "building_constructed", "stream_path": "res://audio/sfx/build_complete.ogg" },
-    { "id": "animal_recruited", "stream_path": "res://audio/sfx/recruit.ogg" },
-    { "id": "achievement_unlocked", "stream_path": "res://audio/sfx/achievement.ogg" },
-    { "id": "pattern_discovered", "stream_path": "res://audio/sfx/resonance.ogg" }
+    { "id": "building_constructed", "stream_path": "res://audio/sfx/build_complete.ogg", "fallback_frequency": 392.0, "fallback_duration": 0.12, "volume_db": -10.0 },
+    { "id": "animal_recruited", "stream_path": "res://audio/sfx/recruit.ogg", "fallback_frequency": 523.25, "fallback_duration": 0.10, "volume_db": -12.0 },
+    { "id": "achievement_unlocked", "stream_path": "res://audio/sfx/achievement.ogg", "fallback_frequency": 783.99, "fallback_duration": 0.22, "volume_db": -9.0 },
+    { "id": "pattern_discovered", "stream_path": "res://audio/sfx/resonance.ogg", "fallback_frequency": 659.25, "fallback_duration": 0.20, "volume_db": -11.0 }
   ]
 }

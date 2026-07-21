@@ -95,3 +95,14 @@
 - [x] Load the Undersea animal and its new Kelp resource from the same expansion file.
 - [x] Load Space Mice founder, item, and cross-namespace achievement content without core-code changes.
 - [x] Validate expansion lookup, inventory creation, housing, recruitment, and namespace isolation with an automated smoke test.
+
+## Milestone 9 — Polish and Ship Readiness
+
+- [x] Write saves atomically through a temporary file and retain one recovery backup.
+- [x] Recover from a corrupt primary save without mutating state on unsupported future versions.
+- [x] Sanitize invalid inventory quantities and item ages during restoration.
+- [x] Reuse one lazily rebuilt AStarGrid2D and expose pathfinding diagnostics.
+- [x] Keep animal dispatch path queries capped per frame.
+- [x] Provide pooled, data-configured procedural audio when final SFX assets are absent.
+- [x] Keep mesh, billboard Sprite3D, and procedural visual resolution on one data-driven path.
+- [x] Validate recovery, pathfinding reuse, audio, and sprite fallback with an automated Milestone 9 smoke test.

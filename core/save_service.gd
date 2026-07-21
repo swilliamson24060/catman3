@@ -35,28 +35,46 @@ func save_game(save_path: String = SAVE_PATH) -> bool:
 		"phase2_economy": GameState.serialize_economy(),
 		"phase2_completed_buildings": SettlementManager.serialize_completed_buildings(),
 	}
-	var file := FileAccess.open(save_path, FileAccess.WRITE)
+	var encoded := JSON.stringify(data, "\t")
+	var absolute_path := ProjectSettings.globalize_path(save_path)
+	var temp_path := absolute_path + ".tmp"
+	var backup_path := absolute_path + ".bak"
+	var file := FileAccess.open(temp_path, FileAccess.WRITE)
 	if file == null:
-		push_warning("[SaveService] Could not open save file for writing.")
+		push_warning("[SaveService] Could not open temporary save file for writing.")
 		return false
-	file.store_string(JSON.stringify(data, "\t"))
+	file.store_string(encoded)
+	file.flush()
 	file.close()
+	if FileAccess.file_exists(absolute_path):
+		if FileAccess.file_exists(backup_path):
+			DirAccess.remove_absolute(backup_path)
+		if DirAccess.rename_absolute(absolute_path, backup_path) != OK:
+			DirAccess.remove_absolute(temp_path)
+			push_warning("[SaveService] Could not rotate the previous save into a backup.")
+			return false
+	if DirAccess.rename_absolute(temp_path, absolute_path) != OK:
+		if FileAccess.file_exists(backup_path):
+			DirAccess.rename_absolute(backup_path, absolute_path)
+		push_warning("[SaveService] Could not commit the temporary save.")
+		return false
 	print("[SaveService] Saved game.")
 	return true
 
 func load_game(save_path: String = SAVE_PATH) -> bool:
-	if not FileAccess.file_exists(save_path):
+	var absolute_path := ProjectSettings.globalize_path(save_path)
+	var parsed := _read_save_dictionary(absolute_path)
+	if parsed.is_empty():
+		var backup_path := absolute_path + ".bak"
+		parsed = _read_save_dictionary(backup_path)
+		if not parsed.is_empty():
+			push_warning("[SaveService] Primary save was unreadable; recovered the previous backup.")
+	if parsed.is_empty():
+		push_warning("[SaveService] Save file and backup are missing or unreadable -- ignoring.")
 		return false
-	var file := FileAccess.open(save_path, FileAccess.READ)
-	if file == null:
-		push_warning("[SaveService] Could not open save file for reading.")
-		return false
-	var text := file.get_as_text()
-	file.close()
-
-	var parsed = JSON.parse_string(text)
-	if parsed == null or not (parsed is Dictionary):
-		push_warning("[SaveService] Save file is corrupt or unreadable -- ignoring.")
+	var version := int(parsed.get("version", 1))
+	if version > SAVE_VERSION:
+		push_warning("[SaveService] Save version %d is newer than supported version %d." % [version, SAVE_VERSION])
 		return false
 
 	current = SaveData.new()
@@ -92,3 +110,16 @@ func _as_string_array(value) -> Array[String]:
 
 func _as_dictionary(value) -> Dictionary:
 	return value if value is Dictionary else {}
+
+func _read_save_dictionary(absolute_path: String) -> Dictionary:
+	if not FileAccess.file_exists(absolute_path):
+		return {}
+	var file := FileAccess.open(absolute_path, FileAccess.READ)
+	if file == null:
+		return {}
+	var text := file.get_as_text()
+	file.close()
+	var json := JSON.new()
+	if json.parse(text) != OK:
+		return {}
+	return json.data if json.data is Dictionary else {}

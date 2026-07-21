@@ -10,6 +10,7 @@ func _initialize() -> void:
 
 
 func _run() -> void:
+	_cleanup_save_files()
 	var achievements: Node = root.get_node("AchievementService")
 	var save_service: Node = root.get_node("SaveService")
 	var event_bus: Node = root.get_node("EventBus")
@@ -60,7 +61,14 @@ func _run() -> void:
 	save_service.call("new_game", "")
 	assert(bool(save_service.call("load_game", SAVE_TEST_PATH)), "Unlocked content must reload.")
 	assert(bool(achievements.call("is_unlocked", "cheese_vault")), "Cheese Vault unlock must survive a fresh load.")
-	DirAccess.remove_absolute(SAVE_TEST_PATH)
+	_cleanup_save_files()
 
 	print("MILESTONE_7_ACHIEVEMENT_SMOKE_TEST_PASS")
 	quit(0)
+
+
+func _cleanup_save_files() -> void:
+	for suffix: String in ["", ".bak", ".tmp"]:
+		var path := SAVE_TEST_PATH + suffix
+		if FileAccess.file_exists(path):
+			DirAccess.remove_absolute(path)
