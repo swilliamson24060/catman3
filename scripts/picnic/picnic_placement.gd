@@ -32,7 +32,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		if _preview == null and not game_state.has_picnic():
 			begin_placement()
 		elif game_state.has_picnic():
-			game_state.request_feedback("Only one picnic can be placed.")
+			pack_current_picnic()
 		get_viewport().set_input_as_handled()
 		return
 	if _preview == null:
@@ -55,6 +55,13 @@ func begin_placement() -> void:
 	_preview.set_preview_mode(true)
 	_set_preview_color(PREVIEW_INVALID_COLOR)
 	game_state.set_placement_mode(true)
+
+
+func pack_current_picnic() -> void:
+	var picnic := game_state.placed_picnic as Phase1Picnic
+	if picnic == null:
+		return
+	picnic.pack_up()
 
 
 func cancel_placement() -> void:

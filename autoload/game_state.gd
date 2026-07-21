@@ -205,6 +205,13 @@ func register_picnic(picnic: Node3D) -> bool:
 	return true
 
 
+func unregister_picnic(picnic: Node3D) -> bool:
+	if picnic == null or placed_picnic != picnic:
+		return false
+	placed_picnic = null
+	return true
+
+
 func set_placement_mode(is_active: bool) -> void:
 	placement_mode_changed.emit(is_active)
 

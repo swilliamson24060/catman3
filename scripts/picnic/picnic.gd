@@ -68,6 +68,17 @@ func get_attendee_count() -> int:
 	return _reservations.size()
 
 
+## Releases every attendee and removes this picnic so it can be placed elsewhere.
+func pack_up() -> void:
+	if _event_active:
+		end_picnic_event(false)
+	else:
+		_release_attendees()
+	if game_state.unregister_picnic(self):
+		game_state.request_feedback("Picnic packed up. Press P to place it near other wild mice.")
+	queue_free()
+
+
 func get_food_position() -> Vector3:
 	return food_visual.global_position
 
@@ -84,17 +95,22 @@ func release_mouse(mouse: Phase1WildMouse) -> void:
 
 
 ## Ends the current gathering and returns attendees to wandering.
-func end_picnic_event() -> void:
+func end_picnic_event(show_feedback: bool = true) -> void:
 	if not _event_active:
 		return
 	_event_active = false
 	_event_time_remaining = 0.0
+	_release_attendees()
+	picnic_ended.emit(self)
+	if show_feedback:
+		game_state.request_feedback("The picnic winds down. Ring the bell to gather mice again.")
+
+
+func _release_attendees() -> void:
 	for mouse: Phase1WildMouse in _reservations.keys():
 		if is_instance_valid(mouse):
 			mouse.release_from_picnic(self)
 	_reservations.clear()
-	picnic_ended.emit(self)
-	game_state.request_feedback("The picnic winds down. Ring the bell to gather mice again.")
 
 
 func _start_picnic_event() -> void:

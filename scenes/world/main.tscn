@@ -80,11 +80,11 @@ size = Vector3(0.35, 1.1, 30)
 albedo_color = Color(0.29, 0.18, 0.08, 1)
 roughness = 0.9
 
-[sub_resource type="TorusMesh" id="TerritoryRingMesh"]
-inner_radius = 9.85
-outer_radius = 10.0
-rings = 64
-ring_segments = 8
+[sub_resource type="BoxMesh" id="TerritoryBoundaryLongMesh"]
+size = Vector3(29, 0.03, 0.12)
+
+[sub_resource type="BoxMesh" id="TerritoryBoundarySideMesh"]
+size = Vector3(0.12, 0.03, 29)
 
 [sub_resource type="StandardMaterial3D" id="TerritoryRingMaterial"]
 transparency = 1
@@ -223,10 +223,28 @@ script = ExtResource("12")
 [node name="StrayCatSpawner" type="Node3D" parent="Milestone6WorldSystems"]
 script = ExtResource("13")
 
-[node name="TerritoryBoundary" type="MeshInstance3D" parent="." groups=["settlement_boundary"]]
+[node name="TerritoryBoundary" type="Node3D" parent="." groups=["settlement_boundary"]]
 visible = false
 position = Vector3(0, 0.025, 0)
-mesh = SubResource("TerritoryRingMesh")
+
+[node name="North" type="MeshInstance3D" parent="TerritoryBoundary"]
+position = Vector3(0, 0, -14.5)
+mesh = SubResource("TerritoryBoundaryLongMesh")
+material_override = SubResource("TerritoryRingMaterial")
+
+[node name="South" type="MeshInstance3D" parent="TerritoryBoundary"]
+position = Vector3(0, 0, 14.5)
+mesh = SubResource("TerritoryBoundaryLongMesh")
+material_override = SubResource("TerritoryRingMaterial")
+
+[node name="West" type="MeshInstance3D" parent="TerritoryBoundary"]
+position = Vector3(-14.5, 0, 0)
+mesh = SubResource("TerritoryBoundarySideMesh")
+material_override = SubResource("TerritoryRingMaterial")
+
+[node name="East" type="MeshInstance3D" parent="TerritoryBoundary"]
+position = Vector3(14.5, 0, 0)
+mesh = SubResource("TerritoryBoundarySideMesh")
 material_override = SubResource("TerritoryRingMaterial")
 
 [node name="WildMice" type="Node3D" parent="."]

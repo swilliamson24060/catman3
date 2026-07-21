@@ -5,6 +5,7 @@ signal influence_changed
 signal building_registered(building: Node3D)
 
 const INITIAL_RADIUS: float = 10.0
+const INITIAL_WALLED_HALF_EXTENT: float = 14.5
 const SETTLEMENT_ORIGIN := Vector3.ZERO
 const BUILDING_DEFINITION_DIRECTORY := "res://resources/buildings"
 const RESONANCE_GRID_SIZE: float = 3.0
@@ -16,7 +17,9 @@ var _completed_buildings: Array[Node3D] = []
 func is_position_inside_settlement(world_position: Vector3) -> bool:
 	var flat := world_position
 	flat.y = 0.0
-	if flat.distance_to(SETTLEMENT_ORIGIN) <= INITIAL_RADIUS:
+	# The starting settlement is the square enclosed by the four visible walls.
+	# Influence granted by completed buildings remains circular beyond that area.
+	if absf(flat.x - SETTLEMENT_ORIGIN.x) <= INITIAL_WALLED_HALF_EXTENT and absf(flat.z - SETTLEMENT_ORIGIN.z) <= INITIAL_WALLED_HALF_EXTENT:
 		return true
 	for source: Node3D in _influence_sources:
 		if is_instance_valid(source) and flat.distance_to(Vector3(source.global_position.x, 0.0, source.global_position.z)) <= float(_influence_sources[source]):
