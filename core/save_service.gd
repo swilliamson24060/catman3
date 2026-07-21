@@ -12,7 +12,7 @@ extends Node
 ## than crashing the load.
 
 const SAVE_PATH := "user://catmando_save.json"
-const SAVE_VERSION := 1
+const SAVE_VERSION := 2
 
 var current: SaveData = SaveData.new()
 
@@ -20,7 +20,7 @@ func new_game(founder_cat_id: String) -> void:
 	current = SaveData.new()
 	current.founder_cat_id = founder_cat_id
 
-func save_game() -> void:
+func save_game(save_path: String = SAVE_PATH) -> bool:
 	var data := {
 		"version": SAVE_VERSION,
 		"founder_cat_id": current.founder_cat_id,
@@ -33,18 +33,19 @@ func save_game() -> void:
 		"phase2_economy": GameState.serialize_economy(),
 		"phase2_completed_buildings": SettlementManager.serialize_completed_buildings(),
 	}
-	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	var file := FileAccess.open(save_path, FileAccess.WRITE)
 	if file == null:
 		push_warning("[SaveService] Could not open save file for writing.")
-		return
+		return false
 	file.store_string(JSON.stringify(data, "\t"))
 	file.close()
 	print("[SaveService] Saved game.")
+	return true
 
-func load_game() -> bool:
-	if not FileAccess.file_exists(SAVE_PATH):
+func load_game(save_path: String = SAVE_PATH) -> bool:
+	if not FileAccess.file_exists(save_path):
 		return false
-	var file := FileAccess.open(SAVE_PATH, FileAccess.READ)
+	var file := FileAccess.open(save_path, FileAccess.READ)
 	if file == null:
 		push_warning("[SaveService] Could not open save file for reading.")
 		return false

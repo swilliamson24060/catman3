@@ -40,6 +40,9 @@ func get_production_status() -> String:
 func get_pause_reason() -> String:
 	if not is_producer():
 		return "This building does not produce resources."
+	var production_rate := float(stats_service.call("get_effective", str(building_definition.id), "production_rate", 1.0))
+	if production_rate <= 0.0:
+		return "Production rate is zero."
 	var missing: Array[String] = []
 	for raw_id: Variant in building_definition.production_inputs:
 		var resource_id := StringName(str(raw_id))
@@ -73,7 +76,13 @@ func _on_simulation_advanced(simulation_delta: float) -> void:
 	if not is_producer() or simulation_delta <= 0.0:
 		return
 	var production_rate := float(stats_service.call("get_effective", str(building_definition.id), "production_rate", 1.0))
-	production_elapsed_seconds += simulation_delta * maxf(production_rate, 0.0)
+	if production_rate <= 0.0:
+		_set_production_status("Production rate is zero.")
+		return
+	if not game_state.can_store_resource(building_definition.production_resource, building_definition.production_amount):
+		_set_production_status("Invalid production output.")
+		return
+	production_elapsed_seconds += simulation_delta * production_rate
 	while production_elapsed_seconds >= building_definition.production_interval_seconds:
 		if not game_state.spend_resources(building_definition.production_inputs):
 			production_elapsed_seconds = building_definition.production_interval_seconds

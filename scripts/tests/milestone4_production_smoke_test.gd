@@ -2,6 +2,7 @@ extends SceneTree
 
 const GARDEN_DEFINITION: BuildingDefinition = preload("res://resources/buildings/catnip_garden.tres")
 const GARDEN_SCENE: PackedScene = preload("res://scenes/buildings/catnip_garden.tscn")
+const SAVE_TEST_PATH := "/tmp/catmando_milestone4_save_test.json"
 
 
 func _initialize() -> void:
@@ -12,6 +13,7 @@ func _run() -> void:
 	var game_state := root.get_node("GameState") as Phase1GameState
 	var simulation_clock := root.get_node("SimulationClock") as Phase2SimulationClock
 	var settlement_manager := root.get_node("SettlementManager") as Phase2SettlementManager
+	var save_service: Node = root.get_node("SaveService")
 	simulation_clock.set_simulation_paused(true)
 	game_state.reset()
 	var container := Node3D.new()
@@ -72,6 +74,19 @@ func _run() -> void:
 	var restored_garden := restored[0] as CompletedBuilding
 	assert(restored_garden.position.is_equal_approx(Vector3(3.0, 0.0, -4.0)), "Building transform must round-trip.")
 	assert(is_equal_approx(restored_garden.production_elapsed_seconds, 7.5), "Partial production progress must round-trip.")
+
+	# The actual save coordinator persists known and data-defined resources,
+	# completed transforms, and partial cycles together.
+	game_state.restore_economy({"cheese": 31, "catnip": 4, "resources": {"moonstone": 6}})
+	assert(bool(save_service.call("save_game", SAVE_TEST_PATH)), "Save coordinator must write the Phase 2 snapshot.")
+	game_state.restore_economy({"cheese": 0, "catnip": 0})
+	settlement_manager.restore_completed_buildings([])
+	assert(bool(save_service.call("load_game", SAVE_TEST_PATH)), "Save coordinator must reload the Phase 2 snapshot.")
+	await process_frame
+	assert(game_state.get_cheese() == 31 and game_state.get_catnip() == 4, "Core economy balances must round-trip through disk.")
+	assert(game_state.get_resource_amount(&"moonstone") == 6, "Data-defined resources must round-trip through disk.")
+	assert(settlement_manager.get_completed_buildings().size() == 2, "Completed producers must round-trip through disk.")
+	DirAccess.remove_absolute(SAVE_TEST_PATH)
 
 	print("MILESTONE_4_PRODUCTION_SMOKE_TEST_PASS")
 	quit(0)

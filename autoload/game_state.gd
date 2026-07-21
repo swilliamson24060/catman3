@@ -21,6 +21,7 @@ signal construction_site_placed(site: ConstructionSite)
 signal construction_site_opened(site: ConstructionSite)
 signal construction_site_closed
 signal building_produced(building: Node3D, resource_id: StringName, amount: int)
+signal settlement_resource_changed(resource_id: StringName, new_amount: int)
 
 const STARTING_CHEESE: int = 20
 const STARTING_CATNIP: int = 0
@@ -45,6 +46,7 @@ var placed_picnic: Node3D
 var active_dialogue_mouse: Phase1WildMouse
 var active_construction_site: ConstructionSite
 var is_build_menu_open: bool = false
+var _extra_resources: Dictionary = {}
 
 
 ## Returns whether the current inventory can cover an amount.
@@ -82,7 +84,11 @@ func get_resource_amount(resource_id: StringName) -> int:
 			return cheese
 		&"catnip":
 			return catnip
-	return 0
+	return maxi(int(_extra_resources.get(resource_id, 0)), 0)
+
+
+func can_store_resource(resource_id: StringName, amount: int) -> bool:
+	return not resource_id.is_empty() and amount > 0
 
 
 func can_afford_resources(costs: Dictionary) -> bool:
@@ -105,6 +111,9 @@ func spend_resources(costs: Dictionary) -> bool:
 				cheese -= amount
 			&"catnip":
 				catnip -= amount
+			_:
+				_extra_resources[resource_id] = maxi(int(_extra_resources.get(resource_id, 0)) - amount, 0)
+				settlement_resource_changed.emit(resource_id, int(_extra_resources[resource_id]))
 	return true
 
 
@@ -130,7 +139,7 @@ func spend_catnip(amount: int) -> bool:
 ## Keeping this routing here gives producers one generic, data-driven API while
 ## preserving the existing strongly signalled HUD balances.
 func deposit_resource(resource_id: StringName, amount: int, producer: Node3D = null) -> bool:
-	if amount <= 0:
+	if not can_store_resource(resource_id, amount):
 		return false
 	match resource_id:
 		&"cheese":
@@ -138,19 +147,28 @@ func deposit_resource(resource_id: StringName, amount: int, producer: Node3D = n
 		&"catnip":
 			add_catnip(amount)
 		_:
-			push_warning("No Phase 2 economy route for produced resource '%s'." % resource_id)
-			return false
+			_extra_resources[resource_id] = get_resource_amount(resource_id) + amount
+			settlement_resource_changed.emit(resource_id, int(_extra_resources[resource_id]))
 	building_produced.emit(producer, resource_id, amount)
 	return true
 
 
 func serialize_economy() -> Dictionary:
-	return {"cheese": cheese, "catnip": catnip}
+	return {"cheese": cheese, "catnip": catnip, "resources": _extra_resources.duplicate(true)}
 
 
 func restore_economy(data: Dictionary) -> void:
 	cheese = maxi(int(data.get("cheese", STARTING_CHEESE)), 0)
 	catnip = maxi(int(data.get("catnip", STARTING_CATNIP)), 0)
+	_extra_resources.clear()
+	var resources: Variant = data.get("resources", {})
+	if resources is Dictionary:
+		for raw_id: Variant in resources:
+			var resource_id := StringName(str(raw_id))
+			if resource_id.is_empty():
+				continue
+			_extra_resources[resource_id] = maxi(int(resources[raw_id]), 0)
+			settlement_resource_changed.emit(resource_id, int(_extra_resources[resource_id]))
 
 
 func get_recruited_mouse_count() -> int:
@@ -289,6 +307,7 @@ func reset() -> void:
 	active_dialogue_mouse = null
 	active_construction_site = null
 	is_build_menu_open = false
+	_extra_resources.clear()
 
 
 func _modifier(property_name: StringName) -> float:

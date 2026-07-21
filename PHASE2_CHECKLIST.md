@@ -45,6 +45,9 @@
 - [x] Add production pause reasons and in-world status inspection.
 - [x] Persist completed buildings and partial production progress.
 - [x] Validate multiple producers, debug acceleration, and state recovery with an automated smoke test.
+- [x] Support arbitrary data-defined settlement resource ids without new economy code.
+- [x] Reject invalid outputs before consuming recipe inputs.
+- [x] Validate economy and completed-building persistence through the actual save coordinator.
 
 ## Milestone 5 — Architectural Resonance
 
