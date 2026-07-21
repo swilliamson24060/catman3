@@ -12,6 +12,7 @@ const RESOURCE_NODE_SCRIPT := preload("res://world/resource_node.gd")
 @export var moonstone_count: int = 3
 @export var min_distance_from_center: int = 3
 @export var rng_seed: int = 0
+@onready var grid_service: Node = get_node("/root/GridService")
 
 func _ready() -> void:
 	var rng := RandomNumberGenerator.new()
@@ -40,17 +41,17 @@ func _spawn_batch(rng: RandomNumberGenerator, item_id: String, count: int, used_
 	while placed < count and attempts < max_attempts:
 		attempts += 1
 		var pos := Vector2i(
-			rng.randi_range(0, GridService.grid_width - 1),
-			rng.randi_range(0, GridService.grid_height - 1)
+			rng.randi_range(0, int(grid_service.get("grid_width")) - 1),
+			rng.randi_range(0, int(grid_service.get("grid_height")) - 1)
 		)
 		@warning_ignore("integer_division")
-		var half_w: int = int(GridService.grid_width) / 2
+		var half_w: int = int(grid_service.get("grid_width")) / 2
 		@warning_ignore("integer_division")
-		var half_h: int = int(GridService.grid_height) / 2
+		var half_h: int = int(grid_service.get("grid_height")) / 2
 		var center := Vector2i(half_w, half_h)
 		if Vector2(pos).distance_to(Vector2(center)) < min_distance_from_center:
 			continue
-		if used_positions.has(pos) or GridService.is_resource_occupied(pos):
+		if used_positions.has(pos) or bool(grid_service.call("is_resource_occupied", pos)):
 			continue
 
 		used_positions[pos] = true
@@ -63,5 +64,5 @@ func _spawn_node(item_id: String, grid_pos: Vector2i, is_rare: bool = false) -> 
 	node.item_id = item_id
 	node.grid_pos = grid_pos
 	node.is_rare = is_rare
-	node.position = GridService.grid_to_world(grid_pos)
+	node.position = grid_service.call("grid_to_world", grid_pos)
 	add_child(node)

@@ -8,10 +8,11 @@ const SLOT_SCENE := preload("res://inventory/inventory_slot.tscn")
 
 @onready var root_control: Control = $Control
 @onready var grid: GridContainer = $Control/Panel/Margin/VBox/Grid
+@onready var inventory: Node = get_node("/root/Inventory")
 
 func _ready() -> void:
 	root_control.visible = false
-	Inventory.inventory_changed.connect(_rebuild)
+	inventory.inventory_changed.connect(_rebuild)
 	_rebuild()
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -23,11 +24,12 @@ func toggle() -> void:
 	root_control.visible = not root_control.visible
 
 func _rebuild() -> void:
-	if grid.get_child_count() == Inventory.slots.size():
+	var slots: Array = inventory.get("slots")
+	if grid.get_child_count() == slots.size():
 		return
 	for child in grid.get_children():
 		child.queue_free()
-	for i in Inventory.slots.size():
+	for i in slots.size():
 		var slot: InventorySlot = SLOT_SCENE.instantiate()
 		slot.slot_index = i
 		grid.add_child(slot)

@@ -26,6 +26,16 @@ var _garden_anchors: Dictionary = {} # anchor Vector2i -> footprint Vector2i, bu
 func _ready() -> void:
 	EventBus.building_constructed.connect(_on_building_constructed)
 	EventBus.building_collapsed.connect(_on_building_removed)
+	SettlementManager.building_registered.connect(_on_phase2_building_registered)
+
+func _on_phase2_building_registered(building: Node3D) -> void:
+	if not building is CompletedBuilding:
+		return
+	var completed := building as CompletedBuilding
+	if completed.building_definition == null or completed.building_definition.id != &"catnip_garden":
+		return
+	var grid_pos := SettlementManager.world_to_resonance_grid(completed.global_position)
+	_garden_anchors[grid_pos] = Vector2i.ONE
 
 func _on_building_constructed(building_id: String, grid_pos: Vector2i) -> void:
 	if building_id != "building_catnip_garden":

@@ -38,6 +38,7 @@ FunplayMcpRuntimeBridge="*res://addons/funplay_mcp/runtime/funplay_mcp_runtime_b
 GameState="*res://autoload/game_state.gd"
 SimulationClock="*res://autoload/simulation_clock.gd"
 SettlementManager="*res://autoload/settlement_manager.gd"
+ScaffoldService="*res://core/scaffold_service.gd"
 
 [display]
 

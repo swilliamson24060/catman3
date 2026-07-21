@@ -64,6 +64,10 @@ text = "Recruited mice: 0"
 theme_override_colors/font_color = Color(0.95, 0.72, 0.38, 1)
 text = "Active construction sites: 0"
 
+[node name="WeatherLabel" type="Label" parent="MarginContainer/PanelContainer/MarginContainer/VBoxContainer"]
+theme_override_colors/font_color = Color(0.66, 0.84, 1, 1)
+text = "Weather: Clear"
+
 [node name="FounderLabel" type="Label" parent="MarginContainer/PanelContainer/MarginContainer/VBoxContainer"]
 theme_override_colors/font_color = Color(0.82, 0.84, 0.86, 1)
 text = "Founder: Not chosen"
@@ -151,6 +155,26 @@ theme_override_constants/separation = 8
 theme_override_colors/font_color = Color(0.62, 0.95, 0.58, 1)
 theme_override_font_sizes/font_size = 16
 text = "ARCHITECTURAL RESONANCE DISCOVERED"
+horizontal_alignment = 1
+
+[node name="ScaffoldStatus" type="Label" parent="."]
+visible = false
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -260.0
+offset_top = -220.0
+offset_right = 260.0
+offset_bottom = -125.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_colors/font_color = Color(1, 0.84, 0.38, 1)
+theme_override_colors/font_outline_color = Color(0.05, 0.04, 0.03, 1)
+theme_override_constants/outline_size = 6
+theme_override_font_sizes/font_size = 18
+text = "CAT-STACK BALANCE"
 horizontal_alignment = 1
 
 [node name="PatternName" type="Label" parent="ResonanceBanner/MarginContainer/VBoxContainer"]

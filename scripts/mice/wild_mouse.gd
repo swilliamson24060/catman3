@@ -63,6 +63,8 @@ const DEFAULT_PERSONALITY: MousePersonalityData = preload("res://resources/perso
 @onready var need_debug: Label3D = $NeedDebug
 @onready var work_debug: Label3D = $WorkDebug
 @onready var stats_service: Node = get_node("/root/StatsService")
+@onready var catnip_drift_service: Node = get_node("/root/CatnipDriftService")
+@onready var settlement_manager: Phase2SettlementManager = get_node("/root/SettlementManager") as Phase2SettlementManager
 
 var _state: MouseState = MouseState.WAIT_FOR_NAVIGATION
 var _spawn_position: Vector3
@@ -771,7 +773,8 @@ func _update_work(delta: float) -> void:
 	var hunger_multiplier := clampf(1.0 - needs.hunger * 0.55, 0.35, 1.0)
 	var fatigue_multiplier := clampf(1.0 - needs.fatigue * 0.65, 0.25, 1.0)
 	var personality_multiplier := personality.get_effect(&"construction_speed_multiplier", 1.0)
-	_worksite.contribute_work(BASE_WORK_RATE * personality_multiplier * contentment_multiplier * hunger_multiplier * fatigue_multiplier * delta)
+	var drift_multiplier := get_catnip_drift_work_multiplier()
+	_worksite.contribute_work(BASE_WORK_RATE * personality_multiplier * contentment_multiplier * hunger_multiplier * fatigue_multiplier * drift_multiplier * delta)
 	needs.add_fatigue(FATIGUE_GAIN_PER_WORK_SECOND * delta)
 	if needs.fatigue >= personality.get_effect(&"fatigue_break_threshold", 0.7):
 		_start_work_break()
@@ -864,6 +867,14 @@ func _get_contentment_move_multiplier() -> float:
 
 func _get_resonance_move_multiplier() -> float:
 	return maxf(float(stats_service.call("get_effective", "global_mice", "movement_speed", 1.0)), 0.0)
+
+
+func get_catnip_drift_work_multiplier() -> float:
+	var grid_position := settlement_manager.world_to_resonance_grid(global_position)
+	var scent := float(catnip_drift_service.call("get_scent_at", grid_position))
+	if scent >= 0.85:
+		return 0.75
+	return 1.0 + scent * 0.4
 
 
 func _update_contentment_presentation(delta: float) -> void:

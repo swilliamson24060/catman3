@@ -60,3 +60,17 @@
 - [x] Reapply discovered bonuses when loading a save.
 - [x] Apply the Herbal Triad movement bonus live to all mouse navigation states.
 - [x] Validate rotation, one-time rewards, persistence, and live production changes with an automated smoke test.
+
+## Milestone 6 — Mechanics Integration
+
+- [x] Mount resource nodes and Whisker-Radar in the active Phase 2 world.
+- [x] Mount Grooming/Dust Bunny rewards near Phase 2 construction sites.
+- [x] Apply rain durability and waterproofing to Phase 2 buildings.
+- [x] Connect the founder cat to fog reveal and thermal warmth buffs.
+- [x] Register Phase 2 Catnip Gardens with wind-driven scent drift.
+- [x] Apply Catnip Drift bonuses and drowsiness to voluntary mouse labor.
+- [x] Keep cheese salary/strike and tiny-tool systems active through shared managers.
+- [x] Mount Cat-Nap Dream Mode and its pastel overlay.
+- [x] Mount data-weighted Stray Cat Visitors in the active world.
+- [x] Add the wind-driven Cat-Stack scaffold balance challenge.
+- [x] Validate the integrated mechanics with an automated Milestone 6 smoke test.

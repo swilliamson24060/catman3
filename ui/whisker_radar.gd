@@ -14,6 +14,7 @@ const MAX_AMPLITUDE_DEG := 14.0
 
 @onready var left_whisker: Line2D = $Control/LeftWhisker
 @onready var right_whisker: Line2D = $Control/RightWhisker
+@onready var grid_service: Node = get_node("/root/GridService")
 
 var _phase: float = 0.0
 
@@ -27,7 +28,7 @@ func _process(delta: float) -> void:
 	if player == null:
 		return
 
-	var dist := GridService.nearest_hidden_rare_distance(player.global_position)
+	var dist := float(grid_service.call("nearest_hidden_rare_distance", player.global_position))
 	var closeness := 0.0 if dist == INF else clampf(1.0 - dist / MAX_RANGE, 0.0, 1.0)
 	last_closeness = closeness
 

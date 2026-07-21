@@ -22,6 +22,9 @@ const MODEL_SCALE: Vector3 = Vector3(1.08, 1.08, 1.08)
 @onready var game_state: Phase1GameState = get_node("/root/GameState") as Phase1GameState
 @onready var placement_controller: PicnicPlacementController = $PicnicPlacementController
 @onready var building_placement_controller: BuildingPlacementController = $BuildingPlacementController
+@onready var stats_service: Node = get_node("/root/StatsService")
+@onready var thermal_service: Node = get_node("/root/ThermalService")
+@onready var grid_service: Node = get_node("/root/GridService")
 
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity", 9.8)
 var _interaction_target: Node
@@ -29,6 +32,7 @@ var _interaction_target: Node
 
 func _ready() -> void:
 	add_to_group("player")
+	add_to_group("player_cat")
 	game_state.founder_selected.connect(_on_founder_selected)
 	if game_state.has_founder():
 		_on_founder_selected(game_state.selected_founder)
@@ -90,7 +94,15 @@ func _physics_process(delta: float) -> void:
 	camera_forward = camera_forward.normalized()
 	camera_right = camera_right.normalized()
 	var desired_direction := (camera_right * input_vector.x + camera_forward * -input_vector.y).normalized()
-	var desired_velocity := desired_direction * move_speed
+	var grid_position: Vector2i = grid_service.call("world_to_grid", global_position)
+	grid_service.call("reveal_around", grid_position, 5)
+	var heat := float(thermal_service.call("get_heat", grid_position))
+	if heat >= 0.35:
+		stats_service.call("add_temp_modifier", "phase2_thermal_warmth", "global_player", "movement_speed", "additive", heat * 1.5)
+	else:
+		stats_service.call("remove_temp_modifier", "phase2_thermal_warmth", "global_player", "movement_speed")
+	var effective_speed := float(stats_service.call("get_effective", "global_player", "movement_speed", move_speed))
+	var desired_velocity := desired_direction * effective_speed
 
 	velocity.x = move_toward(velocity.x, desired_velocity.x, acceleration * delta)
 	velocity.z = move_toward(velocity.z, desired_velocity.z, acceleration * delta)

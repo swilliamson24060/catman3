@@ -20,6 +20,13 @@ const STRAY_CAT_SCRIPT := preload("res://world/stray_cat.gd")
 var _timer: float = 0.0
 var _next_check: float = 0.0
 var _current: Node3D = null
+@onready var data_registry: Node = get_node("/root/DataRegistry")
+@onready var animal_manager: Node = get_node("/root/AnimalManager")
+@onready var grid_service: Node = get_node("/root/GridService")
+@onready var event_bus: Node = get_node("/root/EventBus")
+@onready var inventory: Node = get_node("/root/Inventory")
+@onready var stats_service: Node = get_node("/root/StatsService")
+@onready var game_state: Phase1GameState = get_node("/root/GameState") as Phase1GameState
 
 func _ready() -> void:
 	randomize()
@@ -67,12 +74,15 @@ func _mouse_ground_pos():
 ## without code changes.
 func attraction_chance() -> float:
 	var chance := base_chance
-	for animal_type in DataRegistry.get_all_animal_types():
+	for animal_type: Dictionary in data_registry.call("get_all_animal_types"):
 		var species_id: String = animal_type.get("id", "")
 		var weight: float = animal_type.get("attracts", {}).get("stray_cat", 0.0)
 		if weight <= 0.0:
 			continue
-		chance += AnimalManager.recruited_count(species_id) * weight
+		var count := int(animal_manager.call("recruited_count", species_id))
+		if species_id == "mouse":
+			count += game_state.get_recruited_mouse_count()
+		chance += count * weight
 	return clampf(chance, 0.0, 1.0)
 
 func _maybe_spawn() -> void:
@@ -84,11 +94,11 @@ func _maybe_spawn() -> void:
 
 	var cat := Node3D.new()
 	cat.set_script(STRAY_CAT_SCRIPT)
-	cat.position = GridService.grid_to_world(grid_pos)
+	cat.position = grid_service.call("grid_to_world", grid_pos)
 	add_child(cat)
 	cat.departed.connect(_on_departed)
 	_current = cat
-	EventBus.stray_cat_appeared.emit(grid_pos)
+	event_bus.stray_cat_appeared.emit(grid_pos)
 	print("[StrayCatSpawner] A stray cat appeared at %s! Click it to greet." % [grid_pos])
 
 ## Picks a random empty, in-bounds tile along one of the four map edges.
@@ -99,39 +109,39 @@ func _pick_edge_tile() -> Vector2i:
 		var side := randi() % 4
 		var pos: Vector2i
 		match side:
-			0: pos = Vector2i(randi() % GridService.grid_width, 0)
-			1: pos = Vector2i(randi() % GridService.grid_width, GridService.grid_height - 1)
-			2: pos = Vector2i(0, randi() % GridService.grid_height)
-			_: pos = Vector2i(GridService.grid_width - 1, randi() % GridService.grid_height)
-		if GridService.get_tile_state(pos) == GridService.TileState.EMPTY and not GridService.is_resource_occupied(pos):
+			0: pos = Vector2i(randi() % int(grid_service.get("grid_width")), 0)
+			1: pos = Vector2i(randi() % int(grid_service.get("grid_width")), int(grid_service.get("grid_height")) - 1)
+			2: pos = Vector2i(0, randi() % int(grid_service.get("grid_height")))
+			_: pos = Vector2i(int(grid_service.get("grid_width")) - 1, randi() % int(grid_service.get("grid_height")))
+		if int(grid_service.call("get_tile_state", pos)) == 0 and not bool(grid_service.call("is_resource_occupied", pos)):
 			return pos
 	return Vector2i(-1, -1)
 
 func _on_departed(_cat: Node3D) -> void:
-	var pos := GridService.world_to_grid(_current.global_position) if is_instance_valid(_current) else Vector2i.ZERO
+	var pos: Vector2i = grid_service.call("world_to_grid", _current.global_position) if is_instance_valid(_current) else Vector2i.ZERO
 	_current = null
-	EventBus.stray_cat_departed.emit(pos)
+	event_bus.stray_cat_departed.emit(pos)
 	print("[StrayCatSpawner] The stray cat wandered off, unresolved.")
 
 func _greet(cat: Node3D) -> void:
 	if not cat.greet():
 		return
-	var grid_pos := GridService.world_to_grid(cat.global_position)
+	var grid_pos: Vector2i = grid_service.call("world_to_grid", cat.global_position)
 	_current = null
 
 	var outcome := _resolve_visit()
-	EventBus.stray_cat_visit_resolved.emit(outcome)
-	EventBus.stray_cat_departed.emit(grid_pos)
+	event_bus.stray_cat_visit_resolved.emit(outcome)
+	event_bus.stray_cat_departed.emit(grid_pos)
 
 ## Weighted random outcome table: 40% rare trade (if the player can afford
 ## it), 35% free gift, 25% the cat sticks around and joins the town.
 func _resolve_visit() -> String:
 	var roll := randf()
 	if roll < 0.40:
-		if Inventory.remove_item("catnip", 2):
-			var moonstone := DataRegistry.make_inventory_item("moonstone")
+		if bool(inventory.call("remove_item", "catnip", 2)):
+			var moonstone: InventoryItem = data_registry.call("make_inventory_item", "moonstone")
 			if moonstone:
-				Inventory.add_item(moonstone, 1)
+				inventory.call("add_item", moonstone, 1)
 			print("[StrayCatSpawner] The stray cat traded 1 moonstone for 2 catnip!")
 			return "trade_moonstone"
 		print("[StrayCatSpawner] The stray cat wanted to trade for catnip, but you had none. It leaves empty-pawed.")
@@ -139,14 +149,14 @@ func _resolve_visit() -> String:
 	elif roll < 0.75:
 		var gift_item_id := "wood" if randf() < 0.5 else "twigs"
 		var amount := randi_range(2, 4)
-		var item := DataRegistry.make_inventory_item(gift_item_id)
+		var item: InventoryItem = data_registry.call("make_inventory_item", gift_item_id)
 		if item:
-			Inventory.add_item(item, amount)
+			inventory.call("add_item", item, amount)
 		print("[StrayCatSpawner] The stray cat left a gift: %d x %s!" % [amount, gift_item_id])
 		return "gift"
 	else:
-		StatsService.add_modifiers([
+		stats_service.call("add_modifiers", [
 			{"target": "global_town", "stat": "morale", "modifier_type": "additive", "value": 2.0},
 		])
-		print("[StrayCatSpawner] The stray cat decided to stick around -- town morale permanently +2 (now %.1f)." % StatsService.get_effective("global_town", "morale", 0.0))
+		print("[StrayCatSpawner] The stray cat decided to stick around -- town morale permanently +2 (now %.1f)." % float(stats_service.call("get_effective", "global_town", "morale", 0.0)))
 		return "joins_town"

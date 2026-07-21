@@ -1,4 +1,4 @@
-[gd_scene load_steps=29 format=3]
+[gd_scene load_steps=35 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/player/founder_cat.tscn" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/mice/wild_mouse.tscn" id="2"]
@@ -9,6 +9,12 @@
 [ext_resource type="Resource" path="res://resources/personalities/curious.tres" id="7"]
 [ext_resource type="Resource" path="res://resources/personalities/lazy.tres" id="8"]
 [ext_resource type="Resource" path="res://resources/personalities/hoarder.tres" id="9"]
+[ext_resource type="PackedScene" path="res://ui/whisker_radar.tscn" id="10"]
+[ext_resource type="PackedScene" path="res://ui/dream_overlay.tscn" id="11"]
+[ext_resource type="Script" path="res://world/dust_bunny_spawner.gd" id="12"]
+[ext_resource type="Script" path="res://world/stray_cat_spawner.gd" id="13"]
+[ext_resource type="Script" path="res://world/resource_node_spawner.gd" id="14"]
+[ext_resource type="PackedScene" path="res://inventory/inventory_ui.tscn" id="15"]
 
 [sub_resource type="Environment" id="Environment"]
 background_mode = 1
@@ -206,6 +212,17 @@ position = Vector3(0, 0.1, 4)
 
 [node name="CompletedBuildings" type="Node3D" parent="." groups=["completed_building_container"]]
 
+[node name="Milestone6WorldSystems" type="Node3D" parent="."]
+
+[node name="ResourceNodeSpawner" type="Node3D" parent="Milestone6WorldSystems"]
+script = ExtResource("14")
+
+[node name="DustBunnySpawner" type="Node3D" parent="Milestone6WorldSystems"]
+script = ExtResource("12")
+
+[node name="StrayCatSpawner" type="Node3D" parent="Milestone6WorldSystems"]
+script = ExtResource("13")
+
 [node name="TerritoryBoundary" type="MeshInstance3D" parent="." groups=["settlement_boundary"]]
 visible = false
 position = Vector3(0, 0.025, 0)
@@ -235,6 +252,12 @@ personality = ExtResource("9")
 move_speed = 2.5
 
 [node name="UI" parent="." instance=ExtResource("3")]
+
+[node name="WhiskerRadar" parent="." instance=ExtResource("10")]
+
+[node name="DreamOverlay" parent="." instance=ExtResource("11")]
+
+[node name="InventoryUI" parent="." instance=ExtResource("15")]
 
 
 [node name="FounderSelectUI" parent="." instance=ExtResource("5")]

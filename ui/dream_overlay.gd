@@ -8,13 +8,14 @@ const FADE_SPEED := 2.5
 const TARGET_ALPHA := 0.22
 
 @onready var tint: ColorRect = $Tint
+@onready var event_bus: Node = get_node("/root/EventBus")
 
 var _target_alpha: float = 0.0
 var _hue_t: float = 0.0
 
 func _ready() -> void:
 	tint.color = Color(1.0, 0.85, 0.95, 0.0)
-	EventBus.dream_mode_changed.connect(_on_dream_mode_changed)
+	event_bus.dream_mode_changed.connect(_on_dream_mode_changed)
 
 func _on_dream_mode_changed(active: bool) -> void:
 	_target_alpha = TARGET_ALPHA if active else 0.0

@@ -18,6 +18,11 @@ const DUST_BUNNY_SCRIPT := preload("res://world/dust_bunny.gd")
 
 var _active: Array = [] # Node3D (DustBunny) instances currently alive
 var _timer: float = 0.0
+@onready var building_manager: Node = get_node("/root/BuildingManager")
+@onready var grid_service: Node = get_node("/root/GridService")
+@onready var data_registry: Node = get_node("/root/DataRegistry")
+@onready var inventory: Node = get_node("/root/Inventory")
+@onready var stats_service: Node = get_node("/root/StatsService")
 
 func _ready() -> void:
 	randomize()
@@ -69,17 +74,20 @@ func _maybe_spawn() -> void:
 	if randf() > spawn_chance:
 		return
 
-	var sites := BuildingManager.get_unbuilt_anchors()
-	if sites.is_empty():
+	var world_sites: Array[Vector3] = []
+	for node: Node in get_tree().get_nodes_in_group("construction_sites"):
+		if node is Node3D:
+			world_sites.append((node as Node3D).global_position)
+	if world_sites.is_empty():
+		for anchor: Vector2i in building_manager.call("get_unbuilt_anchors"):
+			world_sites.append(grid_service.call("grid_to_world", anchor))
+	if world_sites.is_empty():
 		return
-
-	var anchor: Vector2i = sites[randi() % sites.size()]
-	var offset := Vector2i(randi_range(-1, 1), randi_range(-1, 1))
-	var grid_pos := anchor + offset
+	var position := world_sites[randi() % world_sites.size()] + Vector3(randf_range(-1.5, 1.5), 0.0, randf_range(-1.5, 1.5))
 
 	var bunny := Node3D.new()
 	bunny.set_script(DUST_BUNNY_SCRIPT)
-	bunny.position = GridService.grid_to_world(grid_pos)
+	bunny.position = position
 	add_child(bunny)
 	bunny.expired.connect(_on_bunny_gone)
 	_active.append(bunny)
@@ -89,14 +97,14 @@ func _swat(bunny: Node3D) -> void:
 		return
 	_active.erase(bunny)
 
-	var item := DataRegistry.make_inventory_item("lint")
+	var item: InventoryItem = data_registry.call("make_inventory_item", "lint")
 	if item:
-		Inventory.add_item(item, lint_reward)
-	StatsService.add_modifiers([
+		inventory.call("add_item", item, lint_reward)
+	stats_service.call("add_modifiers", [
 		{"target": "global_town", "stat": "morale", "modifier_type": "additive", "value": morale_reward},
 	])
 	print("[DustBunnySpawner] Swatted! +%d lint, +%.1f morale (total %.1f)" % [
-		lint_reward, morale_reward, StatsService.get_effective("global_town", "morale", 0.0)
+		lint_reward, morale_reward, float(stats_service.call("get_effective", "global_town", "morale", 0.0))
 	])
 
 func _on_bunny_gone(bunny: Node3D) -> void:

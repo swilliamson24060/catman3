@@ -12,18 +12,21 @@ class_name ResourceNode
 ## Rare nodes (moonstone) are what the Whisker-Radar Hot/Cold UI homes in
 ## on while their tile is still fogged -- see GridService.register_resource_node.
 @export var is_rare: bool = false
+@onready var grid_service: Node = get_node("/root/GridService")
+@onready var data_registry: Node = get_node("/root/DataRegistry")
+@onready var inventory: Node = get_node("/root/Inventory")
 
 func _ready() -> void:
 	_build_visual()
 	_build_collision()
 
-	monitoring = GridService.is_revealed(grid_pos)
+	monitoring = bool(grid_service.call("is_revealed", grid_pos))
 	visible = monitoring
-	GridService.set_resource_occupied(grid_pos, true)
-	GridService.register_resource_node(grid_pos, self)
+	grid_service.call("set_resource_occupied", grid_pos, true)
+	grid_service.call("register_resource_node", grid_pos, self)
 
 	body_entered.connect(_on_body_entered)
-	GridService.tile_revealed.connect(_on_tile_revealed)
+	grid_service.tile_revealed.connect(_on_tile_revealed)
 	tree_exiting.connect(_on_tree_exiting)
 
 func _on_tile_revealed(pos: Vector2i) -> void:
@@ -32,8 +35,8 @@ func _on_tile_revealed(pos: Vector2i) -> void:
 		monitoring = true
 
 func _on_tree_exiting() -> void:
-	GridService.set_resource_occupied(grid_pos, false)
-	GridService.unregister_resource_node(grid_pos)
+	grid_service.call("set_resource_occupied", grid_pos, false)
+	grid_service.call("unregister_resource_node", grid_pos)
 
 func _on_body_entered(body: Node3D) -> void:
 	if not body.is_in_group("player_cat"):
@@ -41,10 +44,10 @@ func _on_body_entered(body: Node3D) -> void:
 	var result := harvest()
 	if result.is_empty():
 		return
-	var item := DataRegistry.make_inventory_item(result.item_id)
+	var item: InventoryItem = data_registry.call("make_inventory_item", result.item_id)
 	if item == null:
 		return
-	Inventory.add_item(item, result.amount)
+	inventory.call("add_item", item, result.amount)
 
 ## Generic harvest entry point -- usable by the player's collision-based
 ## pickup above, or explicitly by AnimalManager on behalf of a mouse (which

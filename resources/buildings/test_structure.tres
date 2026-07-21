@@ -14,3 +14,5 @@ work_required = 100.0
 minimum_workers = 1
 preferred_worker_count = 3
 tags = Array[StringName]([&"test", &"structure"])
+tier = &"cardboard"
+waterproof = false

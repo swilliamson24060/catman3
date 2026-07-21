@@ -7,10 +7,11 @@ class_name InventorySlot
 
 @onready var icon_rect: TextureRect = $Margin/Icon
 @onready var count_label: Label = $Margin/Count
+@onready var inventory: Node = get_node("/root/Inventory")
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	Inventory.slot_changed.connect(_on_slot_changed)
+	inventory.slot_changed.connect(_on_slot_changed)
 	refresh()
 
 func _on_slot_changed(index: int) -> void:
@@ -18,7 +19,7 @@ func _on_slot_changed(index: int) -> void:
 		refresh()
 
 func refresh() -> void:
-	var data := Inventory.get_slot(slot_index)
+	var data: Dictionary = inventory.call("get_slot", slot_index)
 	if data.is_empty():
 		icon_rect.texture = null
 		count_label.text = ""
@@ -29,7 +30,7 @@ func refresh() -> void:
 		tooltip_text = data.item.display_name if data.item.description == "" else "%s\n%s" % [data.item.display_name, data.item.description]
 
 func _get_drag_data(_at_position: Vector2) -> Variant:
-	var data := Inventory.get_slot(slot_index)
+	var data: Dictionary = inventory.call("get_slot", slot_index)
 	if data.is_empty():
 		return null
 
@@ -46,4 +47,4 @@ func _can_drop_data(_at_position: Vector2, drag_data: Variant) -> bool:
 	return typeof(drag_data) == TYPE_DICTIONARY and drag_data.has("from_index")
 
 func _drop_data(_at_position: Vector2, drag_data: Variant) -> void:
-	Inventory.move_item(drag_data.from_index, slot_index)
+	inventory.call("move_item", drag_data.from_index, slot_index)

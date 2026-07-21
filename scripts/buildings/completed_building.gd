@@ -2,21 +2,26 @@ class_name CompletedBuilding
 extends StaticBody3D
 
 signal production_status_changed(status: String)
+signal durability_changed(current: float, maximum: float)
 
 @export var building_definition: BuildingDefinition
 
 @onready var game_state: Phase1GameState = get_node("/root/GameState") as Phase1GameState
 @onready var simulation_clock: Phase2SimulationClock = get_node("/root/SimulationClock") as Phase2SimulationClock
 @onready var stats_service: Node = get_node("/root/StatsService")
+@onready var weather_service: Node = get_node("/root/WeatherService")
+@onready var settlement_manager: Phase2SettlementManager = get_node("/root/SettlementManager") as Phase2SettlementManager
 
 var production_elapsed_seconds: float = 0.0
+var durability: float = 100.0
 var _production_status: String = "Inactive"
 
 
 func _ready() -> void:
 	add_to_group("completed_buildings")
+	durability = building_definition.max_durability if building_definition != null else 100.0
+	simulation_clock.simulation_advanced.connect(_on_simulation_advanced)
 	if is_producer():
-		simulation_clock.simulation_advanced.connect(_on_simulation_advanced)
 		_set_production_status("Producing")
 
 
@@ -73,7 +78,10 @@ func get_interaction_priority() -> int:
 
 
 func _on_simulation_advanced(simulation_delta: float) -> void:
-	if not is_producer() or simulation_delta <= 0.0:
+	if simulation_delta <= 0.0:
+		return
+	_tick_weather_damage(simulation_delta)
+	if durability <= 0.0 or not is_producer():
 		return
 	var production_rate := float(stats_service.call("get_effective", str(building_definition.id), "production_rate", 1.0))
 	if production_rate <= 0.0:
@@ -108,6 +116,23 @@ func restore_production_progress(elapsed_seconds: float) -> void:
 		return
 	production_elapsed_seconds = clampf(elapsed_seconds, 0.0, building_definition.production_interval_seconds)
 	_set_production_status(get_pause_reason() if is_equal_approx(production_elapsed_seconds, building_definition.production_interval_seconds) else "Producing")
+
+
+func restore_durability(value: float) -> void:
+	var maximum := building_definition.max_durability if building_definition != null else 100.0
+	durability = clampf(value, 0.0, maximum)
+	durability_changed.emit(durability, maximum)
+
+
+func _tick_weather_damage(simulation_delta: float) -> void:
+	if building_definition == null or building_definition.waterproof or not bool(weather_service.call("is_raining")):
+		return
+	durability = maxf(durability - 2.0 * simulation_delta, 0.0)
+	durability_changed.emit(durability, building_definition.max_durability)
+	if durability <= 0.0:
+		settlement_manager.unregister_completed_building(self)
+		game_state.request_feedback("%s collapsed in the rain." % building_definition.display_name)
+		queue_free()
 
 
 func _set_production_status(status: String) -> void:

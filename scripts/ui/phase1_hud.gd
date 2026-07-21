@@ -36,6 +36,9 @@ extends CanvasLayer
 @onready var simulation_clock: Phase2SimulationClock = get_node("/root/SimulationClock") as Phase2SimulationClock
 @onready var event_bus: Node = get_node("/root/EventBus")
 @onready var data_registry: Node = get_node("/root/DataRegistry")
+@onready var scaffold_service: Node = get_node("/root/ScaffoldService")
+@onready var weather_label: Label = $MarginContainer/PanelContainer/MarginContainer/VBoxContainer/WeatherLabel
+@onready var scaffold_status: Label = $ScaffoldStatus
 
 var _feedback_time_remaining: float = 0.0
 var _dialogue_mouse: Phase1WildMouse
@@ -65,6 +68,10 @@ func _ready() -> void:
 	game_state.construction_site_opened.connect(_on_construction_site_opened)
 	game_state.construction_site_closed.connect(_on_construction_site_closed)
 	event_bus.pattern_discovered.connect(_on_pattern_discovered)
+	event_bus.weather_changed.connect(_on_weather_changed)
+	scaffold_service.challenge_started.connect(_on_scaffold_started)
+	scaffold_service.balance_changed.connect(_on_scaffold_balance_changed)
+	scaffold_service.challenge_resolved.connect(_on_scaffold_resolved)
 	accept_button.pressed.connect(_on_accept_pressed)
 	decline_button.pressed.connect(_on_decline_pressed)
 	inspection_close_button.pressed.connect(inspection_panel.hide)
@@ -77,6 +84,8 @@ func _ready() -> void:
 	build_selection_label.hide()
 	site_panel.hide()
 	resonance_banner.hide()
+	scaffold_status.hide()
+	_on_weather_changed(str(get_node("/root/WeatherService").call("weather_id")))
 	_on_construction_site_count_changed(null)
 	_on_cheese_changed(game_state.get_cheese())
 	_on_catnip_changed(game_state.get_catnip())
@@ -339,3 +348,26 @@ func _on_pattern_discovered(pattern_id: String) -> void:
 	await tween.finished
 	if generation == _resonance_banner_generation:
 		resonance_banner.hide()
+
+
+func _on_weather_changed(weather_id: String) -> void:
+	weather_label.text = "Weather: %s" % weather_id.capitalize()
+
+
+func _on_scaffold_started(_duration: float) -> void:
+	scaffold_status.show()
+
+
+func _on_scaffold_balance_changed(balance: float, remaining: float) -> void:
+	var marker := roundi((balance + 1.0) * 10.0)
+	var bar := "----------|----------"
+	marker = clampi(marker, 0, bar.length() - 1)
+	bar = bar.substr(0, marker) + "▲" + bar.substr(marker + 1)
+	scaffold_status.text = "CAT-STACK BALANCE  %.1fs\n[%s]\n← / → counter the wind" % [remaining, bar]
+
+
+func _on_scaffold_resolved(success: bool) -> void:
+	scaffold_status.text = "Cat-stack stable!" if success else "The cat-stack toppled!"
+	game_state.request_feedback(scaffold_status.text)
+	await get_tree().create_timer(2.0).timeout
+	scaffold_status.hide()

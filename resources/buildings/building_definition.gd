@@ -11,6 +11,9 @@ extends Resource
 @export var preferred_worker_count: int = 2
 @export var settlement_influence_radius: float = 0.0
 @export var tags: Array[StringName] = []
+@export var tier: StringName = &"cardboard"
+@export var waterproof: bool = false
+@export var max_durability: float = 100.0
 @export var production_resource: StringName
 @export var production_amount: int = 0
 @export var production_interval_seconds: float = 0.0

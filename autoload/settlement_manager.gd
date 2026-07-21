@@ -67,6 +67,13 @@ func register_completed_building(building: Node3D, definition: BuildingDefinitio
 	building_registered.emit(building)
 
 
+func unregister_completed_building(building: Node3D) -> void:
+	if building == null:
+		return
+	_completed_buildings.erase(building)
+	unregister_influence_source(building)
+
+
 func get_completed_buildings() -> Array[Node3D]:
 	var result: Array[Node3D] = []
 	for building: Node3D in _completed_buildings:
@@ -106,6 +113,7 @@ func serialize_completed_buildings() -> Array:
 			"definition_id": str(definition.id),
 			"transform": _serialize_transform(building.transform),
 			"production_elapsed_seconds": progress,
+			"durability": (building as CompletedBuilding).durability if building is CompletedBuilding else 100.0,
 		})
 	return result
 
@@ -135,6 +143,7 @@ func restore_completed_buildings(data: Array) -> void:
 		container.add_child(building)
 		building.transform = _deserialize_transform(entry.get("transform", {}))
 		building.restore_production_progress(float(entry.get("production_elapsed_seconds", 0.0)))
+		building.restore_durability(float(entry.get("durability", definition.max_durability)))
 		register_completed_building(building, definition)
 	influence_changed.emit()
 
