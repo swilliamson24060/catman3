@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="BuildingDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://resources/buildings/building_definition.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/buildings/test_structure.tscn" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"test_structure"
+display_name = "Test Structure"
+description = "A non-producing prototype structure used to validate construction."
+completed_scene = ExtResource("2")
+footprint_radius = 1.25
+work_required = 100.0
+minimum_workers = 1
+preferred_worker_count = 3
+tags = Array[StringName]([&"test", &"structure"])

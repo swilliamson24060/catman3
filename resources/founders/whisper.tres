@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="FounderData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://resources/founders/founder_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+internal_id = &"whisper"
+display_name = "Whisper the Mystic"
+title = "The Mystic"
+description = "+20% cheese yield
+-15% worker pay"
+appearance_id = &"cat"
+tint = Color(0.055, 0.065, 0.08, 1)
+cheese_yield_multiplier = 1.2
+worker_pay_multiplier = 0.85

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="FounderData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://resources/founders/founder_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+internal_id = &"turbo"
+display_name = "Turbo the Scrapper"
+title = "The Scrapper"
+description = "+20% resource discovery
++15% stray recruitment"
+appearance_id = &"cat"
+tint = Color(1, 0.42, 0.08, 1)
+resource_discovery_multiplier = 1.2
+stray_recruitment_multiplier = 1.15

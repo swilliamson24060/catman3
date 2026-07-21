@@ -1,0 +1,240 @@
+[gd_scene load_steps=29 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/player/founder_cat.tscn" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/mice/wild_mouse.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://scenes/ui/phase1_hud.tscn" id="3"]
+[ext_resource type="NavigationMesh" path="res://phase1_navmesh.tres" id="4"]
+[ext_resource type="PackedScene" path="res://scenes/ui/founder_select_ui.tscn" id="5"]
+[ext_resource type="Resource" path="res://resources/personalities/builder.tres" id="6"]
+[ext_resource type="Resource" path="res://resources/personalities/curious.tres" id="7"]
+[ext_resource type="Resource" path="res://resources/personalities/lazy.tres" id="8"]
+[ext_resource type="Resource" path="res://resources/personalities/hoarder.tres" id="9"]
+
+[sub_resource type="Environment" id="Environment"]
+background_mode = 1
+background_color = Color(0.52, 0.74, 0.9, 1)
+ambient_light_source = 3
+ambient_light_color = Color(0.72, 0.79, 0.86, 1)
+ambient_light_energy = 0.8
+tonemap_mode = 2
+
+[sub_resource type="BoxMesh" id="GroundMesh"]
+size = Vector3(30, 0.2, 30)
+
+[sub_resource type="StandardMaterial3D" id="GroundMaterial"]
+albedo_color = Color(0.25, 0.55, 0.26, 1)
+roughness = 1.0
+
+[sub_resource type="BoxShape3D" id="GroundShape"]
+size = Vector3(30, 0.2, 30)
+
+[sub_resource type="CylinderMesh" id="TrunkMesh"]
+top_radius = 0.32
+bottom_radius = 0.42
+height = 2.8
+
+[sub_resource type="StandardMaterial3D" id="TrunkMaterial"]
+albedo_color = Color(0.34, 0.19, 0.09, 1)
+
+[sub_resource type="SphereMesh" id="CrownMesh"]
+radius = 1.25
+height = 2.2
+
+[sub_resource type="StandardMaterial3D" id="CrownMaterial"]
+albedo_color = Color(0.13, 0.42, 0.16, 1)
+
+[sub_resource type="CylinderShape3D" id="TreeShape"]
+radius = 0.42
+height = 2.8
+
+[sub_resource type="SphereMesh" id="RockMesh"]
+radius = 0.8
+height = 1.2
+
+[sub_resource type="StandardMaterial3D" id="RockMaterial"]
+albedo_color = Color(0.38, 0.4, 0.43, 1)
+roughness = 0.95
+
+[sub_resource type="BoxShape3D" id="RockShape"]
+size = Vector3(2.1, 0.95, 1.5)
+
+[sub_resource type="BoxMesh" id="BoundaryLongMesh"]
+size = Vector3(30, 1.1, 0.35)
+
+[sub_resource type="BoxMesh" id="BoundarySideMesh"]
+size = Vector3(0.35, 1.1, 30)
+
+[sub_resource type="BoxShape3D" id="BoundaryLongShape"]
+size = Vector3(30, 1.1, 0.35)
+
+[sub_resource type="BoxShape3D" id="BoundarySideShape"]
+size = Vector3(0.35, 1.1, 30)
+
+[sub_resource type="StandardMaterial3D" id="BoundaryMaterial"]
+albedo_color = Color(0.29, 0.18, 0.08, 1)
+roughness = 0.9
+
+[sub_resource type="TorusMesh" id="TerritoryRingMesh"]
+inner_radius = 9.85
+outer_radius = 10.0
+rings = 64
+ring_segments = 8
+
+[sub_resource type="StandardMaterial3D" id="TerritoryRingMaterial"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(0.28, 0.72, 1, 0.55)
+
+[node name="Main" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-52, -28, 0)
+shadow_enabled = true
+directional_shadow_max_distance = 50.0
+
+[node name="Terrain" type="Node3D" parent="."]
+
+[node name="StaticBody3D" type="StaticBody3D" parent="Terrain"]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Terrain/StaticBody3D"]
+position = Vector3(0, -0.1, 0)
+mesh = SubResource("GroundMesh")
+material_override = SubResource("GroundMaterial")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Terrain/StaticBody3D"]
+position = Vector3(0, -0.1, 0)
+shape = SubResource("GroundShape")
+
+[node name="NavigationRegion3D" type="NavigationRegion3D" parent="Terrain"]
+navigation_mesh = ExtResource("4")
+use_edge_connections = true
+
+[node name="Props" type="Node3D" parent="."]
+
+[node name="TreeA" type="StaticBody3D" parent="Props" groups=["points_of_interest"]]
+position = Vector3(-7, 1.4, -6)
+
+[node name="Trunk" type="MeshInstance3D" parent="Props/TreeA"]
+mesh = SubResource("TrunkMesh")
+material_override = SubResource("TrunkMaterial")
+
+[node name="Crown" type="MeshInstance3D" parent="Props/TreeA"]
+position = Vector3(0, 2.1, 0)
+mesh = SubResource("CrownMesh")
+material_override = SubResource("CrownMaterial")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Props/TreeA"]
+shape = SubResource("TreeShape")
+
+[node name="TreeB" type="StaticBody3D" parent="Props" groups=["points_of_interest"]]
+position = Vector3(8, 1.4, 5)
+
+[node name="Trunk" type="MeshInstance3D" parent="Props/TreeB"]
+mesh = SubResource("TrunkMesh")
+material_override = SubResource("TrunkMaterial")
+
+[node name="Crown" type="MeshInstance3D" parent="Props/TreeB"]
+position = Vector3(0, 2.1, 0)
+mesh = SubResource("CrownMesh")
+material_override = SubResource("CrownMaterial")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Props/TreeB"]
+shape = SubResource("TreeShape")
+
+[node name="Rock" type="StaticBody3D" parent="Props" groups=["points_of_interest"]]
+position = Vector3(4, 0.6, -7)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Props/Rock"]
+scale = Vector3(1.4, 0.8, 1)
+mesh = SubResource("RockMesh")
+material_override = SubResource("RockMaterial")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Props/Rock"]
+shape = SubResource("RockShape")
+
+[node name="Boundaries" type="Node3D" parent="."]
+
+[node name="North" type="StaticBody3D" parent="Boundaries"]
+position = Vector3(0, 0.55, -14.8)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Boundaries/North"]
+mesh = SubResource("BoundaryLongMesh")
+material_override = SubResource("BoundaryMaterial")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Boundaries/North"]
+shape = SubResource("BoundaryLongShape")
+
+[node name="South" type="StaticBody3D" parent="Boundaries"]
+position = Vector3(0, 0.55, 14.8)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Boundaries/South"]
+mesh = SubResource("BoundaryLongMesh")
+material_override = SubResource("BoundaryMaterial")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Boundaries/South"]
+shape = SubResource("BoundaryLongShape")
+
+[node name="West" type="StaticBody3D" parent="Boundaries"]
+position = Vector3(-14.8, 0.55, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Boundaries/West"]
+mesh = SubResource("BoundarySideMesh")
+material_override = SubResource("BoundaryMaterial")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Boundaries/West"]
+shape = SubResource("BoundarySideShape")
+
+[node name="East" type="StaticBody3D" parent="Boundaries"]
+position = Vector3(14.8, 0.55, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Boundaries/East"]
+mesh = SubResource("BoundarySideMesh")
+material_override = SubResource("BoundaryMaterial")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Boundaries/East"]
+shape = SubResource("BoundarySideShape")
+
+[node name="Player" parent="." instance=ExtResource("1")]
+position = Vector3(0, 0.1, 4)
+
+[node name="PicnicContainer" type="Node3D" parent="." groups=["picnic_container"]]
+
+[node name="ConstructionSites" type="Node3D" parent="." groups=["construction_site_container"]]
+
+[node name="CompletedBuildings" type="Node3D" parent="." groups=["completed_building_container"]]
+
+[node name="TerritoryBoundary" type="MeshInstance3D" parent="." groups=["settlement_boundary"]]
+visible = false
+position = Vector3(0, 0.025, 0)
+mesh = SubResource("TerritoryRingMesh")
+material_override = SubResource("TerritoryRingMaterial")
+
+[node name="WildMice" type="Node3D" parent="."]
+
+[node name="MouseA" parent="WildMice" instance=ExtResource("2")]
+position = Vector3(-5, 0.1, 0)
+personality = ExtResource("6")
+move_speed = 2.15
+
+[node name="MouseB" parent="WildMice" instance=ExtResource("2")]
+position = Vector3(4, 0.1, 2)
+personality = ExtResource("7")
+move_speed = 2.35
+
+[node name="MouseC" parent="WildMice" instance=ExtResource("2")]
+position = Vector3(-2, 0.1, -5)
+personality = ExtResource("8")
+move_speed = 1.95
+
+[node name="MouseD" parent="WildMice" instance=ExtResource("2")]
+position = Vector3(6, 0.1, -3)
+personality = ExtResource("9")
+move_speed = 2.5
+
+[node name="UI" parent="." instance=ExtResource("3")]
+
+
+[node name="FounderSelectUI" parent="." instance=ExtResource("5")]

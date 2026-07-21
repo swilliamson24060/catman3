@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="BuildingDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://resources/buildings/building_definition.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/buildings/catnip_garden.tscn" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"catnip_garden"
+display_name = "Catnip Garden"
+description = "A fragrant garden that automatically harvests catnip for the settlement."
+completed_scene = ExtResource("2")
+footprint_radius = 1.5
+work_required = 125.0
+minimum_workers = 1
+preferred_worker_count = 2
+tags = Array[StringName]([&"garden", &"producer"])
+production_resource = &"catnip"
+production_amount = 1
+production_interval_seconds = 20.0

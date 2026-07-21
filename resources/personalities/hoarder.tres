@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="MousePersonalityData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://resources/personalities/mouse_personality_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+internal_id = &"hoarder"
+behavior_profile = &"hoarder"
+traits = Array[StringName]([&"supply_focused", &"food_inspector", &"scarcity_minded"])
+effects = {&"storage_interest": 1.0, &"construction_willingness": 0.0, &"construction_speed_multiplier": 0.95, &"bribe_willingness_multiplier": 2.2, &"fatigue_break_threshold": 0.68}
+recruitment_cost = 5
+move_speed_multiplier = 1.0
+pause_duration_multiplier = 0.8
+inspection_frequency = 0.7
+notice_delay_multiplier = 0.65
+wander_radius_multiplier = 0.85
+debug_color = Color(0.92, 0.72, 0.18, 1)
+picnic_dialogue = Array[String](["How much cheese is in that basket? Exactly?", "Supplies vanish quickly if nobody keeps count."])
+recruitment_dialogue = Array[String](["Five cheese. A proper reserve is essential.", "I'll join when the stores look secure."])

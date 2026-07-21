@@ -65,4 +65,3 @@ func _update_thermal_buff(current_tile: Vector2i) -> void:
 		StatsService.add_temp_modifier(WARMTH_BUFF_SOURCE, "global_player", "movement_speed", "additive", heat * 1.5)
 	else:
 		StatsService.remove_temp_modifier(WARMTH_BUFF_SOURCE, "global_player", "movement_speed")
-

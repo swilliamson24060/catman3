@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="MousePersonalityData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://resources/personalities/mouse_personality_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+internal_id = &"lazy"
+behavior_profile = &"lazy"
+traits = Array[StringName]([&"comfort_seeking", &"frequent_rest", &"slow_responder"])
+effects = {&"rest_preference": 1.0, &"construction_willingness": -5.0, &"construction_speed_multiplier": 0.7, &"bribe_willingness_multiplier": 2.0, &"fatigue_break_threshold": 0.55}
+recruitment_cost = 1
+move_speed_multiplier = 0.62
+pause_duration_multiplier = 1.8
+inspection_frequency = 0.08
+notice_delay_multiplier = 2.4
+wander_radius_multiplier = 0.65
+debug_color = Color(0.65, 0.58, 0.85, 1)
+picnic_dialogue = Array[String](["This blanket looks excellent for a nap.", "I came as quickly as seemed reasonable."])
+recruitment_dialogue = Array[String](["One cheese. Nothing too strenuous, though.", "Is there somewhere comfortable to sit?"])

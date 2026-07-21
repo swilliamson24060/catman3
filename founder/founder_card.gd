@@ -29,21 +29,27 @@ func setup(founder_data: Dictionary) -> void:
 ## the flat color/tabby swatch otherwise -- e.g. for a modder's new founder
 ## before they've generated art for it -- so the card never ends up blank.
 ##
-## Loaded via Image.load() rather than load()/ResourceLoader: a portrait
-## dropped into res://founder/portraits/ (by the generator tool, or by a
-## modder) has no .import metadata until the project is reopened in the
-## editor, and ResourceLoader silently treats un-imported files as absent.
-## Image.load() reads the PNG bytes directly, so new portraits work
-## immediately without an editor re-scan.
+## Tries ResourceLoader/load() first: it reads the already-imported .ctex,
+## which is what actually ships in an exported build. The raw Image.load()
+## byte-read only works in the editor (an exported PCK doesn't contain the
+## original PNG, just its imported form) and exists solely so a portrait a
+## modder just dropped in -- with no .import metadata yet -- shows up
+## without forcing an editor re-scan first.
 func _apply_portrait(coat: Dictionary) -> void:
 	if founder_id != "":
 		var portrait_path := "%s%s.png" % [PORTRAITS_DIR, founder_id]
-		var img := Image.new()
-		if img.load(portrait_path) == OK:
-			swatch.texture = ImageTexture.create_from_image(img)
+		if ResourceLoader.exists(portrait_path, "Texture2D"):
+			swatch.texture = load(portrait_path)
 			swatch.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
 			swatch.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 			return
+		elif OS.has_feature("editor"):
+			var img := Image.new()
+			if img.load(portrait_path) == OK:
+				swatch.texture = ImageTexture.create_from_image(img)
+				swatch.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+				swatch.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+				return
 	_apply_swatch(coat)
 
 func _apply_swatch(coat: Dictionary) -> void:
