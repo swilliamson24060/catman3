@@ -76,6 +76,38 @@ func can_afford_cheese(amount: int) -> bool:
 	return can_afford(amount)
 
 
+func get_resource_amount(resource_id: StringName) -> int:
+	match resource_id:
+		&"cheese":
+			return cheese
+		&"catnip":
+			return catnip
+	return 0
+
+
+func can_afford_resources(costs: Dictionary) -> bool:
+	for raw_id: Variant in costs:
+		var amount := int(costs[raw_id])
+		if amount < 0 or get_resource_amount(StringName(str(raw_id))) < amount:
+			return false
+	return true
+
+
+## Checks the complete recipe before removing anything, preventing partial loss.
+func spend_resources(costs: Dictionary) -> bool:
+	if not can_afford_resources(costs):
+		return false
+	for raw_id: Variant in costs:
+		var resource_id := StringName(str(raw_id))
+		var amount := int(costs[raw_id])
+		match resource_id:
+			&"cheese":
+				cheese -= amount
+			&"catnip":
+				catnip -= amount
+	return true
+
+
 ## Returns the current catnip balance.
 func get_catnip() -> int:
 	return catnip
@@ -110,6 +142,15 @@ func deposit_resource(resource_id: StringName, amount: int, producer: Node3D = n
 			return false
 	building_produced.emit(producer, resource_id, amount)
 	return true
+
+
+func serialize_economy() -> Dictionary:
+	return {"cheese": cheese, "catnip": catnip}
+
+
+func restore_economy(data: Dictionary) -> void:
+	cheese = maxi(int(data.get("cheese", STARTING_CHEESE)), 0)
+	catnip = maxi(int(data.get("catnip", STARTING_CATNIP)), 0)
 
 
 func get_recruited_mouse_count() -> int:

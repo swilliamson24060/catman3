@@ -41,7 +41,7 @@
 - [x] Add a buildable Catnip Garden as the first producing structure.
 - [x] Deposit completed production into the existing GameState economy.
 - [x] Surface production in player feedback and the HUD.
-- [ ] Add production inputs and atomic input-to-output conversion.
-- [ ] Add production pause reasons and in-world status inspection.
-- [ ] Persist completed buildings and partial production progress.
-- [ ] Validate multiple producers, debug acceleration, and state recovery with an automated smoke test.
+- [x] Add production inputs and atomic input-to-output conversion.
+- [x] Add production pause reasons and in-world status inspection.
+- [x] Persist completed buildings and partial production progress.
+- [x] Validate multiple producers, debug acceleration, and state recovery with an automated smoke test.

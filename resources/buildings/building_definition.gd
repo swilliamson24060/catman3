@@ -14,3 +14,5 @@ extends Resource
 @export var production_resource: StringName
 @export var production_amount: int = 0
 @export var production_interval_seconds: float = 0.0
+## Resource id -> amount consumed atomically when one production cycle completes.
+@export var production_inputs: Dictionary = {}

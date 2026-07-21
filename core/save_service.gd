@@ -30,6 +30,8 @@ func save_game() -> void:
 		"town_storage": TownStorage.serialize(),
 		"buildings": BuildingManager.serialize(),
 		"animals": AnimalManager.serialize_roster(),
+		"phase2_economy": GameState.serialize_economy(),
+		"phase2_completed_buildings": SettlementManager.serialize_completed_buildings(),
 	}
 	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if file == null:
@@ -63,6 +65,8 @@ func load_game() -> bool:
 	TownStorage.restore(_as_array(parsed.get("town_storage", [])))
 	BuildingManager.restore(_as_array(parsed.get("buildings", [])))
 	AnimalManager.restore_roster(_as_array(parsed.get("animals", [])))
+	GameState.restore_economy(_as_dictionary(parsed.get("phase2_economy", {})))
+	SettlementManager.restore_completed_buildings(_as_array(parsed.get("phase2_completed_buildings", [])))
 
 	print("[SaveService] Loaded game.")
 	return true
@@ -77,3 +81,6 @@ func _as_string_array(value) -> Array[String]:
 			if v is String:
 				out.append(v)
 	return out
+
+func _as_dictionary(value) -> Dictionary:
+	return value if value is Dictionary else {}
