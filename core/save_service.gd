@@ -12,13 +12,14 @@ extends Node
 ## than crashing the load.
 
 const SAVE_PATH := "user://catmando_save.json"
-const SAVE_VERSION := 2
+const SAVE_VERSION := 3
 
 var current: SaveData = SaveData.new()
 
 func new_game(founder_cat_id: String) -> void:
 	current = SaveData.new()
 	current.founder_cat_id = founder_cat_id
+	AchievementService.reset_progress()
 
 func save_game(save_path: String = SAVE_PATH) -> bool:
 	var data := {
@@ -26,6 +27,7 @@ func save_game(save_path: String = SAVE_PATH) -> bool:
 		"founder_cat_id": current.founder_cat_id,
 		"discovered_patterns": current.discovered_patterns,
 		"unlocked_content": current.unlocked_content,
+		"achievement_progress": AchievementService.serialize_progress(),
 		"inventory": Inventory.serialize(),
 		"town_storage": TownStorage.serialize(),
 		"buildings": BuildingManager.serialize(),
@@ -61,6 +63,9 @@ func load_game(save_path: String = SAVE_PATH) -> bool:
 	current.founder_cat_id = str(parsed.get("founder_cat_id", ""))
 	current.discovered_patterns.assign(_as_string_array(parsed.get("discovered_patterns", [])))
 	current.unlocked_content.assign(_as_string_array(parsed.get("unlocked_content", [])))
+	current.achievement_progress = _as_dictionary(parsed.get("achievement_progress", {}))
+	AchievementService.set_tracking_enabled(false)
+	AchievementService.restore_progress(current.achievement_progress)
 
 	Inventory.restore(_as_array(parsed.get("inventory", [])))
 	TownStorage.restore(_as_array(parsed.get("town_storage", [])))
@@ -69,6 +74,7 @@ func load_game(save_path: String = SAVE_PATH) -> bool:
 	GameState.restore_economy(_as_dictionary(parsed.get("phase2_economy", {})))
 	SettlementManager.restore_completed_buildings(_as_array(parsed.get("phase2_completed_buildings", [])))
 	ResonanceService.reapply_discovered_bonuses()
+	AchievementService.set_tracking_enabled(true)
 
 	print("[SaveService] Loaded game.")
 	return true

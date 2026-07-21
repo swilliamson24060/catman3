@@ -4,7 +4,7 @@
       "id": "first_mouse_hut",
       "display_name": "Home Sweet Home",
       "description": "Construct your first Mouse Hut.",
-      "condition": { "type": "building_constructed_count", "building_id": "building_mouse_hut", "count": 1 },
+      "condition": { "type": "building_constructed_count", "building_id": "mouse_hut", "count": 1 },
       "unlocks": []
     },
     {
@@ -12,7 +12,7 @@
       "display_name": "Guild of Five",
       "description": "Recruit 5 mice into the workforce.",
       "condition": { "type": "animal_recruited_count", "species_id": "mouse", "count": 5 },
-      "unlocks": ["building_cheese_vault"]
+      "unlocks": ["cheese_vault"]
     },
     {
       "id": "first_resonance",

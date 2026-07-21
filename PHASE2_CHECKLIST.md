@@ -74,3 +74,13 @@
 - [x] Mount data-weighted Stray Cat Visitors in the active world.
 - [x] Add the wind-driven Cat-Stack scaffold balance challenge.
 - [x] Validate the integrated mechanics with an automated Milestone 6 smoke test.
+
+## Milestone 7 — Achievements and Unlocks
+
+- [x] Listen to active Phase 2 building, recruitment, and resonance events.
+- [x] Keep achievement conditions and rewards data-driven.
+- [x] Persist achievement counters and unlocked content across saves.
+- [x] Add a locked Cheese Vault progression reward.
+- [x] Gate build placement through achievement unlock ids.
+- [x] Surface achievement and content-unlock feedback in the HUD.
+- [x] Validate one-time rewards, counter persistence, and build gating with an automated smoke test.

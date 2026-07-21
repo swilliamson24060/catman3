@@ -49,6 +49,16 @@
       "build_cost": {},
       "build_time": 100.0,
       "housing_capacity": 2
+    },
+    {
+      "id": "cheese_vault",
+      "display_name": "Cheese Vault (Phase 2)",
+      "footprint": { "width": 1, "height": 1 },
+      "tier": "cardboard",
+      "waterproof": true,
+      "build_cost": {},
+      "build_time": 150.0,
+      "locked_by_default": true
     }
   ]
 }

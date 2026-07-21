@@ -21,24 +21,49 @@ extends Node
 var _building_counts: Dictionary = {} # building_id -> int, plus "_any" for totals
 var _animal_counts: Dictionary = {}   # species_id -> int, cumulative recruits (not current roster)
 var _pattern_count: int = 0
+var _tracking_enabled: bool = true
 
 func _ready() -> void:
 	EventBus.building_constructed.connect(_on_building_constructed)
 	EventBus.animal_recruited.connect(_on_animal_recruited)
 	EventBus.pattern_discovered.connect(_on_pattern_discovered)
+	SettlementManager.building_registered.connect(_on_phase2_building_registered)
+	GameState.mouse_recruited.connect(_on_phase2_mouse_recruited)
 
 func _on_building_constructed(building_id: String, _anchor: Vector2i) -> void:
+	if not _tracking_enabled:
+		return
 	_building_counts[building_id] = _building_counts.get(building_id, 0) + 1
 	_building_counts["_any"] = _building_counts.get("_any", 0) + 1
 	_check_achievements("building_constructed_count")
 
 func _on_animal_recruited(_animal_id: String, species_id: String) -> void:
+	if not _tracking_enabled:
+		return
 	_animal_counts[species_id] = _animal_counts.get(species_id, 0) + 1
 	_check_achievements("animal_recruited_count")
 
 func _on_pattern_discovered(_pattern_id: String) -> void:
+	if not _tracking_enabled:
+		return
 	_pattern_count += 1
 	_check_achievements("pattern_discovered_count")
+
+
+func _on_phase2_building_registered(building: Node3D) -> void:
+	if not _tracking_enabled or not building is CompletedBuilding:
+		return
+	var completed := building as CompletedBuilding
+	if completed.building_definition == null:
+		return
+	_on_building_constructed(str(completed.building_definition.id), Vector2i.ZERO)
+
+
+func _on_phase2_mouse_recruited(_mouse: Phase1WildMouse) -> void:
+	if not _tracking_enabled:
+		return
+	_animal_counts["mouse"] = _animal_counts.get("mouse", 0) + 1
+	_check_achievements("animal_recruited_count")
 
 func _check_achievements(condition_type: String) -> void:
 	for achievement in DataRegistry.get_all_achievements():
@@ -79,3 +104,35 @@ func _unlock(achievement: Dictionary) -> void:
 ## achievement's `unlocks` -- has been granted this run.
 func is_unlocked(content_id: String) -> bool:
 	return content_id in SaveService.current.unlocked_content
+
+
+func serialize_progress() -> Dictionary:
+	return {
+		"building_counts": _building_counts.duplicate(true),
+		"animal_counts": _animal_counts.duplicate(true),
+		"pattern_count": _pattern_count,
+	}
+
+
+func restore_progress(data: Dictionary) -> void:
+	_building_counts = _sanitized_counts(data.get("building_counts", {}))
+	_animal_counts = _sanitized_counts(data.get("animal_counts", {}))
+	_pattern_count = maxi(int(data.get("pattern_count", 0)), 0)
+
+
+func set_tracking_enabled(enabled: bool) -> void:
+	_tracking_enabled = enabled
+
+
+func reset_progress() -> void:
+	_building_counts.clear()
+	_animal_counts.clear()
+	_pattern_count = 0
+
+
+func _sanitized_counts(value: Variant) -> Dictionary:
+	var result := {}
+	if value is Dictionary:
+		for key: Variant in value:
+			result[str(key)] = maxi(int(value[key]), 0)
+	return result

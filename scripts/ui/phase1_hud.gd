@@ -69,6 +69,7 @@ func _ready() -> void:
 	game_state.construction_site_closed.connect(_on_construction_site_closed)
 	event_bus.pattern_discovered.connect(_on_pattern_discovered)
 	event_bus.weather_changed.connect(_on_weather_changed)
+	event_bus.achievement_unlocked.connect(_on_achievement_unlocked)
 	scaffold_service.challenge_started.connect(_on_scaffold_started)
 	scaffold_service.balance_changed.connect(_on_scaffold_balance_changed)
 	scaffold_service.challenge_resolved.connect(_on_scaffold_resolved)
@@ -352,6 +353,17 @@ func _on_pattern_discovered(pattern_id: String) -> void:
 
 func _on_weather_changed(weather_id: String) -> void:
 	weather_label.text = "Weather: %s" % weather_id.capitalize()
+
+
+func _on_achievement_unlocked(achievement_id: String) -> void:
+	var achievement: Dictionary = data_registry.call("get_achievement", achievement_id)
+	if achievement.is_empty():
+		return
+	var unlocks: Array = achievement.get("unlocks", [])
+	var suffix := ""
+	if not unlocks.is_empty():
+		suffix = "  Unlocked: %s" % ", ".join(unlocks).replace("_", " ").capitalize()
+	game_state.request_feedback("Achievement — %s!%s" % [achievement.get("display_name", achievement_id), suffix])
 
 
 func _on_scaffold_started(_duration: float) -> void:

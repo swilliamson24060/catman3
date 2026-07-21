@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="BuildingDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://resources/buildings/building_definition.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/buildings/cheese_vault.tscn" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"cheese_vault"
+display_name = "Cheese Vault"
+description = "A secure storehouse unlocked by recruiting a full mouse guild."
+completed_scene = ExtResource("2")
+footprint_radius = 1.4
+work_required = 150.0
+minimum_workers = 2
+preferred_worker_count = 3
+tags = Array[StringName]([&"storage", &"cheese", &"achievement_unlock"])
+tier = &"cardboard"
+waterproof = true
+locked_by_default = true
+unlock_content_id = &"cheese_vault"

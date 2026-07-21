@@ -78,7 +78,7 @@ theme_override_colors/font_color = Color(0.65, 0.72, 0.78, 1)
 text = "Debug: F8 needs  •  F9 speed  •  F10 work scores"
 
 [node name="Controls" type="Label" parent="MarginContainer/PanelContainer/MarginContainer/VBoxContainer"]
-text = "WASD: Move  •  Mouse: Look  •  P: Place picnic  •  B: Build menu  •  Esc: Release cursor\nBuild: 1 Test Structure  •  2 Catnip Garden  •  3 Mouse Hut  •  E Place\nRelease cursor, then left-click a mouse to inspect contentment"
+text = "WASD: Move  •  Mouse: Look  •  P: Place picnic  •  B: Build menu  •  Esc: Release cursor\nBuild: 1 Test  •  2 Catnip Garden  •  3 Mouse Hut  •  4 Cheese Vault  •  E Place\nRelease cursor, then left-click a mouse to inspect contentment"
 
 [node name="PlacementInstructions" type="Label" parent="."]
 anchors_preset = 7
@@ -351,6 +351,7 @@ text = "Build Menu"
 text = "1 — Test Structure
 2 — Catnip Garden
 3 — Mouse Hut
+4 — Cheese Vault (recruit 5 mice)
 E — Confirm marker
 B — Cancel / close build menu"
 autowrap_mode = 2

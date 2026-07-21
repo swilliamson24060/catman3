@@ -251,6 +251,11 @@ position = Vector3(6, 0.1, -3)
 personality = ExtResource("9")
 move_speed = 2.5
 
+[node name="MouseE" parent="WildMice" instance=ExtResource("2")]
+position = Vector3(1, 0.1, -7)
+personality = ExtResource("6")
+move_speed = 2.25
+
 [node name="UI" parent="." instance=ExtResource("3")]
 
 [node name="WhiskerRadar" parent="." instance=ExtResource("10")]

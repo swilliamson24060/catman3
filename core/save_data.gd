@@ -7,3 +7,4 @@ class_name SaveData
 @export var founder_cat_id: String = ""
 @export var discovered_patterns: Array[String] = []
 @export var unlocked_content: Array[String] = []
+@export var achievement_progress: Dictionary = {}

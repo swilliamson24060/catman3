@@ -14,6 +14,8 @@ extends Resource
 @export var tier: StringName = &"cardboard"
 @export var waterproof: bool = false
 @export var max_durability: float = 100.0
+@export var locked_by_default: bool = false
+@export var unlock_content_id: StringName
 @export var production_resource: StringName
 @export var production_amount: int = 0
 @export var production_interval_seconds: float = 0.0

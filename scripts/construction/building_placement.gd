@@ -5,6 +5,7 @@ const SITE_SCENE: PackedScene = preload("res://scenes/construction/construction_
 const TEST_STRUCTURE: BuildingDefinition = preload("res://resources/buildings/test_structure.tres")
 const CATNIP_GARDEN: BuildingDefinition = preload("res://resources/buildings/catnip_garden.tres")
 const MOUSE_HUT: BuildingDefinition = preload("res://resources/buildings/mouse_hut.tres")
+const CHEESE_VAULT: BuildingDefinition = preload("res://resources/buildings/cheese_vault.tres")
 const VALID_COLOR := Color(0.2, 0.95, 0.4, 0.5)
 const INVALID_COLOR := Color(0.95, 0.2, 0.16, 0.5)
 
@@ -14,6 +15,7 @@ const INVALID_COLOR := Color(0.95, 0.2, 0.16, 0.5)
 @onready var player: CharacterBody3D = get_parent() as CharacterBody3D
 @onready var game_state: Phase1GameState = get_node("/root/GameState") as Phase1GameState
 @onready var settlement_manager: Phase2SettlementManager = get_node("/root/SettlementManager") as Phase2SettlementManager
+@onready var achievement_service: Node = get_node("/root/AchievementService")
 
 var _preview: MeshInstance3D
 var _preview_material := StandardMaterial3D.new()
@@ -54,6 +56,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		begin_placement(MOUSE_HUT)
 		get_viewport().set_input_as_handled()
 		return
+	if event.is_action_pressed("select_building_4"):
+		if not is_definition_unlocked(CHEESE_VAULT):
+			game_state.request_feedback("Cheese Vault unlocks after recruiting five mice.")
+		else:
+			begin_placement(CHEESE_VAULT)
+		get_viewport().set_input_as_handled()
+		return
 	if _preview == null:
 		return
 	if event.is_action_pressed("interact"):
@@ -67,6 +76,9 @@ func is_placing() -> bool:
 
 func begin_placement(definition: BuildingDefinition) -> void:
 	if definition == null:
+		return
+	if not is_definition_unlocked(definition):
+		game_state.request_feedback("%s is still locked." % definition.display_name)
 		return
 	cancel_placement(false)
 	game_state.set_build_menu_open(false)
@@ -82,6 +94,12 @@ func begin_placement(definition: BuildingDefinition) -> void:
 	game_state.set_placement_mode(true)
 	game_state.set_build_selection(definition.display_name)
 	_set_boundary_visible(true)
+
+
+func is_definition_unlocked(definition: BuildingDefinition) -> bool:
+	if definition == null or not definition.locked_by_default:
+		return true
+	return bool(achievement_service.call("is_unlocked", str(definition.unlock_content_id)))
 
 
 func cancel_placement(show_feedback: bool = true) -> void:
