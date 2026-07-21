@@ -64,7 +64,7 @@ func _load_all() -> void:
 	_load_fragment(CORE_DATA_DIR + "coat_palette.json", "decorations", CORE_NAMESPACE)
 
 	for file_path in _list_expansion_files():
-		var mod_namespace := file_path.get_file().get_basename()
+		var mod_namespace := file_path.get_file().get_basename().to_snake_case()
 		_load_fragment(file_path, "buildings", mod_namespace)
 		_load_fragment(file_path, "founder_cats", mod_namespace)
 		_load_fragment(file_path, "animal_types", mod_namespace)
@@ -79,7 +79,8 @@ func _load_all() -> void:
 		_load_fragment(file_path, "eye_colors", mod_namespace)
 		_load_fragment(file_path, "decorations", mod_namespace)
 
-	# --- Pass 2: now that everything is merged, validate cross-references ---
+	# --- Pass 2: now that everything is merged, canonicalize and validate ---
+	_normalize_references()
 	_validate_references()
 
 	print("[DataRegistry] Loaded %d buildings, %d founder cats, %d animal types, %d items, %d resonance patterns, %d achievements, %d audio cues, %d/%d/%d coat colors/eyes/decorations" % [
@@ -104,6 +105,7 @@ func _list_expansion_files() -> Array[String]:
 			files.append(EXPANSIONS_DIR + file_name)
 		file_name = dir.get_next()
 	dir.list_dir_end()
+	files.sort()
 	return files
 
 func _load_fragment(file_path: String, top_level_key: String, mod_namespace: String) -> void:
@@ -119,8 +121,15 @@ func _load_fragment(file_path: String, top_level_key: String, mod_namespace: Str
 		if not (entry is Dictionary) or not entry.has("id"):
 			load_errors.append("Entry without an 'id' in %s (%s)" % [file_path, top_level_key])
 			continue
-		var qualified_id := "%s:%s" % [mod_namespace, entry["id"]]
-		target[qualified_id] = entry
+		var source_id := str(entry["id"])
+		var qualified_id := "%s:%s" % [mod_namespace, source_id]
+		var stored: Dictionary = entry.duplicate(true)
+		stored["source_id"] = source_id
+		stored["namespace"] = mod_namespace
+		# Core ids stay bare for save compatibility. Expansion ids are always
+		# canonical at runtime so two mods may safely use the same source id.
+		stored["id"] = source_id if mod_namespace == CORE_NAMESPACE else qualified_id
+		target[qualified_id] = stored
 
 func _registry_for(top_level_key: String) -> Dictionary:
 	match top_level_key:
@@ -153,8 +162,8 @@ func _registry_for(top_level_key: String) -> Dictionary:
 ## expansion author wrote -- still needs to resolve. So on a core-namespace
 ## miss, fall back to a scan for any namespace's entry with this bare id,
 ## the same leniency _id_exists_anywhere already applies during validation.
-## Ambiguous if two expansions reuse the same bare id, but that's a modder
-## authoring collision no engine code can resolve on their behalf.
+## If multiple expansions reuse a bare id, callers must use a qualified id;
+## silently picking one would make behavior depend on load order.
 func _resolve(registry: Dictionary, id: String) -> Dictionary:
 	if id == "":
 		return {}
@@ -163,10 +172,13 @@ func _resolve(registry: Dictionary, id: String) -> Dictionary:
 	var core_id := "%s:%s" % [CORE_NAMESPACE, id]
 	if registry.has(core_id):
 		return registry[core_id]
+	var matched_entry: Dictionary = {}
 	for key in registry.keys():
 		if key.ends_with(":" + id):
-			return registry[key]
-	return {}
+			if not matched_entry.is_empty():
+				return {}
+			matched_entry = registry[key]
+	return matched_entry
 
 func _id_exists_anywhere(registry: Dictionary, plain_or_qualified_id: String) -> bool:
 	if plain_or_qualified_id == "":
@@ -178,7 +190,77 @@ func _id_exists_anywhere(registry: Dictionary, plain_or_qualified_id: String) ->
 			return true
 	return false
 
+func _canonical_reference(registry: Dictionary, reference: String, owner_namespace: String) -> String:
+	if reference == "":
+		return ""
+	if reference.contains(":"):
+		var qualified_entry: Dictionary = registry.get(reference, {})
+		return str(qualified_entry.get("id", reference))
+	var local_key := "%s:%s" % [owner_namespace, reference]
+	if registry.has(local_key):
+		return str(registry[local_key].get("id", reference))
+	var core_key := "%s:%s" % [CORE_NAMESPACE, reference]
+	if registry.has(core_key):
+		return str(registry[core_key].get("id", reference))
+	return reference
+
+func _normalize_references() -> void:
+	for building: Dictionary in _buildings.values():
+		var building_namespace: String = building.get("namespace", CORE_NAMESPACE)
+		var produces: Dictionary = building.get("produces", {})
+		if produces.has("output"):
+			produces["output"] = _canonical_reference(_items, str(produces["output"]), building_namespace)
+		if produces.has("consumes") and produces["consumes"] is Dictionary:
+			var normalized_consumes := {}
+			for item_id: Variant in produces["consumes"]:
+				normalized_consumes[_canonical_reference(_items, str(item_id), building_namespace)] = produces["consumes"][item_id]
+			produces["consumes"] = normalized_consumes
+
+	for animal: Dictionary in _animal_types.values():
+		var animal_namespace: String = animal.get("namespace", CORE_NAMESPACE)
+		animal["housing_building_type"] = _canonical_reference(_buildings, str(animal.get("housing_building_type", "")), animal_namespace)
+		for job: Dictionary in animal.get("job_roles", []):
+			if job.has("output"):
+				job["output"] = _canonical_reference(_items, str(job["output"]), animal_namespace)
+		var upkeep: Dictionary = animal.get("upkeep", {})
+		if upkeep.has("item"):
+			upkeep["item"] = _canonical_reference(_items, str(upkeep["item"]), animal_namespace)
+
+	for pattern: Dictionary in _resonance_patterns.values():
+		var pattern_namespace: String = pattern.get("namespace", CORE_NAMESPACE)
+		pattern["anchor_building_type"] = _canonical_reference(_buildings, str(pattern.get("anchor_building_type", "")), pattern_namespace)
+		for offset: Dictionary in pattern.get("required_offsets", []):
+			offset["building_type"] = _canonical_reference(_buildings, str(offset.get("building_type", "")), pattern_namespace)
+
+	for achievement: Dictionary in _achievements.values():
+		var achievement_namespace: String = achievement.get("namespace", CORE_NAMESPACE)
+		var condition: Dictionary = achievement.get("condition", {})
+		if condition.has("building_id"):
+			condition["building_id"] = _canonical_reference(_buildings, str(condition["building_id"]), achievement_namespace)
+		if condition.has("species_id"):
+			condition["species_id"] = _canonical_reference(_animal_types, str(condition["species_id"]), achievement_namespace)
+		var normalized_unlocks: Array = []
+		for content_id: Variant in achievement.get("unlocks", []):
+			var reference := str(content_id)
+			var normalized := _canonical_reference(_buildings, reference, achievement_namespace)
+			if normalized == reference:
+				normalized = _canonical_reference(_items, reference, achievement_namespace)
+			if normalized == reference:
+				normalized = _canonical_reference(_animal_types, reference, achievement_namespace)
+			normalized_unlocks.append(normalized)
+		achievement["unlocks"] = normalized_unlocks
+
 func _validate_references() -> void:
+	for building in _buildings.values():
+		var produces: Dictionary = building.get("produces", {})
+		var output: String = produces.get("output", "")
+		if output != "" and not _id_exists_anywhere(_items, output):
+			load_errors.append("Building '%s' produces unknown item '%s'" % [building.get("id"), output])
+		var consumes: Dictionary = produces.get("consumes", {})
+		for item_id: Variant in consumes:
+			if not _id_exists_anywhere(_items, str(item_id)):
+				load_errors.append("Building '%s' consumes unknown item '%s'" % [building.get("id"), item_id])
+
 	for pattern in _resonance_patterns.values():
 		var anchor: String = pattern.get("anchor_building_type", "")
 		if not _id_exists_anywhere(_buildings, anchor):
@@ -195,6 +277,9 @@ func _validate_references() -> void:
 		for job in animal.get("job_roles", []):
 			if job.has("output") and not _id_exists_anywhere(_items, job["output"]):
 				load_errors.append("Animal type '%s' job role '%s' produces unknown item '%s'" % [animal.get("id"), job.get("id", "?"), job["output"]])
+		var upkeep_item: String = animal.get("upkeep", {}).get("item", "")
+		if upkeep_item != "" and not _id_exists_anywhere(_items, upkeep_item):
+			load_errors.append("Animal type '%s' requires unknown upkeep item '%s'" % [animal.get("id"), upkeep_item])
 
 	for achievement in _achievements.values():
 		var condition: Dictionary = achievement.get("condition", {})
@@ -224,6 +309,9 @@ func get_animal_type(id: String) -> Dictionary:
 
 func get_item(id: String) -> Dictionary:
 	return _resolve(_items, id)
+
+func get_all_items() -> Array:
+	return _items.values()
 
 func get_resonance_pattern(id: String) -> Dictionary:
 	return _resolve(_resonance_patterns, id)

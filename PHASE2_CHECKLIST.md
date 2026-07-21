@@ -84,3 +84,14 @@
 - [x] Gate build placement through achievement unlock ids.
 - [x] Surface achievement and content-unlock feedback in the HUD.
 - [x] Validate one-time rewards, counter persistence, and build gating with an automated smoke test.
+
+## Milestone 8 — Modular Expansions
+
+- [x] Discover expansion JSON fragments deterministically at startup.
+- [x] Merge every expansion before validating cross-references.
+- [x] Canonicalize expansion runtime ids with filename-derived namespaces.
+- [x] Resolve bare references locally first, then fall back to core content.
+- [x] Validate building recipes, animal jobs, housing, upkeep, achievements, and resonance references.
+- [x] Load the Undersea animal and its new Kelp resource from the same expansion file.
+- [x] Load Space Mice founder, item, and cross-namespace achievement content without core-code changes.
+- [x] Validate expansion lookup, inventory creation, housing, recruitment, and namespace isolation with an automated smoke test.
