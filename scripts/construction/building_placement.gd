@@ -192,7 +192,9 @@ func _is_blocked(position: Vector3) -> bool:
 	return not player.get_world_3d().direct_space_state.intersect_shape(query, 4).is_empty()
 
 
-func _set_boundary_visible(is_visible: bool) -> void:
+func _set_boundary_visible(_is_visible: bool) -> void:
 	var boundary := get_tree().get_first_node_in_group("settlement_boundary") as Node3D
 	if boundary != null:
-		boundary.visible = is_visible
+		# Territory is now a permanent movement limit, so its initial outline
+		# remains visible alongside the influence rings added by new buildings.
+		boundary.visible = true

@@ -1,4 +1,4 @@
-[gd_scene load_steps=35 format=3]
+[gd_scene load_steps=36 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/player/founder_cat.tscn" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/mice/wild_mouse.tscn" id="2"]
@@ -15,6 +15,7 @@
 [ext_resource type="Script" path="res://world/stray_cat_spawner.gd" id="13"]
 [ext_resource type="Script" path="res://world/resource_node_spawner.gd" id="14"]
 [ext_resource type="PackedScene" path="res://inventory/inventory_ui.tscn" id="15"]
+[ext_resource type="Script" path="res://world/fog_renderer.gd" id="16"]
 
 [sub_resource type="Environment" id="Environment"]
 background_mode = 1
@@ -102,6 +103,9 @@ shadow_enabled = true
 directional_shadow_max_distance = 50.0
 
 [node name="Terrain" type="Node3D" parent="."]
+
+[node name="SettlementFog" type="MultiMeshInstance3D" parent="."]
+script = ExtResource("16")
 
 [node name="StaticBody3D" type="StaticBody3D" parent="Terrain"]
 

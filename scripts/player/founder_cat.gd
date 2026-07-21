@@ -32,6 +32,7 @@ const CLOSEUP_DISTANCE: float = 4.2
 @onready var stats_service: Node = get_node("/root/StatsService")
 @onready var thermal_service: Node = get_node("/root/ThermalService")
 @onready var grid_service: Node = get_node("/root/GridService")
+@onready var settlement_manager: Phase2SettlementManager = get_node("/root/SettlementManager") as Phase2SettlementManager
 
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity", 9.8)
 var _interaction_target: Node
@@ -89,6 +90,7 @@ func _process(_delta: float) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	var position_before_motion := global_position
 	if not is_on_floor():
 		velocity.y -= _gravity * delta
 	else:
@@ -122,6 +124,11 @@ func _physics_process(delta: float) -> void:
 		rotation.y = lerp_angle(rotation.y, target_yaw, rotation_speed * delta)
 
 	move_and_slide()
+	var constrained_position := settlement_manager.constrain_position_to_settlement(position_before_motion, global_position)
+	if not constrained_position.is_equal_approx(global_position):
+		global_position = constrained_position
+		velocity.x = 0.0
+		velocity.z = 0.0
 
 
 func _update_interaction_target() -> void:

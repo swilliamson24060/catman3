@@ -92,6 +92,7 @@ var _worksite: ConstructionSite
 var _work_slot: Marker3D
 var _break_remaining: float = 0.0
 var _last_work_score: float = 0.0
+var _cheese_target: Node3D
 
 
 func _ready() -> void:
@@ -127,6 +128,7 @@ func _wait_for_navigation() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	var position_before_motion := global_position
 	if not is_on_floor():
 		velocity.y -= _gravity * delta
 	else:
@@ -157,7 +159,9 @@ func _physics_process(delta: float) -> void:
 			_update_work(delta)
 		MouseState.TAKE_BREAK:
 			_update_work_break(delta)
-		MouseState.SEEK_CHEESE, MouseState.DISCONTENTED_IDLE:
+		MouseState.SEEK_CHEESE:
+			_update_seek_cheese(delta)
+		MouseState.DISCONTENTED_IDLE:
 			_update_discontented_idle(delta)
 		MouseState.CELEBRATE_COMPLETION:
 			_update_completion_celebration(delta)
@@ -165,6 +169,11 @@ func _physics_process(delta: float) -> void:
 			_stop_planar_motion(delta)
 
 	move_and_slide()
+	var constrained_position := settlement_manager.constrain_position_to_settlement(position_before_motion, global_position)
+	if not constrained_position.is_equal_approx(global_position):
+		global_position = constrained_position
+		velocity.x = 0.0
+		velocity.z = 0.0
 	_update_contentment_presentation(delta)
 
 
@@ -509,13 +518,59 @@ func get_recruitment_cost() -> int:
 	return current_recruitment_cost
 
 
+func collect_random_cheese(amount: int) -> void:
+	if amount <= 0 or is_recruited:
+		return
+	current_recruitment_cost += amount
+	needs.hunger = clampf(needs.hunger - float(amount) * 0.22, 0.0, 1.0)
+	game_state.request_feedback("%s found %d cheese. Their recruitment price is now %d." % [generated_name, amount, current_recruitment_cost])
+	_cheese_target = null
+	_begin_idle(_random.randf_range(minimum_pause, maximum_pause))
+
+
 func _update_idle(delta: float) -> void:
 	_pause_remaining -= delta
 	_stop_planar_motion(delta)
 	if is_instance_valid(_inspection_target):
 		_face_position(_inspection_target.global_position, delta)
 	if _pause_remaining <= 0.0:
+		if _try_seek_settlement_cheese():
+			return
 		_choose_wander_target()
+
+
+func _try_seek_settlement_cheese() -> bool:
+	if is_recruited or _picnic != null:
+		return false
+	var nearest: Node3D
+	var nearest_distance := INF
+	for node: Node in get_tree().get_nodes_in_group("settlement_cheese_pickups"):
+		var pickup := node as Node3D
+		if pickup == null or pickup.is_queued_for_deletion():
+			continue
+		var distance := global_position.distance_to(pickup.global_position)
+		if distance < nearest_distance:
+			nearest = pickup
+			nearest_distance = distance
+	if nearest == null:
+		return false
+	_cheese_target = nearest
+	navigation_agent.target_desired_distance = ARRIVAL_DISTANCE
+	navigation_agent.target_position = nearest.global_position
+	_state = MouseState.SEEK_CHEESE
+	return true
+
+
+func _update_seek_cheese(delta: float) -> void:
+	if is_recruited or not is_instance_valid(_cheese_target) or _cheese_target.is_queued_for_deletion():
+		_cheese_target = null
+		_begin_idle(_random.randf_range(minimum_pause, maximum_pause))
+		return
+	if global_position.distance_to(_cheese_target.global_position) <= ARRIVAL_DISTANCE + 0.25:
+		_cheese_target.call("collect", self)
+		return
+	navigation_agent.target_position = _cheese_target.global_position
+	_update_navigation(delta, false)
 
 
 func _update_notice(delta: float) -> void:
@@ -564,6 +619,7 @@ func _choose_wander_target() -> void:
 	)
 	var requested_target := _spawn_position + random_offset
 	var safe_target := NavigationServer3D.map_get_closest_point(map_rid, requested_target)
+	safe_target = settlement_manager.constrain_position_to_settlement(global_position, safe_target)
 	if safe_target.distance_to(global_position) < 1.0:
 		_begin_idle(TARGET_RETRY_DELAY)
 		return

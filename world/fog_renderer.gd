@@ -1,43 +1,56 @@
+class_name SettlementFogRenderer
 extends MultiMeshInstance3D
-## Renders one dark, flat quad per grid tile and hides (scales to zero) each
-## one as GridService reports it revealed. Purely a visual layer over
-## GridService's data -- no gameplay logic lives here.
+
+## A dense overhead fog blanket. Tiles inside controlled settlement territory
+## are removed; completed buildings update SettlementManager influence and
+## immediately clear the newly expanded area.
+
+@export var world_half_extent: float = 35.0
+@export var fog_cell_size: float = 1.0
+@export var fog_height: float = 1.55
+
+@onready var settlement_manager: Phase2SettlementManager = get_node("/root/SettlementManager") as Phase2SettlementManager
+
+var _grid_size: int = 0
+
 
 func _ready() -> void:
+	_build_fog_grid()
+	settlement_manager.influence_changed.connect(_refresh_fog)
+	_refresh_fog()
+
+
+func _build_fog_grid() -> void:
+	_grid_size = ceili(world_half_extent * 2.0 / fog_cell_size)
 	var quad := QuadMesh.new()
-	quad.size = Vector2(GridService.cell_size * 0.98, GridService.cell_size * 0.98)
+	quad.size = Vector2(fog_cell_size * 1.04, fog_cell_size * 1.04)
+	var material := StandardMaterial3D.new()
+	material.albedo_color = Color(0.035, 0.055, 0.07, 0.96)
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	quad.surface_set_material(0, material)
+	var fog_multimesh := MultiMesh.new()
+	fog_multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	fog_multimesh.mesh = quad
+	fog_multimesh.instance_count = _grid_size * _grid_size
+	multimesh = fog_multimesh
 
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.04, 0.04, 0.05, 0.94)
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	quad.surface_set_material(0, mat)
 
-	var mm := MultiMesh.new()
-	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.mesh = quad
-	mm.instance_count = GridService.grid_width * GridService.grid_height
-	multimesh = mm
-
+func _refresh_fog() -> void:
+	if multimesh == null:
+		return
 	var flat_basis := Basis(Vector3.RIGHT, -PI / 2.0)
-	var i := 0
-	for x in GridService.grid_width:
-		for y in GridService.grid_height:
-			var pos := Vector2i(x, y)
-			var world := GridService.grid_to_world(pos)
-			multimesh.set_instance_transform(i, Transform3D(flat_basis, world + Vector3(0, 0.05, 0)))
-			if GridService.is_revealed(pos):
-				_hide_instance(i)
-			i += 1
+	var hidden_basis := flat_basis.scaled(Vector3.ZERO)
+	var start := -world_half_extent + fog_cell_size * 0.5
+	var index := 0
+	for x: int in range(_grid_size):
+		for z: int in range(_grid_size):
+			var world_position := Vector3(start + x * fog_cell_size, fog_height, start + z * fog_cell_size)
+			var is_settled := settlement_manager.is_position_inside_settlement(world_position)
+			multimesh.set_instance_transform(index, Transform3D(hidden_basis if is_settled else flat_basis, world_position))
+			index += 1
 
-	GridService.tile_revealed.connect(_on_tile_revealed)
 
-func _on_tile_revealed(grid_pos: Vector2i) -> void:
-	var index := grid_pos.x * GridService.grid_height + grid_pos.y
-	_hide_instance(index)
-
-func _hide_instance(index: int) -> void:
-	var t := multimesh.get_instance_transform(index)
-	t.basis = t.basis.scaled(Vector3.ZERO)
-	multimesh.set_instance_transform(index, t)
+func is_position_fogged(world_position: Vector3) -> bool:
+	return not settlement_manager.is_position_inside_settlement(world_position)

@@ -11,6 +11,7 @@ const BUILDING_DEFINITION_DIRECTORY := "res://resources/buildings"
 const RESONANCE_GRID_SIZE: float = 3.0
 const INFLUENCE_RING_WIDTH: float = 0.16
 const INFLUENCE_RING_SEGMENTS: int = 64
+const WORLD_HALF_EXTENT: float = 33.5
 
 var _influence_sources: Dictionary = {}
 var _completed_buildings: Array[Node3D] = []
@@ -27,6 +28,54 @@ func is_position_inside_settlement(world_position: Vector3) -> bool:
 		if is_instance_valid(source) and flat.distance_to(Vector3(source.global_position.x, 0.0, source.global_position.z)) <= float(_influence_sources[source]):
 			return true
 	return false
+
+
+func constrain_position_to_settlement(previous_position: Vector3, desired_position: Vector3) -> Vector3:
+	if is_position_inside_settlement(desired_position):
+		return desired_position
+	if not is_position_inside_settlement(previous_position):
+		return SETTLEMENT_ORIGIN + Vector3.UP * desired_position.y
+	var inside := previous_position
+	var outside := desired_position
+	# Find the current territory edge along this movement segment. Keeping a
+	# small inset prevents physics jitter when velocity continues toward fog.
+	for _iteration: int in range(14):
+		var midpoint := inside.lerp(outside, 0.5)
+		if is_position_inside_settlement(midpoint):
+			inside = midpoint
+		else:
+			outside = midpoint
+	var inward := (previous_position - inside)
+	inward.y = 0.0
+	if not inward.is_zero_approx():
+		inside += inward.normalized() * 0.04
+	inside.y = desired_position.y
+	return inside
+
+
+func get_random_position_inside_settlement(rng: RandomNumberGenerator, margin: float = 0.0) -> Vector3:
+	if rng == null:
+		return SETTLEMENT_ORIGIN
+	var safe_initial_extent := maxf(INITIAL_WALLED_HALF_EXTENT - margin, 1.0)
+	var valid_sources: Array[Node3D] = []
+	for source: Node3D in _influence_sources:
+		if is_instance_valid(source) and float(_influence_sources[source]) > margin:
+			valid_sources.append(source)
+	# Expansion zones receive half the spawn opportunities once one exists.
+	if not valid_sources.is_empty() and rng.randf() < 0.5:
+		var source := valid_sources[rng.randi_range(0, valid_sources.size() - 1)]
+		var radius := maxf(float(_influence_sources[source]) - margin, 0.5)
+		var angle := rng.randf_range(0.0, TAU)
+		var distance := sqrt(rng.randf()) * radius
+		var candidate := source.global_position + Vector3(cos(angle), 0.0, sin(angle)) * distance
+		candidate.x = clampf(candidate.x, -WORLD_HALF_EXTENT, WORLD_HALF_EXTENT)
+		candidate.z = clampf(candidate.z, -WORLD_HALF_EXTENT, WORLD_HALF_EXTENT)
+		return candidate
+	return Vector3(
+		rng.randf_range(-safe_initial_extent, safe_initial_extent),
+		0.0,
+		rng.randf_range(-safe_initial_extent, safe_initial_extent)
+	)
 
 
 func get_nearest_settlement_edge(world_position: Vector3) -> Vector3:
