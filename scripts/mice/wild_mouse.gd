@@ -264,10 +264,20 @@ func interact(_interactor: Node3D) -> void:
 	if _state != MouseState.PICNIC_IDLE:
 		game_state.request_feedback("This mouse is too busy to talk right now.")
 		return
+	begin_picnic_negotiation()
+
+
+## Opens this attendee's offer from either the world interaction or picnic
+## picker. The picker may be used while the mouse is still walking to its mat.
+func begin_picnic_negotiation() -> bool:
+	if is_recruited or _picnic == null or _picnic.has_completed_conversation(self):
+		return false
 	_state_before_negotiation = _state
 	_state = MouseState.NEGOTIATE
 	if not game_state.open_mouse_dialogue(self):
 		_state = _state_before_negotiation
+		return false
+	return true
 
 
 func get_interaction_priority() -> int:

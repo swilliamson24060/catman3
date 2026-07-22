@@ -44,6 +44,9 @@ extends CanvasLayer
 @onready var camera_view_button: Button = $MarginContainer/PanelContainer/MarginContainer/HBoxContainer/CameraControls/ToggleView
 @onready var music_toggle_button: Button = $MarginContainer/PanelContainer/MarginContainer/HBoxContainer/Resources/MusicToggle
 @onready var audio_service: Node = get_node("/root/AudioService")
+@onready var attendee_picker: PanelContainer = $AttendeePicker
+@onready var attendee_buttons: VBoxContainer = $AttendeePicker/MarginContainer/VBoxContainer/AttendeeButtons
+@onready var attendee_help: Label = $AttendeePicker/MarginContainer/VBoxContainer/Help
 
 var _feedback_time_remaining: float = 0.0
 var _dialogue_mouse: Phase1WildMouse
@@ -54,6 +57,8 @@ var _inspected_mouse: Phase1WildMouse
 var _managed_site: ConstructionSite
 var _resonance_banner_generation: int = 0
 var _placement_mode_active: bool = false
+var _active_picnic: Phase1Picnic
+var _attendee_picker_generation: int = 0
 
 
 func _ready() -> void:
@@ -66,6 +71,7 @@ func _ready() -> void:
 	game_state.feedback_requested.connect(_on_feedback_requested)
 	game_state.dialogue_opened.connect(_on_dialogue_opened)
 	game_state.dialogue_closed.connect(_on_dialogue_closed)
+	game_state.picnic_started.connect(_on_picnic_started)
 	game_state.mouse_inspected.connect(_on_mouse_inspected)
 	game_state.build_menu_changed.connect(_on_build_menu_changed)
 	game_state.build_selection_changed.connect(_on_build_selection_changed)
@@ -91,6 +97,7 @@ func _ready() -> void:
 	interaction_prompt.hide()
 	feedback_label.hide()
 	dialogue_panel.hide()
+	attendee_picker.hide()
 	inspection_panel.hide()
 	build_menu.hide()
 	build_selection_label.hide()
@@ -215,6 +222,59 @@ func _on_dialogue_closed() -> void:
 	dialogue_panel.hide()
 	_dialogue_mouse = null
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	_refresh_attendee_picker()
+
+
+func _on_picnic_started(picnic: Node3D) -> void:
+	_attendee_picker_generation += 1
+	_active_picnic = picnic as Phase1Picnic
+	if _active_picnic == null:
+		return
+	_active_picnic.attendee_decision_changed.connect(_on_attendee_decision_changed)
+	_active_picnic.picnic_ended.connect(_on_picnic_ended)
+	_refresh_attendee_picker()
+	attendee_picker.show()
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+
+func _on_attendee_decision_changed(_picnic: Phase1Picnic) -> void:
+	_refresh_attendee_picker()
+
+
+func _on_picnic_ended(_picnic: Phase1Picnic) -> void:
+	_attendee_picker_generation += 1
+	var generation := _attendee_picker_generation
+	attendee_help.text = "All offers decided. The picnic is packing automatically."
+	_active_picnic = null
+	await get_tree().create_timer(2.0).timeout
+	if generation == _attendee_picker_generation:
+		attendee_picker.hide()
+
+
+func _refresh_attendee_picker() -> void:
+	for child in attendee_buttons.get_children():
+		child.queue_free()
+	if not is_instance_valid(_active_picnic) or not _active_picnic.is_event_active():
+		attendee_picker.hide()
+		return
+	var remaining := _active_picnic.get_remaining_conversation_count()
+	attendee_help.text = "Select every mouse (%d remaining). The picnic packs automatically when all have a decision." % remaining
+	for mouse in _active_picnic.get_attendees():
+		var decision := _active_picnic.get_attendee_decision(mouse)
+		var marker := "✓" if decision == "accepted" else ("✕" if decision == "declined" else "•")
+		var status := "ACCEPTED" if decision == "accepted" else ("DECLINED" if decision == "declined" else "%d cheese" % mouse.get_recruitment_cost())
+		var button := Button.new()
+		button.text = "%s  %s — %s" % [marker, mouse.get_display_name(), status]
+		button.disabled = decision != "pending"
+		button.pressed.connect(_select_picnic_attendee.bind(mouse))
+		attendee_buttons.add_child(button)
+
+
+func _select_picnic_attendee(mouse: Phase1WildMouse) -> void:
+	if not is_instance_valid(mouse) or not is_instance_valid(_active_picnic):
+		return
+	if not mouse.begin_picnic_negotiation():
+		game_state.request_feedback("That attendee's offer is no longer available.")
 
 
 func _on_accept_pressed() -> void:

@@ -3,6 +3,7 @@ extends SceneTree
 const MOUSE_SCENE: PackedScene = preload("res://scenes/mice/wild_mouse.tscn")
 const PICNIC_SCENE: PackedScene = preload("res://scenes/picnic/picnic.tscn")
 const SITE_SCENE: PackedScene = preload("res://scenes/construction/construction_site.tscn")
+const HUD_SCENE: PackedScene = preload("res://scenes/ui/phase1_hud.tscn")
 const TEST_STRUCTURE: BuildingDefinition = preload("res://resources/buildings/test_structure.tres")
 
 
@@ -15,6 +16,9 @@ func _run() -> void:
 	var game_state := root.get_node("GameState") as Phase1GameState
 	game_state.reset()
 	assert(game_state.select_founder(&"barnaby"))
+	var hud := HUD_SCENE.instantiate()
+	root.add_child(hud)
+	await process_frame
 
 	var player := Node3D.new()
 	player.add_to_group("player")
@@ -42,16 +46,29 @@ func _run() -> void:
 	picnic.add_child(second_marker)
 	picnic.set("_reservations", {mouse: reserved_marker, second_mouse: second_marker})
 	picnic.set("_event_active", true)
+	game_state.picnic_started.emit(picnic)
+	await process_frame
+	assert(hud.get_node("AttendeePicker").visible, "The picnic must present an attendee picker")
+	assert(hud.get_node("AttendeePicker/MarginContainer/VBoxContainer/AttendeeButtons").get_child_count() == 2, "The picker must list every attendee by name")
+	picnic.pack_up()
+	assert(game_state.has_picnic(), "Packing must be blocked until every attendee is accepted or declined")
 	assert(mouse.try_recruit(), "Mouse must recruit through the real transaction")
 	assert(mouse.get_state_name() == "RECRUITED", "A new recruit must wait at an active picnic")
 	assert(not game_state.is_build_menu_open, "Recruiting one mouse must not interrupt the picnic with building selection")
 	assert(mouse.get_node("RecruitmentBadge").visible, "Recruited mouse needs an in-world badge")
 	assert(mouse.get_node("RecruitmentBadge").text.contains(mouse.get_display_name()), "Recruitment badge must identify the mouse")
 	mouse.close_negotiation()
+	assert(picnic.get_attendee_decision(mouse) == "accepted", "Accepted attendees must receive a check-mark status")
+	await process_frame
+	var accepted_status_found := false
+	for button: Button in hud.get_node("AttendeePicker/MarginContainer/VBoxContainer/AttendeeButtons").get_children():
+		accepted_status_found = accepted_status_found or button.text.contains("✓")
+	assert(accepted_status_found, "The attendee picker must visibly check accepted offers")
 	assert(not game_state.is_build_menu_open, "Building selection must wait until every attendee has had a turn")
 	assert(mouse.get_state_name() == "RECRUITED", "First recruit must remain patient while another attendee awaits conversation")
 	assert(second_mouse.try_recruit(), "The founder must be able to recruit the next picnic attendee")
 	second_mouse.close_negotiation()
+	assert(hud.get_node("AttendeePicker").visible, "The final decision summary must remain visible briefly while packing")
 	assert(not game_state.has_picnic(), "A qualifying completed picnic must pack before building selection")
 	assert(not game_state.is_build_menu_open, "The build menu must wait until automatic picnic removal completes")
 	await process_frame

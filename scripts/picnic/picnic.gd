@@ -4,6 +4,7 @@ extends Node3D
 signal bell_rung(picnic: Phase1Picnic)
 signal picnic_started(picnic: Phase1Picnic)
 signal picnic_ended(picnic: Phase1Picnic)
+signal attendee_decision_changed(picnic: Phase1Picnic)
 
 @export_range(2.0, 30.0, 0.5) var attraction_radius: float = 13.0
 @export var show_attraction_radius: bool = false
@@ -61,13 +62,15 @@ func get_attendee_count() -> int:
 
 ## Releases every attendee and removes this picnic so it can be placed elsewhere.
 func pack_up() -> void:
-	var triggered_build_decision := false
 	if _event_active:
-		triggered_build_decision = _complete_conversation_cycle(true)
+		var remaining := get_remaining_conversation_count()
+		if remaining > 0:
+			game_state.request_feedback("You must accept or decline every mouse before packing. Still waiting: %s." % ", ".join(get_pending_attendee_names()))
+			return
+		_complete_conversation_cycle(true)
+		return
 	else:
 		_release_attendees()
-	if triggered_build_decision:
-		return
 	if game_state.unregister_picnic(self) and not game_state.is_build_menu_open:
 		game_state.request_feedback("Picnic packed up. Press P to place it near other wild mice.")
 	queue_free()
@@ -94,7 +97,8 @@ func release_mouse(mouse: Phase1WildMouse) -> void:
 func complete_conversation(mouse: Phase1WildMouse) -> void:
 	if not _event_active or not _reservations.has(mouse):
 		return
-	_completed_conversations[mouse] = true
+	_completed_conversations[mouse] = "accepted" if mouse.is_recruited else "declined"
+	attendee_decision_changed.emit(self)
 	_check_conversation_cycle_complete()
 	var remaining := get_remaining_conversation_count()
 	if _event_active and remaining > 0:
@@ -113,13 +117,33 @@ func get_remaining_conversation_count() -> int:
 	return remaining
 
 
+func get_attendees() -> Array[Phase1WildMouse]:
+	var attendees: Array[Phase1WildMouse] = []
+	for mouse: Phase1WildMouse in _reservations:
+		if is_instance_valid(mouse):
+			attendees.append(mouse)
+	attendees.sort_custom(func(a: Phase1WildMouse, b: Phase1WildMouse) -> bool: return a.get_display_name() < b.get_display_name())
+	return attendees
+
+
+func get_attendee_decision(mouse: Phase1WildMouse) -> String:
+	return str(_completed_conversations.get(mouse, "pending"))
+
+
+func get_pending_attendee_names() -> PackedStringArray:
+	var names := PackedStringArray()
+	for mouse in get_attendees():
+		if not _completed_conversations.has(mouse):
+			names.append(mouse.get_display_name())
+	return names
+
+
 ## Ends the current gathering and returns attendees to wandering.
 func end_picnic_event(show_feedback: bool = true) -> void:
 	if not _event_active:
 		return
 	_event_active = false
 	_release_attendees()
-	_completed_conversations.clear()
 	picnic_ended.emit(self)
 	if show_feedback:
 		game_state.request_feedback("The picnic winds down. Ring the bell to gather mice again.")
@@ -164,7 +188,7 @@ func _start_picnic_event() -> void:
 	if response_count == 0:
 		game_state.request_feedback("The bell rings, but no wild mice are close enough.")
 	else:
-		game_state.request_feedback("%d wild mice arrived. Talk to each mouse, or press P to pack the picnic." % _reservations.size())
+		game_state.request_feedback("%d wild mice arrived. Choose each attendee and accept or decline their offer." % _reservations.size())
 
 
 func _check_conversation_cycle_complete() -> void:
@@ -182,22 +206,23 @@ func _complete_conversation_cycle(was_packed: bool) -> bool:
 		if is_instance_valid(mouse) and mouse.is_recruited:
 			recruited_count += 1
 	end_picnic_event(false)
+	game_state.unregister_picnic(self)
+	queue_free()
 	if recruited_count > 0 and game_state.is_build_system_unlocked():
-		# Remove the picnic first. The deferred decision guarantees observers see
-		# no active picnic by the time the build menu becomes visible.
-		game_state.unregister_picnic(self)
-		queue_free()
 		game_state.call_deferred("begin_build_decision")
 		var reason := "Picnic packed" if was_packed else "Everyone has had a turn"
 		game_state.request_feedback("%s. The picnic is packed; choose what your mice should build (1–4)." % reason)
 		return true
-	elif recruited_count > 0:
+	elif not game_state.is_build_system_unlocked():
 		var still_needed := Phase1GameState.MINIMUM_MICE_FOR_BUILDING - game_state.get_recruited_mouse_count()
-		game_state.request_feedback("This picnic recruited %d mouse. Recruit %d more before building; press P to pack up and relocate." % [recruited_count, still_needed])
+		game_state.request_feedback("Picnic packed automatically. You must recruit %d more %s before you can build. Press P to place another picnic." % [
+			still_needed,
+			"mouse" if still_needed == 1 else "mice",
+		])
 	elif was_packed:
 		game_state.request_feedback("Picnic packed. No mice were recruited; press P to place it elsewhere.")
 	else:
-		game_state.request_feedback("Everyone has had a turn, but no mice joined this time.")
+		game_state.request_feedback("Everyone declined. Picnic packed automatically; press P to place it elsewhere.")
 	return false
 
 
