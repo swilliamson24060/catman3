@@ -6,6 +6,8 @@ signal collected(pickup: Node3D, collector: Node3D)
 @export var amount: int = 1
 
 @onready var game_state: Phase1GameState = get_node("/root/GameState") as Phase1GameState
+@onready var inventory: Node = get_node("/root/Inventory")
+@onready var data_registry: Node = get_node("/root/DataRegistry")
 
 var _was_collected: bool = false
 
@@ -24,8 +26,14 @@ func collect(collector: Node3D) -> bool:
 	if _was_collected or collector == null:
 		return false
 	if collector.is_in_group("player_cat"):
-		game_state.add_cheese(amount)
-		game_state.request_feedback("You found %d cheese in the settlement." % amount)
+		var cheese: InventoryItem = data_registry.call("make_inventory_item", "cheese_mild")
+		if cheese == null:
+			return false
+		if int(inventory.call("get_available_capacity", cheese)) < amount:
+			game_state.request_feedback("Inventory full — make room before collecting Mild Cheese.")
+			return false
+		inventory.call("add_item", cheese, amount)
+		game_state.request_feedback("Found %d Mild Cheese. Open Inventory (I) to identify or use it." % amount)
 	elif collector.is_in_group("wild_mice") and collector.has_method("collect_random_cheese"):
 		collector.call("collect_random_cheese", amount)
 	else:

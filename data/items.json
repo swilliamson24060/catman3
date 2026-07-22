@@ -6,7 +6,7 @@
       "icon_path": "res://inventory/icons/wood.png",
       "max_stack": 99,
       "description": "Sturdy branches, good for building.",
-      "properties": {}
+      "properties": { "usage": "Construction and crafting recipes consume Wood automatically when required." }
     },
     {
       "id": "twigs",
@@ -14,7 +14,7 @@
       "icon_path": "res://inventory/icons/twigs.png",
       "max_stack": 99,
       "description": "Small sticks for lightweight construction.",
-      "properties": {}
+      "properties": { "usage": "Construction and crafting recipes consume Twigs automatically when required." }
     },
     {
       "id": "yarn",
@@ -22,7 +22,7 @@
       "icon_path": "res://inventory/icons/yarn.png",
       "max_stack": 99,
       "description": "Soft thread, cats can't resist it.",
-      "properties": {}
+      "properties": { "usage": "Construction and crafting recipes consume Yarn automatically when required." }
     },
     {
       "id": "catnip",
@@ -30,7 +30,7 @@
       "icon_path": "res://inventory/icons/catnip.png",
       "max_stack": 99,
       "description": "Aromatic herb loved by cats.",
-      "properties": {}
+      "properties": { "usage": "Recruitment and animal-care systems consume Catnip automatically when required." }
     },
     {
       "id": "moonstone",
@@ -38,7 +38,7 @@
       "icon_path": "res://inventory/icons/moonstone.png",
       "max_stack": 20,
       "description": "A rare, faintly glowing pebble. The Whisker-Radar tingles nearby.",
-      "properties": { "rare": true }
+      "properties": { "rare": true, "usage": "A rare settlement resource kept for advanced recipes and discoveries." }
     },
     {
       "id": "lint",
@@ -46,7 +46,7 @@
       "icon_path": "res://inventory/icons/lint.png",
       "max_stack": 99,
       "description": "Fluffy crafting fuzz, swatted loose from a dust bunny.",
-      "properties": {}
+      "properties": { "usage": "Crafting recipes consume Lint automatically when required." }
     },
     {
       "id": "cheese_mild",
@@ -54,7 +54,7 @@
       "icon_path": "res://inventory/icons/cheese_mild.png",
       "max_stack": 50,
       "description": "A gentle, crowd-pleasing cheese.",
-      "properties": { "variety": "mild", "perishable": true, "spoil_time": 180.0 }
+      "properties": { "variety": "mild", "perishable": true, "spoil_time": 180.0, "use_action": "recruitment_cheese", "use_label": "Add to Recruitment Supply", "usage": "Use this cheese to add 1 to the recruitment supply, or retain it for mouse upkeep." }
     },
     {
       "id": "thimble_helmet",
@@ -62,7 +62,7 @@
       "icon_path": "res://inventory/icons/thimble_helmet.png",
       "max_stack": 5,
       "description": "A tiny helmet crafted from lint and wood. Equipped animals work faster.",
-      "properties": { "tool_effect": "speed_boost", "value": 0.2, "craft_cost": { "lint": 3, "wood": 2 } }
+      "properties": { "tool_effect": "speed_boost", "value": 0.2, "craft_cost": { "lint": 3, "wood": 2 }, "usage": "Automatically equipped to an eligible mouse when it begins work, increasing work speed." }
     },
     {
       "id": "button_shield",
@@ -70,7 +70,7 @@
       "icon_path": "res://inventory/icons/button_shield.png",
       "max_stack": 5,
       "description": "A polished button crafted from lint and twigs. Equipped animals gather extra.",
-      "properties": { "tool_effect": "yield_boost", "value": 1, "craft_cost": { "lint": 2, "twigs": 3 } }
+      "properties": { "tool_effect": "yield_boost", "value": 1, "craft_cost": { "lint": 2, "twigs": 3 }, "usage": "Automatically equipped to an eligible mouse when it begins work, increasing gathered yield." }
     }
   ]
 }

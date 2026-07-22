@@ -5,6 +5,7 @@ extends Node
 
 signal slot_changed(index: int)
 signal inventory_changed()
+signal item_used(item: InventoryItem, message: String)
 
 const _InvSerializer := preload("res://core/inventory_serializer.gd")
 
@@ -78,6 +79,18 @@ func add_item(item: InventoryItem, amount: int = 1) -> int:
 	inventory_changed.emit()
 	return remaining
 
+
+func get_available_capacity(item: InventoryItem) -> int:
+	if item == null:
+		return 0
+	var capacity := 0
+	for slot in slots:
+		if slot == null:
+			capacity += item.max_stack
+		elif slot.item.id == item.id:
+			capacity += maxi(item.max_stack - int(slot.quantity), 0)
+	return capacity
+
 ## Removes `amount` of whatever is in `index`, clearing the slot if it drops
 ## to zero or below.
 func remove_item_at(index: int, amount: int = 1) -> void:
@@ -88,6 +101,41 @@ func remove_item_at(index: int, amount: int = 1) -> void:
 		slots[index] = null
 	slot_changed.emit(index)
 	inventory_changed.emit()
+
+## Uses one item in a slot when its data declares a supported use_action.
+## Returns a player-facing result; passive materials remain in inventory and
+## explain which game system consumes them instead of silently disappearing.
+func use_item_at(index: int) -> Dictionary:
+	var slot := get_slot(index)
+	if slot.is_empty():
+		return {"success": false, "message": "That inventory slot is empty."}
+	var item: InventoryItem = slot.item
+	var use_action := str(item.properties.get("use_action", ""))
+	match use_action:
+		"recruitment_cheese":
+			var game_state := get_node_or_null("/root/GameState")
+			if game_state == null:
+				return {"success": false, "message": "Recruitment supply is not available yet."}
+			remove_item_at(index, 1)
+			game_state.call("add_cheese", 1)
+			var message := "Used 1 %s. Recruitment cheese increased by 1." % item.display_name
+			item_used.emit(item, message)
+			return {"success": true, "message": message}
+		_:
+			return {"success": false, "message": get_item_usage(item)}
+
+
+func get_item_usage(item: InventoryItem) -> String:
+	if item == null:
+		return ""
+	var explicit_usage := str(item.properties.get("usage", ""))
+	if not explicit_usage.is_empty():
+		return explicit_usage
+	if item.properties.has("craft_cost"):
+		return "Craft this item; it is equipped automatically when a mouse starts suitable work."
+	if item.properties.has("tool_effect"):
+		return "Equipped automatically when a mouse starts suitable work."
+	return "Stored as a settlement material and consumed automatically by recipes that need it."
 
 ## Total quantity of item `id` currently held, across all slots.
 func get_item_count(id: String) -> int:

@@ -5,6 +5,8 @@ class_name InventorySlot
 
 @export var slot_index: int = 0
 
+signal selected(index: int)
+
 @onready var icon_rect: TextureRect = $Margin/Icon
 @onready var count_label: Label = $Margin/Count
 @onready var inventory: Node = get_node("/root/Inventory")
@@ -13,6 +15,13 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	inventory.slot_changed.connect(_on_slot_changed)
 	refresh()
+	gui_input.connect(_on_gui_input)
+
+
+func _on_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		selected.emit(slot_index)
+		accept_event()
 
 func _on_slot_changed(index: int) -> void:
 	if index == slot_index:

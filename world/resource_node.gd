@@ -15,6 +15,7 @@ class_name ResourceNode
 @onready var grid_service: Node = get_node("/root/GridService")
 @onready var data_registry: Node = get_node("/root/DataRegistry")
 @onready var inventory: Node = get_node("/root/Inventory")
+@onready var game_state: Node = get_node("/root/GameState")
 
 func _ready() -> void:
 	_build_visual()
@@ -41,13 +42,21 @@ func _on_tree_exiting() -> void:
 func _on_body_entered(body: Node3D) -> void:
 	if not body.is_in_group("player_cat"):
 		return
+	var item: InventoryItem = data_registry.call("make_inventory_item", item_id)
+	if item == null:
+		return
+	if int(inventory.call("get_available_capacity", item)) < amount:
+		game_state.call("request_feedback", "Inventory full — make room before collecting %s." % item.display_name)
+		return
 	var result := harvest()
 	if result.is_empty():
 		return
-	var item: InventoryItem = data_registry.call("make_inventory_item", result.item_id)
-	if item == null:
-		return
-	inventory.call("add_item", item, result.amount)
+	var remainder: int = int(inventory.call("add_item", item, result.amount))
+	var stored: int = result.amount - remainder
+	if stored > 0:
+		game_state.call("request_feedback", "Picked up %d %s. Open Inventory (I) for details." % [stored, item.display_name])
+	if remainder > 0:
+		game_state.call("request_feedback", "Inventory full — %d %s could not be stored." % [remainder, item.display_name])
 
 ## Generic harvest entry point -- usable by the player's collision-based
 ## pickup above, or explicitly by AnimalManager on behalf of a mouse (which
