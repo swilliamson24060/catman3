@@ -78,6 +78,9 @@ func is_placing() -> bool:
 func begin_placement(definition: BuildingDefinition) -> void:
 	if definition == null:
 		return
+	if not game_state.is_build_system_unlocked():
+		game_state.request_feedback("Recruit at least %d mice before building." % Phase1GameState.MINIMUM_MICE_FOR_BUILDING)
+		return
 	if not is_definition_unlocked(definition):
 		game_state.request_feedback("%s is still locked." % definition.display_name)
 		return

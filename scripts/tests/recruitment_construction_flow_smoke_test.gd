@@ -32,6 +32,7 @@ func _run() -> void:
 	root.add_child(second_mouse)
 	var picnic := PICNIC_SCENE.instantiate() as Phase1Picnic
 	root.add_child(picnic)
+	assert(game_state.register_picnic(picnic), "The active recruitment picnic must be registered")
 	await process_frame
 	assert(mouse.respond_to_picnic(picnic, mouse.global_position), "Mouse must be attending a picnic before recruitment")
 	assert(second_mouse.respond_to_picnic(picnic, second_mouse.global_position), "Every picnic attendee must enter the same conversation cycle")
@@ -51,6 +52,9 @@ func _run() -> void:
 	assert(mouse.get_state_name() == "RECRUITED", "First recruit must remain patient while another attendee awaits conversation")
 	assert(second_mouse.try_recruit(), "The founder must be able to recruit the next picnic attendee")
 	second_mouse.close_negotiation()
+	assert(not game_state.has_picnic(), "A qualifying completed picnic must pack before building selection")
+	assert(not game_state.is_build_menu_open, "The build menu must wait until automatic picnic removal completes")
+	await process_frame
 	assert(game_state.is_build_menu_open, "The final completed conversation must open building selection")
 	assert(game_state.is_build_decision_pending(), "Completed recruitment must lock picnic relocation until construction starts")
 	assert(mouse.get_state_name() == "FOLLOW_PLAYER", "Recruit must leave patiently when the picnic ends")

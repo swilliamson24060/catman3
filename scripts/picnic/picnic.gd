@@ -61,10 +61,13 @@ func get_attendee_count() -> int:
 
 ## Releases every attendee and removes this picnic so it can be placed elsewhere.
 func pack_up() -> void:
+	var triggered_build_decision := false
 	if _event_active:
-		_complete_conversation_cycle(true)
+		triggered_build_decision = _complete_conversation_cycle(true)
 	else:
 		_release_attendees()
+	if triggered_build_decision:
+		return
 	if game_state.unregister_picnic(self) and not game_state.is_build_menu_open:
 		game_state.request_feedback("Picnic packed up. Press P to place it near other wild mice.")
 	queue_free()
@@ -171,22 +174,31 @@ func _check_conversation_cycle_complete() -> void:
 		_complete_conversation_cycle(false)
 
 
-func _complete_conversation_cycle(was_packed: bool) -> void:
+func _complete_conversation_cycle(was_packed: bool) -> bool:
 	if not _event_active:
-		return
+		return false
 	var recruited_count := 0
 	for mouse: Phase1WildMouse in _reservations:
 		if is_instance_valid(mouse) and mouse.is_recruited:
 			recruited_count += 1
 	end_picnic_event(false)
-	if recruited_count > 0:
-		game_state.begin_build_decision()
+	if recruited_count > 0 and game_state.is_build_system_unlocked():
+		# Remove the picnic first. The deferred decision guarantees observers see
+		# no active picnic by the time the build menu becomes visible.
+		game_state.unregister_picnic(self)
+		queue_free()
+		game_state.call_deferred("begin_build_decision")
 		var reason := "Picnic packed" if was_packed else "Everyone has had a turn"
-		game_state.request_feedback("%s. Choose what your %d new mice should build (1–4)." % [reason, recruited_count])
+		game_state.request_feedback("%s. The picnic is packed; choose what your mice should build (1–4)." % reason)
+		return true
+	elif recruited_count > 0:
+		var still_needed := Phase1GameState.MINIMUM_MICE_FOR_BUILDING - game_state.get_recruited_mouse_count()
+		game_state.request_feedback("This picnic recruited %d mouse. Recruit %d more before building; press P to pack up and relocate." % [recruited_count, still_needed])
 	elif was_packed:
 		game_state.request_feedback("Picnic packed. No mice were recruited; press P to place it elsewhere.")
 	else:
 		game_state.request_feedback("Everyone has had a turn, but no mice joined this time.")
+	return false
 
 
 func _animate_bell() -> void:

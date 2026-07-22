@@ -26,6 +26,7 @@ signal settlement_resource_changed(resource_id: StringName, new_amount: int)
 
 const STARTING_CHEESE: int = 20
 const STARTING_CATNIP: int = 0
+const MINIMUM_MICE_FOR_BUILDING: int = 2
 const FOUNDER_RESOURCES: Array[FounderData] = [
 	preload("res://resources/founders/barnaby.tres"),
 	preload("res://resources/founders/whisper.tres"),
@@ -183,6 +184,10 @@ func get_recruited_mouse_count() -> int:
 	return get_tree().get_nodes_in_group("recruited_mice").size()
 
 
+func is_build_system_unlocked() -> bool:
+	return get_recruited_mouse_count() >= MINIMUM_MICE_FOR_BUILDING
+
+
 ## Selects a founder once for the current play session.
 func select_founder(founder_id: StringName) -> bool:
 	if has_founder():
@@ -239,11 +244,19 @@ func toggle_build_menu() -> void:
 
 
 func set_build_menu_open(is_open: bool) -> void:
+	if is_open and not is_build_system_unlocked():
+		is_build_menu_open = false
+		build_menu_changed.emit(false)
+		request_feedback("Recruit at least %d mice before choosing a building." % MINIMUM_MICE_FOR_BUILDING)
+		return
 	is_build_menu_open = is_open
 	build_menu_changed.emit(is_open)
 
 
 func begin_build_decision() -> void:
+	if not is_build_system_unlocked():
+		set_build_menu_open(false)
+		return
 	if not _build_decision_pending:
 		_build_decision_pending = true
 		build_decision_pending_changed.emit(true)

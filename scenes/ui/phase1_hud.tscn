@@ -103,7 +103,7 @@ text = "Debug: F8 needs  •  F9 speed  •  F10 work scores"
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.82, 0.84, 0.86, 1)
 theme_override_font_sizes/font_size = 14
-text = "WASD Move  •  E Interact / Place\nP Place / pack picnic  •  B Build menu\nBuildings: 1 Test  •  2 Garden  •  3 Hut  •  4 Vault"
+text = "WASD Move  •  E Interact / Place\nP Place / pack picnic  •  B Build menu (requires 2 mice)\nBuildings: 1 Test  •  2 Garden  •  3 Hut  •  4 Vault"
 vertical_alignment = 1
 autowrap_mode = 2
 
