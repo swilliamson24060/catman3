@@ -1,9 +1,8 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scripts/mice/wild_mouse.gd" id="1"]
 [ext_resource type="PackedScene" path="res://kenney_cube-pets_1/Models/GLB format/animal-beaver.glb" id="2"]
 [ext_resource type="Script" path="res://components/behavior/mouse_contentment.gd" id="3"]
-[ext_resource type="Script" path="res://components/needs/mouse_needs.gd" id="4"]
 
 [sub_resource type="CapsuleShape3D" id="MouseShape"]
 radius = 0.31
@@ -34,15 +33,6 @@ outline_size = 8
 billboard = 1
 no_depth_test = true
 
-[node name="NeedDebug" type="Label3D" parent="."]
-position = Vector3(0, 1.55, 0)
-visible = false
-text = "H 0.00  F 0.00"
-font_size = 24
-outline_size = 7
-billboard = 1
-no_depth_test = true
-
 [node name="WorkDebug" type="Label3D" parent="."]
 position = Vector3(0, 1.82, 0)
 visible = false
@@ -64,9 +54,6 @@ no_depth_test = true
 
 [node name="MouseContentment" type="Node" parent="."]
 script = ExtResource("3")
-
-[node name="MouseNeeds" type="Node" parent="."]
-script = ExtResource("4")
 
 [node name="InteractionArea" type="Area3D" parent="."]
 position = Vector3(0, 0.45, 0)

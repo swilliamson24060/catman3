@@ -33,8 +33,6 @@ const STUCK_RECOVERY_TIME: float = 3.0
 const WORK_EVALUATION_INTERVAL: float = 2.0
 const WORK_REPATH_INTERVAL: float = 0.5
 const WORK_ARRIVAL_DISTANCE: float = 0.7
-const FATIGUE_GAIN_PER_WORK_SECOND: float = 0.045
-const BREAK_RECOVERY_PER_SECOND: float = 0.12
 const WORK_JOIN_THRESHOLD: float = 20.0
 const GIVEN_NAMES: Array[String] = ["Pip", "Mallow", "Nib", "Tansy", "Button", "Cricket", "Pebble", "Mochi", "Thimble", "Clover", "Biscuit", "Juniper"]
 const FAMILY_NAMES: Array[String] = ["Whisker", "Quickpaw", "Softstep", "Cheesenose", "Brambletail", "Dewdrop", "Nettle", "Acorn"]
@@ -42,7 +40,6 @@ const DEFAULT_PERSONALITY: MousePersonalityData = preload("res://resources/perso
 
 @export var personality: MousePersonalityData
 @export var show_personality_debug: bool = false
-@export var show_need_debug: bool = false
 @export var show_work_debug: bool = false
 @export var move_speed: float = 2.2
 @export var wander_radius: float = 8.0
@@ -58,8 +55,6 @@ const DEFAULT_PERSONALITY: MousePersonalityData = preload("res://resources/perso
 @onready var game_state: Phase1GameState = get_node("/root/GameState") as Phase1GameState
 @onready var interaction_area: Area3D = $InteractionArea
 @onready var contentment: Node = $MouseContentment
-@onready var needs: MouseNeeds = $MouseNeeds
-@onready var need_debug: Label3D = $NeedDebug
 @onready var work_debug: Label3D = $WorkDebug
 @onready var recruitment_badge: Label3D = $RecruitmentBadge
 @onready var stats_service: Node = get_node("/root/StatsService")
@@ -78,6 +73,7 @@ var _picnic_behavior_remaining: float = 0.0
 var generated_name: String = "Wild Mouse"
 var is_recruited: bool = false
 var current_recruitment_cost: int = 1
+var personal_cheese: int = 0
 var _state_before_negotiation: MouseState = MouseState.PICNIC_IDLE
 var _follow_target: Node3D
 var _follow_offset: Vector3 = Vector3.ZERO
@@ -111,11 +107,8 @@ func _ready() -> void:
 	personality_debug.text = str(personality.behavior_profile).capitalize()
 	personality_debug.modulate = personality.debug_color
 	personality_debug.visible = show_personality_debug
-	need_debug.visible = show_need_debug and OS.is_debug_build()
 	work_debug.visible = show_work_debug and OS.is_debug_build()
-	_update_need_debug()
-	needs.hunger_changed.connect(_on_need_value_changed)
-	needs.fatigue_changed.connect(_on_need_value_changed)
+	contentment.contentment_changed.connect(_on_contentment_changed)
 	interaction_area.input_event.connect(_on_interaction_area_input_event)
 	game_state.construction_site_placed.connect(_on_construction_site_placed)
 	call_deferred("_wait_for_navigation")
@@ -198,29 +191,6 @@ func get_contentment_band() -> String:
 	return "Miserable"
 
 
-func get_hunger() -> float:
-	return needs.hunger
-
-
-func get_fatigue() -> float:
-	return needs.fatigue
-
-
-func get_hunger_description() -> String:
-	return needs.get_hunger_description()
-
-
-func get_fatigue_description() -> String:
-	return needs.get_fatigue_description()
-
-
-## Enables development-only world labels for normalized needs.
-func set_need_debug_visible(enabled: bool) -> void:
-	show_need_debug = enabled and OS.is_debug_build()
-	need_debug.visible = show_need_debug
-	_update_need_debug()
-
-
 func set_work_debug_visible(enabled: bool) -> void:
 	show_work_debug = enabled and OS.is_debug_build()
 	work_debug.visible = show_work_debug
@@ -229,6 +199,18 @@ func set_work_debug_visible(enabled: bool) -> void:
 ## Applies a signed contentment change for future needs, work, and event systems.
 func adjust_contentment(amount: int) -> int:
 	return contentment.adjust(amount)
+
+
+func get_personal_cheese() -> int:
+	return personal_cheese
+
+
+func receive_personal_cheese(amount: int) -> int:
+	if amount <= 0:
+		return personal_cheese
+	personal_cheese += amount
+	_eat_personal_cheese_for_contentment()
+	return personal_cheese
 
 
 ## Computes future work-group decay, including unhappy coworker influence.
@@ -532,7 +514,6 @@ func collect_random_cheese(amount: int) -> void:
 	if amount <= 0 or is_recruited:
 		return
 	current_recruitment_cost += amount
-	needs.hunger = clampf(needs.hunger - float(amount) * 0.22, 0.0, 1.0)
 	game_state.request_feedback("%s found %d cheese. Their recruitment price is now %d." % [generated_name, amount, current_recruitment_cost])
 	_cheese_target = null
 	_begin_idle(_random.randf_range(minimum_pause, maximum_pause))
@@ -759,10 +740,10 @@ func _navigation_is_ready(map_rid: RID) -> bool:
 
 func _evaluate_work_opportunities() -> void:
 	_work_evaluation_remaining = WORK_EVALUATION_INTERVAL + _random.randf_range(-0.35, 0.35)
-	if not is_recruited or needs.hunger >= 0.85 or get_contentment_score() <= 3:
+	if not is_recruited or get_contentment_score() <= 3:
 		_last_work_score = -100.0
-		work_debug.text = "Work refused: needs"
-		_state = MouseState.SEEK_CHEESE if needs.hunger >= 0.85 else MouseState.DISCONTENTED_IDLE
+		work_debug.text = "Work refused: discontented"
+		_state = MouseState.DISCONTENTED_IDLE
 		_break_remaining = 2.5
 		return
 	var best_site: ConstructionSite
@@ -788,10 +769,8 @@ func _score_worksite(site: ConstructionSite) -> float:
 	var bribe_multiplier := personality.get_effect(&"bribe_willingness_multiplier", 1.0)
 	var bribe_bonus := site.get_bribe_willingness_value() * bribe_multiplier
 	var contentment_bonus := float(get_contentment_score() - 10) * 1.5
-	var hunger_penalty := needs.hunger * 35.0
-	var fatigue_penalty := needs.fatigue * 30.0
 	var crowding_penalty := float(site.get_worker_count()) * 6.0
-	return 50.0 + personality.get_effect(&"construction_willingness", 0.0) + bribe_bonus + contentment_bonus - hunger_penalty - fatigue_penalty - distance_penalty - crowding_penalty + _random.randf_range(-8.0, 8.0)
+	return 50.0 + personality.get_effect(&"construction_willingness", 0.0) + bribe_bonus + contentment_bonus - distance_penalty - crowding_penalty + _random.randf_range(-8.0, 8.0)
 
 
 func _commit_to_worksite(site: ConstructionSite) -> void:
@@ -810,9 +789,6 @@ func _commit_to_worksite(site: ConstructionSite) -> void:
 
 func _update_move_to_worksite(delta: float) -> void:
 	if not is_instance_valid(_worksite) or not is_instance_valid(_work_slot):
-		_abandon_worksite()
-		return
-	if needs.hunger >= 0.9 or needs.fatigue >= 0.95:
 		_abandon_worksite()
 		return
 	var target := _work_slot.global_position
@@ -856,9 +832,6 @@ func _update_work(delta: float) -> void:
 		return
 	_stop_planar_motion(delta)
 	_face_position(_worksite.global_position, delta)
-	needs.add_fatigue(FATIGUE_GAIN_PER_WORK_SECOND * delta)
-	if needs.fatigue >= personality.get_effect(&"fatigue_break_threshold", 0.7):
-		_start_work_break()
 
 
 func _start_work_break() -> void:
@@ -871,7 +844,6 @@ func _start_work_break() -> void:
 
 func _update_work_break(delta: float) -> void:
 	_stop_planar_motion(delta)
-	needs.recover_fatigue(BREAK_RECOVERY_PER_SECOND * delta)
 	visual_root.position.y = lerpf(visual_root.position.y, -0.07, delta * 4.0)
 	_break_remaining -= delta
 	if _break_remaining <= 0.0:
@@ -916,8 +888,6 @@ func _on_worksite_completed(site: ConstructionSite, _building: Node3D) -> void:
 	site.release_worker(self)
 	_worksite = null
 	_work_slot = null
-	needs.recover_fatigue(0.12)
-	adjust_contentment(2 if personality.behavior_profile == &"builder" else 1)
 	_break_remaining = 2.0
 	_state = MouseState.CELEBRATE_COMPLETION
 
@@ -930,7 +900,7 @@ func _on_worksite_cancelled(site: ConstructionSite) -> void:
 func receive_work_bribe(cheese_share: int) -> void:
 	if cheese_share <= 0:
 		return
-	needs.hunger = clampf(needs.hunger - float(cheese_share) * 0.18, 0.0, 1.0)
+	receive_personal_cheese(cheese_share)
 	adjust_contentment(2 if personality.behavior_profile in [&"lazy", &"hoarder"] else 1)
 
 
@@ -970,11 +940,18 @@ func _update_contentment_presentation(delta: float) -> void:
 	visual_root.scale = visual_root.scale.lerp(target_scale, minf(delta * 4.0, 1.0))
 
 
-func _on_need_value_changed(_new_value: float) -> void:
-	_update_need_debug()
+func _on_contentment_changed(_new_score: int) -> void:
+	_eat_personal_cheese_for_contentment()
 
 
-func _update_need_debug() -> void:
-	if need_debug == null or needs == null:
-		return
-	need_debug.text = "H %.2f  F %.2f" % [needs.hunger, needs.fatigue]
+func _eat_personal_cheese_for_contentment() -> int:
+	var score := get_contentment_score()
+	if score > 6 or personal_cheese <= 0:
+		return 0
+	var eaten := mini(10 - score, personal_cheese)
+	if eaten <= 0:
+		return 0
+	personal_cheese -= eaten
+	contentment.adjust(eaten)
+	game_state.request_feedback("%s ate %d personal cheese and recovered to %d contentment." % [generated_name, eaten, get_contentment_score()])
+	return eaten

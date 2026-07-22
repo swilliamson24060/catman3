@@ -17,8 +17,7 @@ extends CanvasLayer
 @onready var inspection_name: Label = $MouseInspectionPanel/MarginContainer/VBoxContainer/MouseName
 @onready var contentment_label: Label = $MouseInspectionPanel/MarginContainer/VBoxContainer/ContentmentLabel
 @onready var mood_label: Label = $MouseInspectionPanel/MarginContainer/VBoxContainer/MoodLabel
-@onready var hunger_label: Label = $MouseInspectionPanel/MarginContainer/VBoxContainer/HungerLabel
-@onready var fatigue_label: Label = $MouseInspectionPanel/MarginContainer/VBoxContainer/FatigueLabel
+@onready var personal_cheese_label: Label = $MouseInspectionPanel/MarginContainer/VBoxContainer/PersonalCheeseLabel
 @onready var inspection_close_button: Button = $MouseInspectionPanel/MarginContainer/VBoxContainer/CloseButton
 @onready var decline_button: Button = $DialoguePanel/MarginContainer/VBoxContainer/Buttons/DeclineButton
 @onready var build_menu: PanelContainer = $BuildMenu
@@ -51,7 +50,6 @@ extends CanvasLayer
 var _feedback_time_remaining: float = 0.0
 var _dialogue_mouse: Phase1WildMouse
 var _offer_already_declined: bool = false
-var _show_need_debug: bool = false
 var _show_work_debug: bool = false
 var _inspected_mouse: Phase1WildMouse
 var _managed_site: ConstructionSite
@@ -110,9 +108,7 @@ func _ready() -> void:
 	_on_catnip_changed(game_state.get_catnip())
 	_on_recruited_count_changed(game_state.get_recruited_mouse_count())
 	debug_time_label.visible = OS.is_debug_build()
-	debug_time_label.text = "Debug: F8 needs  •  F9 speed  •  F10 work scores"
-	hunger_label.hide()
-	fatigue_label.hide()
+	debug_time_label.text = "Debug: F9 speed  •  F10 work scores"
 	if game_state.has_founder():
 		_on_founder_selected(game_state.selected_founder)
 	else:
@@ -154,13 +150,9 @@ func _input(event: InputEvent) -> void:
 			game_state.close_construction_site()
 			get_viewport().set_input_as_handled()
 			return
-	if OS.is_debug_build() and event.is_action_pressed("toggle_need_debug"):
-		_toggle_need_debug()
-		get_viewport().set_input_as_handled()
-		return
 	if OS.is_debug_build() and event.is_action_pressed("cycle_simulation_speed"):
 		var multiplier := simulation_clock.cycle_debug_time_multiplier()
-		debug_time_label.text = "Debug time: %.0fx  •  F8 needs  •  F9 speed" % multiplier
+		debug_time_label.text = "Debug time: %.0fx  •  F9 speed  •  F10 work scores" % multiplier
 		get_viewport().set_input_as_handled()
 		return
 	if OS.is_debug_build() and event.is_action_pressed("toggle_work_debug"):
@@ -195,10 +187,7 @@ func _on_mouse_inspected(mouse: Phase1WildMouse) -> void:
 		20,
 	]
 	mood_label.text = "Mood: %s" % mouse.get_contentment_band()
-	hunger_label.text = "Hunger: %s (%.2f)" % [mouse.get_hunger_description(), mouse.get_hunger()]
-	fatigue_label.text = "Fatigue: %s (%.2f)" % [mouse.get_fatigue_description(), mouse.get_fatigue()]
-	hunger_label.visible = _show_need_debug and OS.is_debug_build()
-	fatigue_label.visible = _show_need_debug and OS.is_debug_build()
+	personal_cheese_label.text = "Personal cheese: %d" % mouse.get_personal_cheese()
 	inspection_panel.show()
 
 
@@ -331,17 +320,6 @@ func _on_catnip_changed(new_amount: int) -> void:
 
 func _on_recruited_count_changed(new_count: int) -> void:
 	recruited_label.text = "Recruited mice: %d" % new_count
-
-
-func _toggle_need_debug() -> void:
-	_show_need_debug = not _show_need_debug
-	for node: Node in get_tree().get_nodes_in_group("wild_mice") + get_tree().get_nodes_in_group("recruited_mice"):
-		var mouse := node as Phase1WildMouse
-		if mouse != null:
-			mouse.set_need_debug_visible(_show_need_debug)
-	if is_instance_valid(_inspected_mouse):
-		_on_mouse_inspected(_inspected_mouse)
-	game_state.request_feedback("Mouse needs debug %s." % ("enabled" if _show_need_debug else "disabled"))
 
 
 func _on_build_menu_changed(is_open: bool) -> void:

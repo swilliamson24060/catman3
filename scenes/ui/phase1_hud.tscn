@@ -101,7 +101,7 @@ text = "Founder: Not chosen"
 [node name="DebugTimeLabel" type="Label" parent="MarginContainer/PanelContainer/MarginContainer/HBoxContainer/World"]
 visible = false
 theme_override_colors/font_color = Color(0.65, 0.72, 0.78, 1)
-text = "Debug: F8 needs  •  F9 speed  •  F10 work scores"
+text = "Debug: F9 speed  •  F10 work scores"
 
 [node name="Controls" type="Label" parent="MarginContainer/PanelContainer/MarginContainer/HBoxContainer"]
 size_flags_horizontal = 3
@@ -369,15 +369,9 @@ theme_override_colors/font_color = Color(0.86, 0.86, 0.78, 1)
 theme_override_font_sizes/font_size = 17
 text = "Mood: Settled"
 
-[node name="HungerLabel" type="Label" parent="MouseInspectionPanel/MarginContainer/VBoxContainer"]
-visible = false
-theme_override_colors/font_color = Color(0.9, 0.72, 0.42, 1)
-text = "Hunger: Fed (0.00)"
-
-[node name="FatigueLabel" type="Label" parent="MouseInspectionPanel/MarginContainer/VBoxContainer"]
-visible = false
-theme_override_colors/font_color = Color(0.65, 0.8, 0.95, 1)
-text = "Fatigue: Rested (0.00)"
+[node name="PersonalCheeseLabel" type="Label" parent="MouseInspectionPanel/MarginContainer/VBoxContainer"]
+theme_override_colors/font_color = Color(1, 0.82, 0.25, 1)
+text = "Personal cheese: 0"
 
 [node name="CloseButton" type="Button" parent="MouseInspectionPanel/MarginContainer/VBoxContainer"]
 text = "Close"

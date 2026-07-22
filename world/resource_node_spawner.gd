@@ -17,7 +17,7 @@ const SETTLEMENT_CHEESE_SCRIPT := preload("res://world/settlement_cheese_pickup.
 @onready var settlement_manager: Phase2SettlementManager = get_node("/root/SettlementManager") as Phase2SettlementManager
 @onready var simulation_clock: Phase2SimulationClock = get_node("/root/SimulationClock") as Phase2SimulationClock
 
-const SETTLEMENT_CHEESE_REPLENISH_TURNS: int = 3
+const SETTLEMENT_CHEESE_REPLENISH_TURNS: int = 1
 
 var _rng := RandomNumberGenerator.new()
 var _active_settlement_cheese: Node3D
@@ -33,8 +33,7 @@ func _ready() -> void:
 	_spawn_batch(_rng, "twigs", twigs_count, used_positions)
 	_spawn_batch(_rng, "yarn", yarn_count, used_positions)
 	# Cheese is a stand-in resource node until a real production chain
-	# (creamery, etc.) exists -- it's what mice cost to recruit per
-	# animal_types.json's upkeep field, so it needs to be obtainable now.
+	# (creamery, etc.) exists. It supports recruitment and personal rewards.
 	_spawn_batch(_rng, "cheese_mild", cheese_count, used_positions)
 	# Moonstone is rare and flagged is_rare -- it's what the Whisker-Radar
 	# Hot/Cold UI (mechanic 2) homes in on while still fogged.

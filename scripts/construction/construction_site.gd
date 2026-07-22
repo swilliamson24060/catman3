@@ -199,11 +199,20 @@ func _complete_site() -> void:
 	var remainder := return_bribe_cheese()
 	var building := building_definition.completed_scene.instantiate() as Node3D
 	building.set("building_definition", building_definition)
+	var builders: Array[Phase1WildMouse] = []
+	for worker: Node3D in _reserved_workers:
+		var mouse := worker as Phase1WildMouse
+		if mouse != null and is_instance_valid(mouse):
+			builders.append(mouse)
+	if building.has_method("configure_builders"):
+		building.call("configure_builders", builders)
 	var container := get_tree().get_first_node_in_group("completed_building_container") as Node3D
 	if container == null:
 		container = get_tree().current_scene
 	container.add_child(building)
 	building.global_transform = global_transform
+	if building.has_method("grant_completion_rewards"):
+		building.call("grant_completion_rewards")
 	_add_completion_marker(building)
 	settlement_manager.register_completed_building(building, building_definition)
 	site_completed.emit(self, building)

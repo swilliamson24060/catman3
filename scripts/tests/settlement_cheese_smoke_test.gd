@@ -53,10 +53,7 @@ func _run() -> void:
 	await process_frame
 
 	spawner.call("_on_need_cycle", 1)
-	spawner.call("_on_need_cycle", 2)
-	assert(get_nodes_in_group("settlement_cheese_pickups").is_empty(), "Cheese must not replenish before three turns")
-	spawner.call("_on_need_cycle", 3)
-	assert(get_nodes_in_group("settlement_cheese_pickups").size() == 1, "Cheese must replenish on the third turn")
+	assert(get_nodes_in_group("settlement_cheese_pickups").size() == 1, "Loose settlement cheese must replenish every turn")
 
 	var mouse := MOUSE_SCENE.instantiate() as Phase1WildMouse
 	root.add_child(mouse)

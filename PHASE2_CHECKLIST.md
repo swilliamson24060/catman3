@@ -5,12 +5,12 @@
 - [x] Inspect existing Phase 1 systems and record baseline diagnostics.
 - [x] Add catnip to the existing GameState economy.
 - [x] Add a lightweight shared simulation clock with debug acceleration.
-- [x] Add per-mouse hunger and fatigue data.
-- [x] Process recruited mouse cheese needs every simulation cycle.
-- [x] Connect feeding and hunger outcomes to contentment.
+- [x] Replace hunger and fatigue with per-mouse personal cheese.
+- [x] Let uneasy mice spend personal cheese to recover toward 10 contentment.
+- [x] Add building completion rewards and recurring five-turn builder payouts.
 - [x] Add behavioral contentment bands.
 - [x] Show cheese, catnip, and recruited mouse count in the HUD.
-- [x] Add development-only mouse-needs inspection.
+- [x] Show personal cheese in mouse inspection.
 - [x] Validate and regression-test the complete Phase 1 loop.
 
 ## Milestone 2 — Generic Building Placement and Construction Sites
@@ -28,7 +28,7 @@
 - [x] Add weighted, personality-sensitive worksite evaluation.
 - [x] Add work navigation, slot reservation, and limited repathing.
 - [x] Add frame-rate-independent work contribution.
-- [x] Add fatigue, breaks, severe-needs refusal, and abandonment.
+- [x] Keep labor willingness driven by personality, contentment, distance, crowding, and bribes.
 - [x] Make cheese bribes affect willingness and reward participants.
 - [x] Add completion celebration and safe return to following.
 - [x] Add development-only work-score labels.

@@ -15,14 +15,72 @@ signal durability_changed(current: float, maximum: float)
 var production_elapsed_seconds: float = 0.0
 var durability: float = 100.0
 var _production_status: String = "Inactive"
+var _builder_mice: Array[Phase1WildMouse] = []
+var _reward_turns_elapsed: int = 0
+var _completion_rewards_granted: bool = false
 
 
 func _ready() -> void:
 	add_to_group("completed_buildings")
 	durability = building_definition.max_durability if building_definition != null else 100.0
 	simulation_clock.simulation_advanced.connect(_on_simulation_advanced)
+	simulation_clock.need_cycle.connect(_on_need_cycle)
 	if is_producer():
 		_set_production_status("Producing")
+
+
+func configure_builders(builders: Array[Phase1WildMouse]) -> void:
+	_builder_mice.clear()
+	for mouse in builders:
+		if is_instance_valid(mouse) and mouse not in _builder_mice:
+			_builder_mice.append(mouse)
+
+
+func get_builder_count() -> int:
+	var count := 0
+	for mouse in _builder_mice:
+		if is_instance_valid(mouse):
+			count += 1
+	return count
+
+
+func grant_completion_rewards() -> void:
+	if _completion_rewards_granted or building_definition == null:
+		return
+	_completion_rewards_granted = true
+	var rewarded_workers := 0
+	for mouse in _builder_mice:
+		if not is_instance_valid(mouse):
+			continue
+		mouse.receive_personal_cheese(1)
+		rewarded_workers += 1
+	match building_definition.id:
+		&"test_structure":
+			game_state.add_cheese(1)
+		&"catnip_garden":
+			game_state.deposit_resource(&"catnip", 1, self)
+		&"mouse_hut":
+			game_state.add_cheese(2)
+			for mouse in _builder_mice:
+				if is_instance_valid(mouse):
+					mouse.adjust_contentment(3)
+		&"cheese_vault":
+			game_state.add_cheese(3)
+	game_state.request_feedback("%s rewarded %d builders with personal cheese." % [building_definition.display_name, rewarded_workers])
+
+
+func _on_need_cycle(_cycle_index: int) -> void:
+	_reward_turns_elapsed += 1
+	if _reward_turns_elapsed < 5:
+		return
+	_reward_turns_elapsed = 0
+	var rewarded_workers := 0
+	for mouse in _builder_mice:
+		if is_instance_valid(mouse) and mouse.is_recruited:
+			mouse.receive_personal_cheese(1)
+			rewarded_workers += 1
+	if rewarded_workers > 0:
+		game_state.request_feedback("%s paid 1 personal cheese to each of its %d builders." % [building_definition.display_name, rewarded_workers])
 
 
 func is_producer() -> bool:
