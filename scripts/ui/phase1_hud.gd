@@ -42,6 +42,8 @@ extends CanvasLayer
 @onready var camera_adjust_button: Button = $MarginContainer/PanelContainer/MarginContainer/HBoxContainer/CameraControls/AdjustCamera
 @onready var return_cursor_button: Button = $MarginContainer/PanelContainer/MarginContainer/HBoxContainer/CameraControls/ReturnCursor
 @onready var camera_view_button: Button = $MarginContainer/PanelContainer/MarginContainer/HBoxContainer/CameraControls/ToggleView
+@onready var music_toggle_button: Button = $MarginContainer/PanelContainer/MarginContainer/HBoxContainer/Resources/MusicToggle
+@onready var audio_service: Node = get_node("/root/AudioService")
 
 var _feedback_time_remaining: float = 0.0
 var _dialogue_mouse: Phase1WildMouse
@@ -83,6 +85,8 @@ func _ready() -> void:
 	camera_adjust_button.pressed.connect(_on_camera_adjust_pressed)
 	return_cursor_button.pressed.connect(_on_return_cursor_pressed)
 	camera_view_button.pressed.connect(_on_camera_view_pressed)
+	music_toggle_button.pressed.connect(_on_music_toggle_pressed)
+	audio_service.music_enabled_changed.connect(_on_music_enabled_changed)
 	placement_instructions.hide()
 	interaction_prompt.hide()
 	feedback_label.hide()
@@ -106,6 +110,16 @@ func _ready() -> void:
 		_on_founder_selected(game_state.selected_founder)
 	else:
 		founder_label.text = "Founder: Not chosen"
+	_on_music_enabled_changed(bool(audio_service.call("is_music_enabled")))
+
+
+func _on_music_toggle_pressed() -> void:
+	audio_service.call("toggle_music")
+
+
+func _on_music_enabled_changed(is_enabled: bool) -> void:
+	music_toggle_button.text = "Music: On" if is_enabled else "Music: Off"
+	music_toggle_button.tooltip_text = "Turn background music off." if is_enabled else "Turn background music on."
 
 
 func _input(event: InputEvent) -> void:

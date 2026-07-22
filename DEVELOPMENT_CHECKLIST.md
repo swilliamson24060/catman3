@@ -2,4 +2,4 @@
 
 - [ ] Implement contentment factors.
 - [ ] Implement behaviors for very unhappy mice.
-- [ ] Add music.
+- [x] Add music with a persistent HUD on/off control.

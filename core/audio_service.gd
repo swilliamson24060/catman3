@@ -8,20 +8,93 @@ extends Node
 ## asset at the path a cue names automatically replaces the fallback.
 
 const POOL_SIZE := 6
+const MUSIC_PATH := "res://audio/music/highland_moonlight.mp3"
+const AUDIO_SETTINGS_PATH := "user://audio_settings.cfg"
+const MUSIC_VOLUME_DB := -13.0
+
+signal music_enabled_changed(is_enabled: bool)
 
 var _players: Array[AudioStreamPlayer] = []
 var _next_player_index := 0
+var _music_player: AudioStreamPlayer
+var _music_enabled: bool = true
 
 func _ready() -> void:
 	for i in POOL_SIZE:
 		var player := AudioStreamPlayer.new()
 		add_child(player)
 		_players.append(player)
+	_music_player = AudioStreamPlayer.new()
+	_music_player.name = "BackgroundMusic"
+	_music_player.volume_db = MUSIC_VOLUME_DB
+	add_child(_music_player)
+	_load_audio_settings()
+	_start_background_music()
 
 	EventBus.building_constructed.connect(func(_id, _pos): play_cue("building_constructed"))
 	EventBus.animal_recruited.connect(func(_id, _species): play_cue("animal_recruited"))
 	EventBus.achievement_unlocked.connect(func(_id): play_cue("achievement_unlocked"))
 	EventBus.pattern_discovered.connect(func(_id): play_cue("pattern_discovered"))
+
+
+func _exit_tree() -> void:
+	if _music_player != null:
+		_music_player.stop()
+		_music_player.stream = null
+
+
+func set_music_enabled(is_enabled: bool) -> void:
+	if _music_enabled == is_enabled:
+		return
+	_music_enabled = is_enabled
+	if _music_enabled:
+		_start_background_music()
+	elif _music_player != null:
+		_music_player.stream_paused = true
+	_save_audio_settings()
+	music_enabled_changed.emit(_music_enabled)
+
+
+func toggle_music() -> bool:
+	set_music_enabled(not _music_enabled)
+	return _music_enabled
+
+
+func is_music_enabled() -> bool:
+	return _music_enabled
+
+
+func _start_background_music() -> void:
+	if not _music_enabled or _music_player == null:
+		return
+	if _music_player.stream == null:
+		if not ResourceLoader.exists(MUSIC_PATH):
+			push_warning("Background music is unavailable at %s." % MUSIC_PATH)
+			return
+		var stream := load(MUSIC_PATH) as AudioStreamMP3
+		if stream == null:
+			push_warning("Background music could not be loaded.")
+			return
+		stream.loop = true
+		_music_player.stream = stream
+	if _music_player.playing:
+		_music_player.stream_paused = false
+	else:
+		_music_player.play()
+
+
+func _load_audio_settings() -> void:
+	var config := ConfigFile.new()
+	if config.load(AUDIO_SETTINGS_PATH) == OK:
+		_music_enabled = bool(config.get_value("audio", "music_enabled", true))
+
+
+func _save_audio_settings() -> void:
+	var config := ConfigFile.new()
+	config.set_value("audio", "music_enabled", _music_enabled)
+	var result := config.save(AUDIO_SETTINGS_PATH)
+	if result != OK:
+		push_warning("Could not save audio preferences (error %d)." % result)
 
 ## Plays the named cue through the next pooled player (round-robin, so
 ## several cues firing in the same frame don't cut each other off). Missing
@@ -68,4 +141,10 @@ func get_pool_diagnostics() -> Dictionary:
 	for player: AudioStreamPlayer in _players:
 		if player.stream != null:
 			configured += 1
-	return {"pool_size": _players.size(), "configured_players": configured}
+	return {
+		"pool_size": _players.size(),
+		"configured_players": configured,
+		"music_enabled": _music_enabled,
+		"music_loaded": _music_player != null and _music_player.stream != null,
+		"music_playing": _music_player != null and _music_player.playing and not _music_player.stream_paused,
+	}
