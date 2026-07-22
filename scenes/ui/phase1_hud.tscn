@@ -474,6 +474,10 @@ text = "Construction: 0%"
 [node name="Bowl" type="Label" parent="ConstructionSitePanel/MarginContainer/VBoxContainer"]
 text = "Bribe bowl: 0 cheese"
 
+[node name="ReassignMouse" type="Button" parent="ConstructionSitePanel/MarginContainer/VBoxContainer"]
+text = "Release Extra Mouse to Another Crew"
+tooltip_text = "Available when this site has more than its minimum crew."
+
 [node name="Instructions" type="Label" parent="ConstructionSitePanel/MarginContainer/VBoxContainer"]
 text = "1 — Add 1 cheese
 2 — Add 3 cheese

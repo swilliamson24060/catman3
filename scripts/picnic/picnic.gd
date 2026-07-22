@@ -202,13 +202,21 @@ func _complete_conversation_cycle(was_packed: bool) -> bool:
 	if not _event_active:
 		return false
 	var recruited_count := 0
+	var newest_recruit: Phase1WildMouse
 	for mouse: Phase1WildMouse in _reservations:
 		if is_instance_valid(mouse) and mouse.is_recruited:
 			recruited_count += 1
+			newest_recruit = mouse
 	end_picnic_event(false)
 	game_state.unregister_picnic(self)
 	queue_free()
-	if recruited_count > 0 and game_state.is_build_system_unlocked():
+	if recruited_count > 0 and _has_active_construction_crew_opening():
+		var open_site := _get_open_construction_site()
+		if is_instance_valid(newest_recruit) and open_site != null:
+			newest_recruit.call_deferred("assign_to_worksite", open_site)
+		game_state.request_feedback("Picnic packed automatically. The new recruit is joining an existing crew.")
+		return true
+	elif recruited_count > 0 and game_state.is_build_system_unlocked():
 		game_state.call_deferred("begin_build_decision")
 		var reason := "Picnic packed" if was_packed else "Everyone has had a turn"
 		game_state.request_feedback("%s. The picnic is packed; choose what your mice should build (1–4)." % reason)
@@ -224,6 +232,18 @@ func _complete_conversation_cycle(was_packed: bool) -> bool:
 	else:
 		game_state.request_feedback("Everyone declined. Picnic packed automatically; press P to place it elsewhere.")
 	return false
+
+
+func _has_active_construction_crew_opening() -> bool:
+	return _get_open_construction_site() != null
+
+
+func _get_open_construction_site() -> ConstructionSite:
+	for node: Node in get_tree().get_nodes_in_group("construction_sites"):
+		var site := node as ConstructionSite
+		if site != null and site.is_accepting_workers():
+			return site
+	return null
 
 
 func _animate_bell() -> void:

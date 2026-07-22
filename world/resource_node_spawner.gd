@@ -16,6 +16,7 @@ const SETTLEMENT_CHEESE_SCRIPT := preload("res://world/settlement_cheese_pickup.
 @onready var grid_service: Node = get_node("/root/GridService")
 @onready var settlement_manager: Phase2SettlementManager = get_node("/root/SettlementManager") as Phase2SettlementManager
 @onready var simulation_clock: Phase2SimulationClock = get_node("/root/SimulationClock") as Phase2SimulationClock
+@onready var game_state: Phase1GameState = get_node("/root/GameState") as Phase1GameState
 
 const SETTLEMENT_CHEESE_REPLENISH_TURNS: int = 1
 
@@ -23,6 +24,7 @@ var _rng := RandomNumberGenerator.new()
 var _active_settlement_cheese: Node3D
 
 func _ready() -> void:
+	add_to_group("resource_node_spawner")
 	if rng_seed != 0:
 		_rng.seed = rng_seed
 	else:
@@ -62,6 +64,27 @@ func _spawn_settlement_cheese() -> Node3D:
 func _on_settlement_cheese_collected(pickup: Node3D, _collector: Node3D) -> void:
 	if pickup == _active_settlement_cheese:
 		_active_settlement_cheese = null
+
+
+func spawn_expansion_rewards(source_position: Vector3, influence_radius: float) -> void:
+	if influence_radius <= 0.0:
+		return
+	var direction := Vector3(source_position.x, 0.0, source_position.z).normalized()
+	if direction.is_zero_approx():
+		direction = Vector3.RIGHT
+	var reward_position := source_position + direction * minf(influence_radius * 0.55, 3.0)
+	var cheese := Area3D.new()
+	cheese.set_script(SETTLEMENT_CHEESE_SCRIPT)
+	add_child(cheese)
+	cheese.global_position = reward_position
+
+	var item_position := reward_position + Vector3(-direction.z, 0.0, direction.x) * 1.4
+	var grid_pos := grid_service.call("world_to_grid", item_position) as Vector2i
+	if bool(grid_service.call("in_bounds", grid_pos)):
+		grid_service.call("reveal_around", grid_pos, 0)
+		var item_ids := ["wood", "twigs", "yarn", "moonstone"]
+		_spawn_node(item_ids[_rng.randi_range(0, item_ids.size() - 1)], grid_pos)
+	game_state.request_feedback("New territory revealed: the mice found cheese and a useful item nearby.")
 
 func _spawn_batch(rng: RandomNumberGenerator, item_id: String, count: int, used_positions: Dictionary, is_rare: bool = false) -> void:
 	var placed := 0

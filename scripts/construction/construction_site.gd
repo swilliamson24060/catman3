@@ -111,6 +111,18 @@ func release_worker(worker: Node3D) -> void:
 	_update_visuals()
 
 
+func release_extra_worker() -> bool:
+	var minimum := maxi(building_definition.minimum_workers, 1) if building_definition != null else 1
+	if get_worker_count() <= minimum:
+		game_state.request_feedback("This crew needs all %d assigned mice." % minimum)
+		return false
+	for worker: Node3D in _reserved_workers.keys():
+		if worker.has_method("release_for_reassignment") and bool(worker.call("release_for_reassignment")):
+			game_state.request_feedback("%s was released to join another crew." % worker.get_display_name())
+			return true
+	return false
+
+
 func get_bribe_willingness_value() -> float:
 	return float(bribe_cheese) * 8.0
 
@@ -215,6 +227,9 @@ func _complete_site() -> void:
 		building.call("grant_completion_rewards")
 	_add_completion_marker(building)
 	settlement_manager.register_completed_building(building, building_definition)
+	var resource_spawner := get_tree().get_first_node_in_group("resource_node_spawner")
+	if resource_spawner != null and resource_spawner.has_method("spawn_expansion_rewards"):
+		resource_spawner.call("spawn_expansion_rewards", building.global_position, building_definition.settlement_influence_radius)
 	site_completed.emit(self, building)
 	game_state.close_construction_site()
 	var expansion_text := " Settlement expanded by %.0f meters." % building_definition.settlement_influence_radius if building_definition.settlement_influence_radius > 0.0 else ""

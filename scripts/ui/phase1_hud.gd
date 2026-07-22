@@ -27,6 +27,7 @@ extends CanvasLayer
 @onready var site_title: Label = $ConstructionSitePanel/MarginContainer/VBoxContainer/Title
 @onready var site_progress: Label = $ConstructionSitePanel/MarginContainer/VBoxContainer/Progress
 @onready var site_bowl: Label = $ConstructionSitePanel/MarginContainer/VBoxContainer/Bowl
+@onready var reassign_mouse_button: Button = $ConstructionSitePanel/MarginContainer/VBoxContainer/ReassignMouse
 @onready var resonance_banner: PanelContainer = $ResonanceBanner
 @onready var resonance_name: Label = $ResonanceBanner/MarginContainer/VBoxContainer/PatternName
 @onready var resonance_description: Label = $ResonanceBanner/MarginContainer/VBoxContainer/Description
@@ -90,6 +91,7 @@ func _ready() -> void:
 	return_cursor_button.pressed.connect(_on_return_cursor_pressed)
 	camera_view_button.pressed.connect(_on_camera_view_pressed)
 	music_toggle_button.pressed.connect(_on_music_toggle_pressed)
+	reassign_mouse_button.pressed.connect(_on_reassign_mouse_pressed)
 	audio_service.music_enabled_changed.connect(_on_music_enabled_changed)
 	placement_instructions.hide()
 	interaction_prompt.hide()
@@ -392,6 +394,12 @@ func _on_site_bowl_changed(_amount: int) -> void:
 	_refresh_site_panel()
 
 
+func _on_reassign_mouse_pressed() -> void:
+	if is_instance_valid(_managed_site):
+		_managed_site.release_extra_worker()
+		_refresh_site_panel()
+
+
 func _refresh_site_panel() -> void:
 	if not is_instance_valid(_managed_site):
 		return
@@ -400,7 +408,8 @@ func _refresh_site_panel() -> void:
 	var crew_text := ""
 	if definition != null:
 		crew_text = " • crew %d/%d • %.0f turns" % [_managed_site.get_active_worker_count(), definition.minimum_workers, definition.base_construction_turns]
-	site_progress.text = "Construction: %d%%%s" % [roundi(_managed_site.get_progress_ratio() * 100.0), crew_text]
+		site_progress.text = "Construction: %d%%%s" % [roundi(_managed_site.get_progress_ratio() * 100.0), crew_text]
+		reassign_mouse_button.disabled = _managed_site.get_worker_count() <= definition.minimum_workers
 	site_bowl.text = "Bribe bowl: %d cheese" % _managed_site.bribe_cheese
 
 

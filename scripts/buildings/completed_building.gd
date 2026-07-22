@@ -23,6 +23,7 @@ var _completion_rewards_granted: bool = false
 func _ready() -> void:
 	add_to_group("completed_buildings")
 	durability = building_definition.max_durability if building_definition != null else 100.0
+	_add_navigation_obstacle()
 	simulation_clock.simulation_advanced.connect(_on_simulation_advanced)
 	simulation_clock.need_cycle.connect(_on_need_cycle)
 	if is_producer():
@@ -138,8 +139,7 @@ func get_interaction_priority() -> int:
 func _on_simulation_advanced(simulation_delta: float) -> void:
 	if simulation_delta <= 0.0:
 		return
-	_tick_weather_damage(simulation_delta)
-	if durability <= 0.0 or not is_producer():
+	if not is_producer():
 		return
 	var production_rate := float(stats_service.call("get_effective", str(building_definition.id), "production_rate", 1.0))
 	if production_rate <= 0.0:
@@ -183,14 +183,20 @@ func restore_durability(value: float) -> void:
 
 
 func _tick_weather_damage(simulation_delta: float) -> void:
-	if building_definition == null or building_definition.waterproof or not bool(weather_service.call("is_raining")):
+	# Completed structures are persistent settlement assets. Weather may affect
+	# production in future, but it must never silently destroy player work.
+	return
+
+
+func _add_navigation_obstacle() -> void:
+	if get_node_or_null("MouseNavigationObstacle") != null:
 		return
-	durability = maxf(durability - 2.0 * simulation_delta, 0.0)
-	durability_changed.emit(durability, building_definition.max_durability)
-	if durability <= 0.0:
-		settlement_manager.unregister_completed_building(self)
-		game_state.request_feedback("%s collapsed in the rain." % building_definition.display_name)
-		queue_free()
+	var obstacle := NavigationObstacle3D.new()
+	obstacle.name = "MouseNavigationObstacle"
+	obstacle.avoidance_enabled = true
+	obstacle.radius = maxf(building_definition.footprint_radius if building_definition != null else 1.0, 0.75)
+	obstacle.height = 2.5
+	add_child(obstacle)
 
 
 func _set_production_status(status: String) -> void:

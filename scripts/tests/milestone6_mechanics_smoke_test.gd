@@ -35,8 +35,8 @@ func _run() -> void:
 	weather.call("force_weather", "rain")
 	hut._on_simulation_advanced(5.0)
 	garden._on_simulation_advanced(5.0)
-	assert(is_equal_approx(hut.durability, HUT.max_durability - 10.0), "Rain must damage cardboard huts.")
-	assert(is_equal_approx(garden.durability, GARDEN.max_durability), "Waterproof gardens must ignore rain.")
+	assert(is_instance_valid(hut) and is_equal_approx(hut.durability, HUT.max_durability), "Completed huts must persist through weather.")
+	assert(is_instance_valid(garden) and is_equal_approx(garden.durability, GARDEN.max_durability), "Completed gardens must persist through weather.")
 
 	weather.call("force_wind", Vector2i.RIGHT)
 	var downwind := float(drift.call("get_scent_at", Vector2i(2, 0)))

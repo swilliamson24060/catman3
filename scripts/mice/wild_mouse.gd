@@ -101,7 +101,10 @@ func _ready() -> void:
 	generated_name = "%s %s" % [GIVEN_NAMES[_random.randi_range(0, GIVEN_NAMES.size() - 1)], FAMILY_NAMES[_random.randi_range(0, FAMILY_NAMES.size() - 1)]]
 	navigation_agent.path_desired_distance = 0.25
 	navigation_agent.target_desired_distance = ARRIVAL_DISTANCE
-	navigation_agent.avoidance_enabled = false
+	navigation_agent.avoidance_enabled = true
+	navigation_agent.max_neighbors = 12
+	navigation_agent.time_horizon_agents = 1.0
+	navigation_agent.time_horizon_obstacles = 1.2
 	navigation_agent.radius = 0.35
 	navigation_agent.height = 0.7
 	personality_debug.text = str(personality.behavior_profile).capitalize()
@@ -162,6 +165,13 @@ func _physics_process(delta: float) -> void:
 			_stop_planar_motion(delta)
 
 	move_and_slide()
+	if get_slide_collision_count() > 0 and _state in [MouseState.WANDER, MouseState.MOVE_TO_PICNIC, MouseState.FOLLOW_PLAYER, MouseState.MOVE_TO_WORKSITE, MouseState.SEEK_CHEESE]:
+		# Runtime structures are navigation obstacles. Refresh the path immediately
+		# after contact so a mouse chooses a route around instead of pushing forever.
+		navigation_agent.target_position = navigation_agent.target_position
+		_follow_repath_remaining = 0.0
+		_work_repath_remaining = 0.0
+		_stuck_check_remaining = 0.0
 	var constrained_position := settlement_manager.constrain_position_to_settlement(position_before_motion, global_position)
 	if not constrained_position.is_equal_approx(global_position):
 		global_position = constrained_position
@@ -880,6 +890,23 @@ func _abandon_worksite() -> void:
 	_work_slot = null
 	_begin_following()
 	_work_evaluation_remaining = WORK_EVALUATION_INTERVAL
+
+
+func release_for_reassignment() -> bool:
+	if not is_recruited or not is_instance_valid(_worksite):
+		return false
+	_abandon_worksite()
+	_work_evaluation_remaining = 0.1
+	return true
+
+
+func assign_to_worksite(site: ConstructionSite) -> bool:
+	if not is_recruited or site == null or not site.is_accepting_workers():
+		return false
+	if is_instance_valid(_worksite):
+		_worksite.release_worker(self)
+	_commit_to_worksite(site)
+	return is_instance_valid(_worksite)
 
 
 func _on_worksite_completed(site: ConstructionSite, _building: Node3D) -> void:
