@@ -28,6 +28,7 @@ func _ready() -> void:
 	_build_clearing()
 	_spawn_authored_anchors()
 	_spawn_community_board()
+	_spawn_investigation_table()
 	get_node("/root/ResidentManager").bind_world(self)
 	print("[Reboot] Milestone 1 clearing booted. Legacy prototype remains at %s" % LEGACY_SCENE_PATH)
 
@@ -86,6 +87,19 @@ func _on_anchor_activated(anchor_id: StringName) -> void:
 		get_node("/root/CalendarService").end_day()
 	elif anchor_id == &"community_board":
 		get_node("/root/ResidentManager").request_board()
+	elif anchor_id == &"investigation_table":
+		get_node("/root/InvestigationService").request_table()
+	elif anchor_id == &"garden_plaque":
+		get_node("/root/DiscoveryService").find(&"discovery_old_plaque")
+		get_node("/root/RumorService").acquire(&"rumor_plaque")
+	elif anchor_id == &"woodland_gate":
+		get_node("/root/RumorService").acquire(&"rumor_heirloom_seeds")
+		get_node("/root/DiscoveryService").reveal_rumor(&"component_heirloom_seeds")
+		get_node("/root/RumorService").acquire(&"rumor_rain_lens")
+		get_node("/root/DiscoveryService").reveal_rumor(&"component_rain_lens")
+	elif anchor_id == &"ruin_overlook":
+		get_node("/root/RumorService").acquire(&"rumor_triangle")
+		get_node("/root/DiscoveryService").reveal_rumor(&"clue_ruin_triangle")
 
 func _spawn_community_board() -> void:
 	_create_block("CommunityBoardPlaceholder", Vector3(2.2, 1.8, 0.25), Vector3(5.5, 0.9, -0.5), Color(0.82, 0.65, 0.28), false)
@@ -96,6 +110,21 @@ func _spawn_community_board() -> void:
 	anchor.position = Vector3(5.5, 0.0, 0.5)
 	anchor.activated.connect(_on_anchor_activated)
 	$CommunityBoard.add_child(anchor)
+
+func _spawn_investigation_table() -> void:
+	_create_block("InvestigationTablePlaceholder", Vector3(2.4, 0.8, 1.2), Vector3(12.8, 0.4, -1.0), Color(0.26, 0.62, 0.68), false)
+	var table_anchor := INTERACTION_ANCHOR.instantiate() as InteractionAnchor
+	table_anchor.anchor_id = &"investigation_table"
+	table_anchor.prompt = "Use the workshop investigation table"
+	table_anchor.position = Vector3(12.8, 0.0, -0.2)
+	table_anchor.activated.connect(_on_anchor_activated)
+	$AuthoredInteractionAnchors.add_child(table_anchor)
+	var plaque_anchor := INTERACTION_ANCHOR.instantiate() as InteractionAnchor
+	plaque_anchor.anchor_id = &"garden_plaque"
+	plaque_anchor.prompt = "Inspect the stone edge by the old tree"
+	plaque_anchor.position = Vector3(-8.7, 0.0, 18.0)
+	plaque_anchor.activated.connect(_on_anchor_activated)
+	$AuthoredInteractionAnchors.add_child(plaque_anchor)
 
 func _create_ground(node_name: String, size: Vector3, position: Vector3, color: Color, collision: bool = false) -> void:
 	var body := StaticBody3D.new()

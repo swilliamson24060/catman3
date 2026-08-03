@@ -9,6 +9,14 @@ func _ready() -> void:
 	]:
 		_create_stone(data[0], data[1], data[2])
 	_create_stone(Vector3(0.0, 3.5, 0.8), Vector3(7.2, 0.85, 0.9), 0.0)
+	var clue: Node3D = preload("res://scenes/discoveries/discovery_site.tscn").instantiate() as Node3D
+	clue.name = "TriangleClueSite"
+	clue.discovery_id = &"clue_ruin_triangle"
+	clue.rumor_id = &"rumor_triangle"
+	clue.prompt = "Study the low three-point carving"
+	clue.placeholder_color = Color(0.72, 0.38, 0.9)
+	clue.position = Vector3(0.0, 0.25, -4.3)
+	add_child(clue)
 
 func _create_stone(position: Vector3, size: Vector3, yaw: float) -> void:
 	var body := StaticBody3D.new()

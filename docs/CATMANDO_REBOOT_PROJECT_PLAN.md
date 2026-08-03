@@ -600,6 +600,10 @@ Final art gate: request **modular environment kit, cottages, workshop, and garde
 
 ### Milestone 6 — Authored exploration, rumors, and discoveries
 
+**Status (2026-08-03): Complete.** The existing three-branch woodland route now contains stable authored discovery sites and controlled landmark language for the rain lens, carved copper gear, dormant seeds, garden plaque, and triangular ruin clue. Data-driven `RumorService`, `DiscoveryService`, and `InvestigationService` autoloads provide resident, observation, and project rumor sources; a unified persisted discovery pipeline; resident-assisted workshop interpretation; optional post-revisit help markers; and Village Almanac pages for rumors, unidentified finds, interpreted finds, and confirmed patterns. Pip supplies the required resident-found observation as a rumor while every unique discovery remains independently recoverable by the founder. Batch D production requirements are locked in `docs/exploration_art_brief.md`.
+
+**Justified deviations:** The Milestone 1 route already had three traversable branches and locked dimensions, so Milestone 6 enriches that scene rather than rebuilding or expanding it. Unique discoveries are stored abstractly in the reboot discovery ledger instead of adding a general component-carry inventory; this prevents loss and leaves movable Resonance component handling to Milestone 7. The suitable resident meets the founder at the workshop table for the investigation beat rather than implementing a general exploration follower system. The Almanac is a compact always-visible development panel sharing the existing HUD seam; full navigation, styling, optional map, and accessibility treatment remain Milestone 10. Confirmed Patterns intentionally remains empty, and no geometry solver, plinth, feedback tier, condition watcher, activation, or First Bloom effect from Milestone 7 has begun.
+
 **Goal:** Connect village life to a small but surprising exploration route.
 
 Implementation:

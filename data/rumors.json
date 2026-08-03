@@ -1,0 +1,7 @@
+[
+  {"id":"rumor_plaque","discovery_id":"discovery_old_plaque","source_type":"project","text":"Clearing the garden exposed a stone edge beneath the old tree.","landmark_hint":"Look beside the restored garden's old tree."},
+  {"id":"rumor_rain_lens","discovery_id":"component_rain_lens","source_type":"observation","text":"Rainwater flashes strangely beyond the mossy fork.","landmark_hint":"Follow the west branch past the split stump."},
+  {"id":"rumor_copper_gear","discovery_id":"component_copper_gear","source_type":"resident","source_resident_id":"resident_pip","text":"Pip found copper teeth in the roots and marked the place with blue twine.","landmark_hint":"Take the east branch toward the bent birch."},
+  {"id":"rumor_heirloom_seeds","discovery_id":"component_heirloom_seeds","source_type":"resident","source_resident_id":"resident_mara","text":"Mara noticed a sealed packet near the woodland gate's fallen log.","landmark_hint":"Search the first quiet turn beyond the gate."},
+  {"id":"rumor_triangle","discovery_id":"clue_ruin_triangle","source_type":"observation","text":"The ruin's shadows repeat a three-point shape near its rear stone.","landmark_hint":"Study the low slab behind the ruin arch."}
+]

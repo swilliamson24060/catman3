@@ -204,6 +204,10 @@ func finish_social_activity() -> void:
 	activity_bubble.visible = false
 	_select_routine_activity()
 
+func begin_investigation_meet(target: Vector3) -> void:
+	current_activity = {"id":"investigation_meet", "label":"Meets the founder to study a find", "location":"workshop investigation table", "position":[target.x,target.y,target.z]}
+	_begin_travel()
+
 func is_social_ready(session_id: StringName) -> bool:
 	return social_session_id == session_id and current_state == State.SOCIALIZING
 

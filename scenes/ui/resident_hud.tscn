@@ -31,11 +31,82 @@ theme_override_constants/margin_bottom = 10
 layout_mode = 2
 
 [node name="Residents" type="RichTextLabel" parent="ResidentLocator/Margin/VBox"]
-custom_minimum_size = Vector2(280, 190)
+custom_minimum_size = Vector2(280, 145)
 layout_mode = 2
 bbcode_enabled = true
 fit_content = true
 text = "Resident Almanac"
+
+[node name="Almanac" type="PanelContainer" parent="."]
+offset_left = 938.0
+offset_top = 108.0
+offset_right = 1262.0
+offset_bottom = 540.0
+theme_override_styles/panel = SubResource("Panel")
+
+[node name="Margin" type="MarginContainer" parent="Almanac"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 10
+
+[node name="VBox" type="VBoxContainer" parent="Almanac/Margin"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Almanac/Margin/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Village Almanac"
+
+[node name="Pages" type="RichTextLabel" parent="Almanac/Margin/VBox"]
+custom_minimum_size = Vector2(290, 370)
+layout_mode = 2
+bbcode_enabled = true
+scroll_active = true
+text = "Rumors\\n\\nUnidentified Finds\\n\\nInterpreted Finds\\n\\nConfirmed Patterns"
+
+[node name="InvestigationTable" type="PanelContainer" parent="."]
+visible = false
+offset_left = 350.0
+offset_top = 145.0
+offset_right = 930.0
+offset_bottom = 575.0
+theme_override_styles/panel = SubResource("Panel")
+
+[node name="Margin" type="MarginContainer" parent="InvestigationTable"]
+layout_mode = 2
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 14
+
+[node name="VBox" type="VBoxContainer" parent="InvestigationTable/Margin"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="InvestigationTable/Margin/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Workshop Investigation Table"
+
+[node name="Finds" type="ItemList" parent="InvestigationTable/Margin/VBox"]
+custom_minimum_size = Vector2(520, 100)
+layout_mode = 2
+
+[node name="Result" type="RichTextLabel" parent="InvestigationTable/Margin/VBox"]
+custom_minimum_size = Vector2(520, 170)
+layout_mode = 2
+bbcode_enabled = true
+fit_content = true
+text = "Bring unidentified finds here."
+
+[node name="Investigate" type="Button" parent="InvestigationTable/Margin/VBox"]
+layout_mode = 2
+text = "Investigate with a resident"
+
+[node name="Close" type="Button" parent="InvestigationTable/Margin/VBox"]
+layout_mode = 2
+text = "Close table"
 
 [node name="DialoguePanel" type="PanelContainer" parent="."]
 visible = false

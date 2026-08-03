@@ -1,5 +1,11 @@
 # Milestone 1 Placeholder Contract
 
+## Milestone 6 exploration contracts
+
+- `scenes/discoveries/discovery_site.tscn` is the replacement seam for every authored find: ground origin, stable interaction anchor, and a 0.35 m focus/VFX point.
+- Cyan, copper, gold, purple, and stone placeholders distinguish discovery categories only; gameplay identity comes from `data/discoveries.json`.
+- Woodland landmarks lead before optional markers. A marker becomes visible only after a revisit/help request.
+- The workshop investigation table and Almanac panels are development placeholders with production dimensions documented in `docs/exploration_art_brief.md`.
 All Milestone 1 geometry is development-only greybox content. Runtime-created nodes carry `development_placeholder=true`; reusable scene assets carry `_development_placeholder` metadata.
 
 - Godot scale is 1 unit = 1 meter.

@@ -62,6 +62,22 @@ func bind_world(world_root: Node3D) -> void:
 		return
 	_world_root = world_root
 	_spawn_residents()
+	# Pip's authored off-screen observation is a player rumor, not a command or
+	# a progression gate. The component remains safely recoverable at its site.
+	get_node("/root/DiscoveryService").resident_observed(&"component_copper_gear", &"resident_pip")
+
+func meet_for_investigation(specialty: StringName) -> StringName:
+	var best: ResidentAgent
+	for agent: ResidentAgent in get_agents():
+		if StringName(str(agent.definition.get("specialty", ""))) == specialty:
+			best = agent
+			break
+	if best == null: best = get_agent(&"resident_elowen")
+	if best == null and not get_agents().is_empty(): best = get_agents()[0]
+	if best == null: return &""
+	best.begin_investigation_meet(Vector3(13.0, 0.2, -2.0))
+	best.global_position = Vector3(13.0, best.global_position.y, -2.0)
+	return best.resident_id
 
 func unbind_world(world_root: Node3D) -> void:
 	if _world_root != world_root:

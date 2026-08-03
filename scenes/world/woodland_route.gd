@@ -13,6 +13,19 @@ func _ready() -> void:
 		[Vector3(-11.0, 0.0, -12.0), 0.85], [Vector3(12.0, 0.0, -19.0), 0.9],
 	]:
 		_create_tree(data[0], data[1])
+	_spawn_discovery("RainLensSite", &"component_rain_lens", &"rumor_rain_lens", Vector3(-8.5, 0.25, -13.5), Color(0.2, 0.8, 1.0), "Inspect the glint beside the split stump")
+	_spawn_discovery("CopperGearSite", &"component_copper_gear", &"rumor_copper_gear", Vector3(10.5, 0.25, -19.0), Color(0.85, 0.42, 0.12), "Inspect the blue-twine root")
+	_spawn_discovery("HeirloomSeedsSite", &"component_heirloom_seeds", &"rumor_heirloom_seeds", Vector3(3.0, 0.25, -6.5), Color(0.85, 0.75, 0.18), "Inspect the fallen-log hollow")
+
+func _spawn_discovery(node_name: String, discovery_id: StringName, rumor_id: StringName, position: Vector3, color: Color, prompt: String) -> void:
+	var site: Node3D = preload("res://scenes/discoveries/discovery_site.tscn").instantiate() as Node3D
+	site.name = node_name
+	site.discovery_id = discovery_id
+	site.rumor_id = rumor_id
+	site.placeholder_color = color
+	site.prompt = prompt
+	site.position = position
+	add_child(site)
 
 func _create_path(node_name: String, size: Vector3, position: Vector3) -> void:
 	var body := StaticBody3D.new()

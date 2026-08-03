@@ -22,9 +22,10 @@ func _run() -> void:
 	assert(scene.get_node("WoodlandRoute/WestBranch") != null)
 	assert(scene.get_node("WoodlandRoute/EastBranch") != null)
 	assert(scene.get_node("WoodlandRoute/RuinBranch") != null)
-	assert(scene.get_node("AncientRuin").get_child_count() == 4, "Ruin silhouette needs three uprights and a lintel")
+	var ruin_stones := scene.get_node("AncientRuin").get_children().filter(func(child: Node) -> bool: return child is StaticBody3D)
+	assert(ruin_stones.size() == 4, "Ruin silhouette needs three uprights and a lintel")
 	assert(scene.get_node("Ambience").get_child_count() == 3, "Clearing, woodland, and ruin ambience zones are required")
-	assert(scene.get_node("AuthoredInteractionAnchors").get_child_count() == destinations.size())
+	assert(scene.get_node("AuthoredInteractionAnchors").get_child_count() >= destinations.size(), "Milestone destinations and later authored anchors must remain available")
 
 	var player := scene.get_node("RebootFounderCat") as RebootFounderCat
 	var camera_rig := scene.get_node("IsometricCameraRig") as IsometricCameraRig

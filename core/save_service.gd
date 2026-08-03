@@ -35,6 +35,9 @@ func new_game(founder_cat_id: String) -> void:
 	var project_service := get_node_or_null("/root/CommunityProjectService")
 	if project_service != null:
 		project_service.reset()
+	get_node("/root/RumorService").reset()
+	get_node("/root/DiscoveryService").reset()
+	get_node("/root/InvestigationService").reset()
 	AchievementService.reset_progress()
 
 func save_game(save_path: String = SAVE_PATH) -> bool:
@@ -51,6 +54,9 @@ func save_game(save_path: String = SAVE_PATH) -> bool:
 		"resident_state": get_node("/root/ResidentManager").serialize_state(),
 		"relationship_state": get_node("/root/RelationshipService").serialize_state(),
 		"community_project_state": get_node("/root/CommunityProjectService").serialize_state(),
+		"rumor_state": get_node("/root/RumorService").serialize_state(),
+		"discovery_state": get_node("/root/DiscoveryService").serialize_state(),
+		"investigation_state": get_node("/root/InvestigationService").serialize_state(),
 		"inventory": Inventory.serialize(),
 		"town_storage": TownStorage.serialize(),
 		"buildings": BuildingManager.serialize(),
@@ -123,12 +129,18 @@ func load_game(save_path: String = SAVE_PATH) -> bool:
 	current.resident_state = _as_dictionary(parsed.get("resident_state", {}))
 	current.relationship_state = _as_dictionary(parsed.get("relationship_state", {}))
 	current.community_project_state = _as_dictionary(parsed.get("community_project_state", {}))
+	current.rumor_state = _as_dictionary(parsed.get("rumor_state", {}))
+	current.discovery_state = _as_dictionary(parsed.get("discovery_state", {}))
+	current.investigation_state = _as_dictionary(parsed.get("investigation_state", {}))
 	AchievementService.set_tracking_enabled(false)
 	AchievementService.restore_progress(current.achievement_progress)
 	WeatherService.restore_state(current.weather_state.merged({"world_seed": current.world_seed}, false))
 	CalendarService.restore_state(current.calendar_state)
 	get_node("/root/RelationshipService").restore_state(current.relationship_state)
 	get_node("/root/CommunityProjectService").restore_state(current.community_project_state)
+	get_node("/root/RumorService").restore_state(current.rumor_state)
+	get_node("/root/DiscoveryService").restore_state(current.discovery_state)
+	get_node("/root/InvestigationService").restore_state(current.investigation_state)
 	get_node("/root/ResidentManager").restore_state(current.resident_state)
 
 	Inventory.restore(_as_array(parsed.get("inventory", [])))
