@@ -1,0 +1,64 @@
+{
+  "residents": [
+    {
+      "id": "resident_mara",
+      "display_name": "Mara",
+      "species": "mouse",
+      "specialty": "gardening",
+      "personality_tags": ["patient", "observant"],
+      "likes": ["flowers", "rain", "shared_meals"],
+      "dislikes": ["noise_at_night"],
+      "home_id": "home_mara",
+      "home_position": [-17.0, 0.2, -8.0],
+      "aspiration_id": "aspiration_restore_garden",
+      "aspiration_steps": ["Learn what the old garden once grew", "Help restore the abandoned beds", "See unusual flowers return"],
+      "color": "df7f78",
+      "routines": {
+        "morning": [{"id":"inspect_garden", "label":"Checks the old garden beds", "location":"abandoned garden", "position":[-8.0,0.2,13.0], "specialty":"gardening", "aspiration":true}, {"id":"water_home", "label":"Tends seedlings at home", "location":"Mara's cottage", "position":[-17.0,0.2,-7.0], "specialty":"gardening"}],
+        "afternoon": [{"id":"study_tree", "label":"Studies the old garden tree", "location":"old garden tree", "position":[-7.0,0.2,17.0], "specialty":"gardening", "aspiration":true}, {"id":"walk_center", "label":"Walks through the clearing", "location":"village center", "position":[-2.0,0.2,2.0]}],
+        "evening": [{"id":"garden_notes", "label":"Writes garden notes", "location":"Mara's cottage", "position":[-16.0,0.2,-7.0], "specialty":"gardening"}],
+        "night": [{"id":"sleep", "label":"Sleeps at home", "location":"Mara's cottage", "position":[-17.0,0.2,-8.0], "home":true}]
+      }
+    },
+    {
+      "id": "resident_pip",
+      "display_name": "Pip",
+      "species": "mouse",
+      "specialty": "building",
+      "personality_tags": ["inventive", "practical"],
+      "likes": ["machines", "shared_work", "clear_weather"],
+      "dislikes": ["idle_tools"],
+      "home_id": "home_pip",
+      "home_position": [-12.0, 0.2, -2.0],
+      "aspiration_id": "aspiration_repair_irrigation",
+      "aspiration_steps": ["Inventory the workshop's surviving tools", "Understand the broken irrigation parts", "Build something the whole village uses"],
+      "color": "62a9df",
+      "routines": {
+        "morning": [{"id":"sort_tools", "label":"Sorts tools at the workshop", "location":"workshop", "position":[13.0,0.2,-2.0], "specialty":"building", "aspiration":true}],
+        "afternoon": [{"id":"survey_workshop", "label":"Measures the workshop plot", "location":"workshop", "position":[15.0,0.2,-1.0], "specialty":"building", "aspiration":true}, {"id":"inspect_gate", "label":"Checks the woodland gate", "location":"woodland gate", "position":[2.0,0.2,-17.0], "specialty":"building"}],
+        "evening": [{"id":"sketch_machine", "label":"Sketches a communal machine", "location":"Pip's cottage", "position":[-11.0,0.2,-2.5], "specialty":"building", "aspiration":true}],
+        "night": [{"id":"sleep", "label":"Sleeps at home", "location":"Pip's cottage", "position":[-12.0,0.2,-2.0], "home":true}]
+      }
+    },
+    {
+      "id": "resident_elowen",
+      "display_name": "Elowen",
+      "species": "mouse",
+      "specialty": "history",
+      "personality_tags": ["curious", "thoughtful"],
+      "likes": ["ruins", "rain", "stories"],
+      "dislikes": ["rushed_conclusions"],
+      "home_id": "home_elowen",
+      "home_position": [9.0, 0.2, 7.0],
+      "aspiration_id": "aspiration_decode_ruin",
+      "aspiration_steps": ["Record the ruin's repeating marks", "Compare the garden and ruin histories", "Interpret the first complete pattern"],
+      "color": "aa79d8",
+      "routines": {
+        "morning": [{"id":"village_notes", "label":"Collects village stories", "location":"village center", "position":[2.0,0.2,1.0], "specialty":"history"}],
+        "afternoon": [{"id":"study_ruin", "label":"Studies the ancient ruin", "location":"ancient ruin", "position":[0.0,0.2,-46.0], "specialty":"history", "aspiration":true}, {"id":"listen_gate", "label":"Listens for woodland clues", "location":"woodland gate", "position":[-2.0,0.2,-17.0], "specialty":"history"}],
+        "evening": [{"id":"compare_notes", "label":"Compares old markings", "location":"village center", "position":[3.0,0.2,3.0], "specialty":"history", "aspiration":true}],
+        "night": [{"id":"sleep", "label":"Sleeps at home", "location":"Elowen's cottage plot", "position":[9.0,0.2,7.0], "home":true}]
+      }
+    }
+  ]
+}

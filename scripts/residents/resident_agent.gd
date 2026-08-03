@@ -1,0 +1,216 @@
+class_name ResidentAgent
+extends CharacterBody3D
+
+signal conversation_requested(resident: ResidentAgent)
+signal activity_changed(resident_id: StringName, activity_id: StringName, state_name: StringName)
+
+enum State { ROUTINE_TRAVEL, ROUTINE_ACTIVITY, CONSIDERING, CONTRIBUTING, TALKING, GOING_HOME, SLEEPING }
+
+@export var move_speed: float = 2.6
+@export var arrival_distance: float = 0.35
+@export var show_debug_scores: bool = false
+
+var definition: Dictionary = {}
+var resident_id: StringName
+var current_period: StringName = &"morning"
+var current_activity: Dictionary = {}
+var current_state: State = State.ROUTINE_ACTIVITY
+var energy: float = 0.85
+var mood: float = 0.75
+var social_openness: float = 0.65
+var aspiration_step: int = 0
+var carried_item_id: StringName
+var _score_breakdown: Array[String] = []
+var _stuck_seconds: float = 0.0
+var _last_distance: float = INF
+
+@onready var navigation_agent: NavigationAgent3D = $NavigationAgent3D
+@onready var model_root: Node3D = $ModelRoot
+@onready var interaction_anchor: InteractionAnchor = $InteractionAnchor
+@onready var speech_bubble_anchor: Marker3D = $SpeechBubbleAnchor
+@onready var carried_item_socket: Marker3D = $CarriedItemSocket
+@onready var debug_label: Label3D = $DebugActivity
+
+func _ready() -> void:
+	add_to_group("reboot_residents")
+	interaction_anchor.activated.connect(_on_interaction)
+	show_debug_scores = bool(ProjectSettings.get_setting("feature/show_resident_debug", show_debug_scores))
+	debug_label.visible = show_debug_scores
+	set_meta("development_placeholder", true)
+
+func configure(data: Dictionary, saved_state: Dictionary = {}) -> void:
+	definition = data.duplicate(true)
+	resident_id = StringName(str(definition.get("id", "resident")))
+	name = str(definition.get("display_name", resident_id))
+	interaction_anchor.anchor_id = resident_id
+	interaction_anchor.prompt = "Talk with %s" % display_name()
+	global_position = _vector3(definition.get("home_position", [0.0, 0.2, 0.0]))
+	_apply_color(Color(str(definition.get("color", "ffffff"))))
+	restore_state(saved_state)
+	set_period(StringName(str(saved_state.get("routine_period", current_period))))
+
+func set_period(period_id: StringName) -> void:
+	current_period = period_id
+	_select_routine_activity()
+
+func _select_routine_activity() -> void:
+	var routines: Dictionary = definition.get("routines", {})
+	var candidates: Array = routines.get(String(current_period), [])
+	if candidates.is_empty():
+		current_activity = {"id":"wait", "label":"Takes a quiet pause", "location":"village center", "position":[0.0,0.2,0.0]}
+	else:
+		var best_score := -INF
+		var best: Dictionary = {}
+		_score_breakdown.clear()
+		for candidate_value: Variant in candidates:
+			if not candidate_value is Dictionary:
+				continue
+			var candidate: Dictionary = candidate_value
+			var score_data := score_activity(candidate)
+			var score := float(score_data.score)
+			_score_breakdown.append("%s %.1f" % [candidate.get("id", "?"), score])
+			if score > best_score:
+				best_score = score
+				best = candidate
+		current_activity = best.duplicate(true)
+	_begin_travel()
+
+func score_activity(candidate: Dictionary) -> Dictionary:
+	var target := _vector3(candidate.get("position", [0.0, 0.2, 0.0]))
+	var schedule_score := 40.0
+	var specialty_score := 18.0 if str(candidate.get("specialty", "")) == str(definition.get("specialty", "")) else 0.0
+	var aspiration_score := 14.0 if bool(candidate.get("aspiration", false)) else 0.0
+	var distance_score := maxf(0.0, 12.0 - global_position.distance_to(target) * 0.35)
+	var weather_score := 0.0
+	var weather := get_node_or_null("/root/WeatherService")
+	if weather != null:
+		var likes: Array = definition.get("likes", [])
+		weather_score = 8.0 if weather.is_raining() and "rain" in likes else (4.0 if not weather.is_raining() and "clear_weather" in likes else 0.0)
+	var comfort_score := (energy + mood + social_openness) * 3.0
+	var manager := get_node_or_null("/root/ResidentManager")
+	var priority_score := 8.0 if manager != null and manager.current_priority == &"project_restore_garden" and bool(candidate.get("aspiration", false)) else 0.0
+	var relationship_score := 0.0
+	return {"score": schedule_score + specialty_score + aspiration_score + distance_score + weather_score + comfort_score + priority_score + relationship_score, "schedule":schedule_score, "specialty":specialty_score, "aspiration":aspiration_score, "distance":distance_score, "weather":weather_score, "comfort":comfort_score, "priority":priority_score, "relationship":relationship_score}
+
+func _begin_travel() -> void:
+	var target := activity_position()
+	navigation_agent.target_position = target
+	current_state = State.GOING_HOME if bool(current_activity.get("home", false)) else State.ROUTINE_TRAVEL
+	_stuck_seconds = 0.0
+	_last_distance = global_position.distance_to(target)
+	_update_debug_label()
+	activity_changed.emit(resident_id, activity_id(), state_name())
+
+func _physics_process(delta: float) -> void:
+	var calendar := get_node_or_null("/root/CalendarService")
+	if calendar != null and calendar.is_paused() and current_state != State.TALKING:
+		velocity = Vector3.ZERO
+		return
+	if current_state not in [State.ROUTINE_TRAVEL, State.GOING_HOME]:
+		velocity = Vector3.ZERO
+		_animate_activity()
+		return
+	var target := activity_position()
+	var offset := target - global_position
+	offset.y = 0.0
+	var distance := offset.length()
+	if distance <= arrival_distance:
+		global_position = Vector3(target.x, global_position.y, target.z)
+		velocity = Vector3.ZERO
+		current_state = State.SLEEPING if current_period == &"night" else State.ROUTINE_ACTIVITY
+		_update_debug_label()
+		activity_changed.emit(resident_id, activity_id(), state_name())
+		return
+	var direction := offset.normalized()
+	velocity = direction * move_speed
+	rotation.y = lerp_angle(rotation.y, atan2(-direction.x, -direction.z), minf(1.0, delta * 9.0))
+	move_and_slide()
+	model_root.position.y = 0.06 + absf(sin(Time.get_ticks_msec() * 0.012)) * 0.08
+	_stuck_seconds = _stuck_seconds + delta if distance >= _last_distance - 0.01 else 0.0
+	_last_distance = distance
+	if _stuck_seconds >= 5.0:
+		global_position = Vector3(target.x, global_position.y, target.z)
+		_stuck_seconds = 0.0
+
+func _animate_activity() -> void:
+	if current_state == State.SLEEPING:
+		model_root.rotation.z = lerpf(model_root.rotation.z, -0.18, 0.08)
+		return
+	model_root.rotation.z = lerpf(model_root.rotation.z, sin(Time.get_ticks_msec() * 0.004) * 0.035, 0.12)
+	model_root.position.y = 0.06 + sin(Time.get_ticks_msec() * 0.006) * 0.035
+
+func request_contribution(specialty: StringName) -> Dictionary:
+	if current_period == &"night" or energy < 0.25:
+		return {"accepted":false, "reason":"%s needs to rest first and can help tomorrow." % display_name()}
+	if specialty != StringName(str(definition.get("specialty", ""))):
+		return {"accepted":false, "reason":"%s says this needs a %s's eye, but will check back later." % [display_name(), specialty]}
+	return {"accepted":true, "reason":"%s would like to help when the community project opens." % display_name()}
+
+func conversation_text() -> String:
+	var weather := get_node_or_null("/root/WeatherService")
+	var weather_line := "The clearing feels settled today."
+	if weather != null and weather.is_raining():
+		weather_line = "The rain changes what is worth noticing today."
+	var manager := get_node_or_null("/root/ResidentManager")
+	var priority_line := "We can choose our first shared priority at the Community Board."
+	if manager != null and not String(manager.current_priority).is_empty():
+		priority_line = "I am keeping the community priority in mind: %s." % manager.priority_display_name()
+	var discovery_line := ""
+	if manager != null and not manager.recent_discoveries.is_empty():
+		discovery_line = "\nI have been thinking about our recent discovery: %s." % manager.recent_discoveries.back()
+	var steps: Array = definition.get("aspiration_steps", [])
+	var aspiration := str(steps[clampi(aspiration_step, 0, steps.size() - 1)]) if not steps.is_empty() else "Find a place in the community."
+	return "%s\n\n%s\n%s%s\n\nI hope to: %s" % [current_activity.get("label", "Taking a quiet pause."), weather_line, priority_line, discovery_line, aspiration]
+
+func begin_talking() -> void:
+	current_state = State.TALKING
+	velocity = Vector3.ZERO
+	_update_debug_label()
+
+func end_talking() -> void:
+	_select_routine_activity()
+
+func serialize_state() -> Dictionary:
+	return {"resident_id":String(resident_id), "position":[global_position.x,global_position.y,global_position.z], "home_id":str(definition.get("home_id", "")), "routine_period":String(current_period), "activity_id":String(activity_id()), "state":state_name(), "energy":energy, "mood":mood, "social_openness":social_openness, "aspiration_step":aspiration_step, "carried_item_id":String(carried_item_id)}
+
+func restore_state(data: Dictionary) -> void:
+	if data.has("position"):
+		global_position = _vector3(data.position)
+	energy = clampf(float(data.get("energy", 0.85)), 0.0, 1.0)
+	mood = clampf(float(data.get("mood", 0.75)), 0.0, 1.0)
+	social_openness = clampf(float(data.get("social_openness", 0.65)), 0.0, 1.0)
+	aspiration_step = maxi(int(data.get("aspiration_step", 0)), 0)
+	carried_item_id = StringName(str(data.get("carried_item_id", "")))
+
+func display_name() -> String:
+	return str(definition.get("display_name", resident_id))
+
+func activity_id() -> StringName:
+	return StringName(str(current_activity.get("id", "wait")))
+
+func activity_position() -> Vector3:
+	return _vector3(current_activity.get("position", definition.get("home_position", [0.0,0.2,0.0])))
+
+func location_name() -> String:
+	return str(current_activity.get("location", "village clearing"))
+
+func state_name() -> StringName:
+	return StringName(str(State.keys()[current_state]).to_snake_case())
+
+func _on_interaction(_anchor_id: StringName) -> void:
+	conversation_requested.emit(self)
+
+func _update_debug_label() -> void:
+	debug_label.text = "%s — %s\n%s\n%s" % [display_name(), state_name(), current_activity.get("label", "Waiting"), " | ".join(_score_breakdown)]
+
+func _apply_color(color: Color) -> void:
+	var material := StandardMaterial3D.new()
+	material.albedo_color = color
+	material.roughness = 0.82
+	for descendant: Node in model_root.find_children("*", "MeshInstance3D", true, false):
+		(descendant as MeshInstance3D).material_override = material
+
+func _vector3(value: Variant) -> Vector3:
+	if value is Array and value.size() >= 3:
+		return Vector3(float(value[0]), float(value[1]), float(value[2]))
+	return Vector3.ZERO

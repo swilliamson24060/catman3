@@ -12,3 +12,4 @@ class_name SaveData
 @export var world_seed: int = 1337
 @export var calendar_state: Dictionary = {}
 @export var weather_state: Dictionary = {}
+@export var resident_state: Dictionary = {}

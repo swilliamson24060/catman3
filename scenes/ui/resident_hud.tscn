@@ -1,0 +1,110 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/resident_hud.gd" id="1"]
+
+[sub_resource type="StyleBoxFlat" id="Panel"]
+bg_color = Color(0.08, 0.1, 0.09, 0.94)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[node name="ResidentHUD" type="CanvasLayer"]
+layer = 8
+script = ExtResource("1")
+
+[node name="ResidentLocator" type="PanelContainer" parent="."]
+offset_left = 18.0
+offset_top = 108.0
+offset_right = 330.0
+offset_bottom = 330.0
+theme_override_styles/panel = SubResource("Panel")
+
+[node name="Margin" type="MarginContainer" parent="ResidentLocator"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 10
+
+[node name="VBox" type="VBoxContainer" parent="ResidentLocator/Margin"]
+layout_mode = 2
+
+[node name="Residents" type="RichTextLabel" parent="ResidentLocator/Margin/VBox"]
+custom_minimum_size = Vector2(280, 190)
+layout_mode = 2
+bbcode_enabled = true
+fit_content = true
+text = "Resident Almanac"
+
+[node name="DialoguePanel" type="PanelContainer" parent="."]
+visible = false
+offset_left = 360.0
+offset_top = 420.0
+offset_right = 920.0
+offset_bottom = 690.0
+theme_override_styles/panel = SubResource("Panel")
+
+[node name="Margin" type="MarginContainer" parent="DialoguePanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 14
+
+[node name="VBox" type="VBoxContainer" parent="DialoguePanel/Margin"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="DialoguePanel/Margin/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Resident"
+
+[node name="Text" type="RichTextLabel" parent="DialoguePanel/Margin/VBox"]
+custom_minimum_size = Vector2(500, 150)
+layout_mode = 2
+fit_content = true
+
+[node name="Close" type="Button" parent="DialoguePanel/Margin/VBox"]
+layout_mode = 2
+text = "Continue"
+
+[node name="CommunityBoard" type="PanelContainer" parent="."]
+visible = false
+offset_left = 400.0
+offset_top = 190.0
+offset_right = 880.0
+offset_bottom = 480.0
+theme_override_styles/panel = SubResource("Panel")
+
+[node name="Margin" type="MarginContainer" parent="CommunityBoard"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 18
+
+[node name="VBox" type="VBoxContainer" parent="CommunityBoard/Margin"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="CommunityBoard/Margin/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 26
+text = "Community Board"
+
+[node name="Description" type="Label" parent="CommunityBoard/Margin/VBox"]
+layout_mode = 2
+autowrap_mode = 2
+text = "Propose one shared priority. Residents decide when and how they can contribute; this is not a direct command."
+
+[node name="Status" type="Label" parent="CommunityBoard/Margin/VBox"]
+layout_mode = 2
+text = "Current priority: No priority proposed"
+
+[node name="Propose" type="Button" parent="CommunityBoard/Margin/VBox"]
+layout_mode = 2
+text = "Propose: Restore the garden"
+
+[node name="Close" type="Button" parent="CommunityBoard/Margin/VBox"]
+layout_mode = 2
+text = "Close board"

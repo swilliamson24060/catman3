@@ -9,6 +9,7 @@
 [ext_resource type="PackedScene" path="res://scenes/world/ambience_zone.tscn" id="7"]
 [ext_resource type="Script" path="res://scripts/world/day_environment_controller.gd" id="8"]
 [ext_resource type="PackedScene" path="res://scenes/ui/day_summary.tscn" id="9"]
+[ext_resource type="PackedScene" path="res://scenes/ui/resident_hud.tscn" id="10"]
 
 [sub_resource type="Environment" id="Environment"]
 background_mode = 1
@@ -81,6 +82,10 @@ directional_shadow_max_distance = 80.0
 [node name="PlaceholderProps" type="Node3D" parent="." unique_id=1740882279]
 
 [node name="AuthoredInteractionAnchors" type="Node3D" parent="." unique_id=509010872]
+
+[node name="Residents" type="Node3D" parent="."]
+
+[node name="CommunityBoard" type="Node3D" parent="."]
 
 [node name="WoodlandRoute" parent="." unique_id=1427452379 instance=ExtResource("5")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -22.5)
@@ -219,3 +224,5 @@ E at home — End day     F6 — Next period     F7 — Rain→sunrise test"
 label_settings = SubResource("PromptSettings")
 
 [node name="DaySummary" parent="." instance=ExtResource("9")]
+
+[node name="ResidentHUD" parent="." instance=ExtResource("10")]

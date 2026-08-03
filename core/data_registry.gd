@@ -29,6 +29,7 @@ var _audio_cues: Dictionary = {}
 var _body_colors: Dictionary = {}
 var _eye_colors: Dictionary = {}
 var _decorations: Dictionary = {}
+var _residents: Dictionary = {}
 
 var load_errors: Array[String] = []
 
@@ -46,6 +47,7 @@ func _load_all() -> void:
 	_body_colors.clear()
 	_eye_colors.clear()
 	_decorations.clear()
+	_residents.clear()
 	load_errors.clear()
 
 	# --- Pass 1: gather + merge everything, core first, then expansions ---
@@ -62,6 +64,7 @@ func _load_all() -> void:
 	_load_fragment(CORE_DATA_DIR + "coat_palette.json", "body_colors", CORE_NAMESPACE)
 	_load_fragment(CORE_DATA_DIR + "coat_palette.json", "eye_colors", CORE_NAMESPACE)
 	_load_fragment(CORE_DATA_DIR + "coat_palette.json", "decorations", CORE_NAMESPACE)
+	_load_fragment(CORE_DATA_DIR + "residents.json", "residents", CORE_NAMESPACE)
 
 	for file_path in _list_expansion_files():
 		var mod_namespace := file_path.get_file().get_basename().to_snake_case()
@@ -78,13 +81,14 @@ func _load_all() -> void:
 		_load_fragment(file_path, "body_colors", mod_namespace)
 		_load_fragment(file_path, "eye_colors", mod_namespace)
 		_load_fragment(file_path, "decorations", mod_namespace)
+		_load_fragment(file_path, "residents", mod_namespace)
 
 	# --- Pass 2: now that everything is merged, canonicalize and validate ---
 	_normalize_references()
 	_validate_references()
 
-	print("[DataRegistry] Loaded %d buildings, %d founder cats, %d animal types, %d items, %d resonance patterns, %d achievements, %d audio cues, %d/%d/%d coat colors/eyes/decorations" % [
-		_buildings.size(), _founder_cats.size(), _animal_types.size(), _items.size(), _resonance_patterns.size(), _achievements.size(), _audio_cues.size(),
+	print("[DataRegistry] Loaded %d buildings, %d founder cats, %d animal types, %d residents, %d items, %d resonance patterns, %d achievements, %d audio cues, %d/%d/%d coat colors/eyes/decorations" % [
+		_buildings.size(), _founder_cats.size(), _animal_types.size(), _residents.size(), _items.size(), _resonance_patterns.size(), _achievements.size(), _audio_cues.size(),
 		_body_colors.size(), _eye_colors.size(), _decorations.size()
 	])
 	if load_errors.is_empty():
@@ -153,6 +157,8 @@ func _registry_for(top_level_key: String) -> Dictionary:
 			return _eye_colors
 		"decorations":
 			return _decorations
+		"residents":
+			return _residents
 	return {}
 
 ## Bare ids default to the core: namespace, but that's only a shortcut, not
@@ -251,6 +257,14 @@ func _normalize_references() -> void:
 		achievement["unlocks"] = normalized_unlocks
 
 func _validate_references() -> void:
+	for resident: Dictionary in _residents.values():
+		for field: String in ["display_name", "specialty", "home_id", "aspiration_id"]:
+			if str(resident.get(field, "")).is_empty():
+				load_errors.append("Resident '%s' is missing required field '%s'" % [resident.get("id", "?"), field])
+		var routines: Dictionary = resident.get("routines", {})
+		for period_id: String in ["morning", "afternoon", "evening", "night"]:
+			if not routines.has(period_id) or not routines[period_id] is Array or routines[period_id].is_empty():
+				load_errors.append("Resident '%s' has no %s routine" % [resident.get("id", "?"), period_id])
 	for building in _buildings.values():
 		var produces: Dictionary = building.get("produces", {})
 		var output: String = produces.get("output", "")
@@ -342,6 +356,12 @@ func get_all_eye_colors() -> Array:
 
 func get_all_decorations() -> Array:
 	return _decorations.values()
+
+func get_resident(id: String) -> Dictionary:
+	return _resolve(_residents, id)
+
+func get_all_residents() -> Array:
+	return _residents.values()
 
 func get_animal_types_with_housing_available(built_building_ids: Array) -> Array:
 	var available: Array = []

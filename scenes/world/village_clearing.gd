@@ -27,6 +27,8 @@ func _ready() -> void:
 		push_warning("[Reboot] village_clearing.tscn was opened while reboot mode is disabled.")
 	_build_clearing()
 	_spawn_authored_anchors()
+	_spawn_community_board()
+	get_node("/root/ResidentManager").bind_world(self)
 	print("[Reboot] Milestone 1 clearing booted. Legacy prototype remains at %s" % LEGACY_SCENE_PATH)
 
 func get_authored_destinations() -> Dictionary:
@@ -42,6 +44,7 @@ func _build_clearing() -> void:
 
 	_create_block("HomeMaraPlaceholder", Vector3(4.2, 3.2, 4.2), Vector3(-17.0, 1.6, -10.0), Color(0.78, 0.51, 0.45))
 	_create_block("HomePipPlaceholder", Vector3(4.2, 3.7, 4.2), Vector3(-12.0, 1.85, -4.5), Color(0.45, 0.64, 0.78))
+	_create_block("HomeElowenPlaceholder", Vector3(4.2, 3.4, 4.2), Vector3(9.0, 1.7, 9.0), Color(0.6, 0.45, 0.76))
 	_create_block("WorkshopPlaceholder", Vector3(6.0, 4.2, 5.0), Vector3(15.0, 2.1, -5.5), Color(0.88, 0.5, 0.2))
 
 	for row in range(3):
@@ -78,6 +81,18 @@ func _spawn_authored_anchors() -> void:
 func _on_anchor_activated(anchor_id: StringName) -> void:
 	if anchor_id == &"home_edge":
 		get_node("/root/CalendarService").end_day()
+	elif anchor_id == &"community_board":
+		get_node("/root/ResidentManager").request_board()
+
+func _spawn_community_board() -> void:
+	_create_block("CommunityBoardPlaceholder", Vector3(2.2, 1.8, 0.25), Vector3(5.5, 0.9, -0.5), Color(0.82, 0.65, 0.28), false)
+	var anchor := INTERACTION_ANCHOR.instantiate() as InteractionAnchor
+	anchor.name = "CommunityBoardAnchor"
+	anchor.anchor_id = &"community_board"
+	anchor.prompt = "Open the Community Board"
+	anchor.position = Vector3(5.5, 0.0, 0.5)
+	anchor.activated.connect(_on_anchor_activated)
+	$CommunityBoard.add_child(anchor)
 
 func _create_ground(node_name: String, size: Vector3, position: Vector3, color: Color, collision: bool = false) -> void:
 	var body := StaticBody3D.new()

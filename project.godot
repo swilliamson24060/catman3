@@ -57,6 +57,7 @@ enabled=PackedStringArray("res://addons/funplay_mcp/plugin.cfg")
 [feature]
 
 reboot_mode=true
+show_resident_debug=false
 
 [input]
 

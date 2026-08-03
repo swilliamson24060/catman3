@@ -21,3 +21,14 @@ No placeholder may ship without a reviewed replacement or explicit approval.
 - The calendar HUD is a debug/readability aid. Final UI may replace its styling while retaining the current period, three-day forecast, and home end-day affordance.
 
 The sky gradient specification, rain particles, wet-surface treatment, and period lighting reference remain gated until the Milestone 1 world palette is approved.
+
+## Milestone 3 resident contract
+
+- Mara, Pip, and Elowen reuse the cube-pet bunny model at a locked 0.72 scene scale, with a 0.32 m radius / 1.05 m height collision capsule and ground-contact origin.
+- Each resident scene exposes stable `SpeechBubbleAnchor`, `CarriedItemSocket`, `InteractionAnchor`, `NavigationAgent3D`, and `AnimationPlayer` nodes. Final character assets must preserve those paths and socket meanings.
+- Loud coral, blue, and violet material overrides communicate identity during greybox testing; color never drives resident logic.
+- Movement and activity use procedural bob/lean placeholders behind the animation interface. Final clips replace them with `idle`, `walk`, `talk`, `carry`, `work`, and `celebrate` animations.
+- Debug score labels are development-only and disabled by default. The Resident Almanac is the player-facing locator; residents receive no permanent overhead marker.
+- Text-only resident names and aspiration dialogue stand in for portrait cards and expressions.
+
+No resident placeholder may ship without a reviewed replacement or explicit approval.
