@@ -1,0 +1,221 @@
+[gd_scene format=3 uid="uid://o48eiq61703i"]
+
+[ext_resource type="Script" uid="uid://cjv2af7pdspm1" path="res://scenes/world/village_clearing.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/player/reboot_founder_cat.tscn" id="2"]
+[ext_resource type="Script" uid="uid://ce15hh7pfosf0" path="res://scripts/camera/isometric_camera_rig.gd" id="3"]
+[ext_resource type="Script" uid="uid://bu2crtwpeh5mt" path="res://scripts/world/occlusion_fader.gd" id="4"]
+[ext_resource type="PackedScene" path="res://scenes/world/woodland_route.tscn" id="5"]
+[ext_resource type="PackedScene" path="res://scenes/world/ancient_ruin.tscn" id="6"]
+[ext_resource type="PackedScene" path="res://scenes/world/ambience_zone.tscn" id="7"]
+[ext_resource type="Script" path="res://scripts/world/day_environment_controller.gd" id="8"]
+[ext_resource type="PackedScene" path="res://scenes/ui/day_summary.tscn" id="9"]
+
+[sub_resource type="Environment" id="Environment"]
+background_mode = 1
+background_color = Color(0.45, 0.66, 0.75, 1)
+ambient_light_source = 3
+ambient_light_color = Color(0.78, 0.82, 0.75, 1)
+ambient_light_energy = 0.82
+tonemap_mode = 2
+
+[sub_resource type="StyleBoxFlat" id="PromptPanel"]
+bg_color = Color(0.08, 0.1, 0.09, 0.82)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="LabelSettings" id="PromptSettings"]
+font_size = 26
+font_color = Color(1, 0.96, 0.78, 1)
+outline_size = 7
+
+[sub_resource type="StandardMaterial3D" id="RainMaterial"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(0.58, 0.76, 0.94, 0.62)
+
+[sub_resource type="QuadMesh" id="RainMesh"]
+material = SubResource("RainMaterial")
+size = Vector2(0.035, 0.7)
+
+[sub_resource type="ParticleProcessMaterial" id="RainProcess"]
+emission_shape = 3
+emission_box_extents = Vector3(12, 1, 12)
+direction = Vector3(0, -1, 0)
+spread = 4.0
+initial_velocity_min = 17.0
+initial_velocity_max = 21.0
+
+[sub_resource type="StandardMaterial3D" id="SunMaterial"]
+shading_mode = 0
+albedo_color = Color(1, 0.82, 0.38, 1)
+emission_enabled = true
+emission = Color(1, 0.58, 0.16, 1)
+emission_energy_multiplier = 2.0
+
+[sub_resource type="StandardMaterial3D" id="MoonMaterial"]
+shading_mode = 0
+albedo_color = Color(0.72, 0.82, 1, 1)
+emission_enabled = true
+emission = Color(0.35, 0.48, 0.9, 1)
+
+[sub_resource type="SphereMesh" id="SkyDiscMesh"]
+radius = 1.2
+height = 2.4
+
+[node name="VillageClearing" type="Node3D" unique_id=652429789]
+script = ExtResource("1")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1676626869]
+environment = SubResource("Environment")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=335400544]
+transform = Transform3D(0.8480481, 0.44939703, -0.28081444, 0, 0.52991927, 0.8480481, 0.52991927, -0.7191856, 0.44939703, 0, 0, 0)
+light_energy = 1.15
+shadow_enabled = true
+directional_shadow_max_distance = 80.0
+
+[node name="TerrainZones" type="Node3D" parent="." unique_id=695564246]
+
+[node name="PlaceholderProps" type="Node3D" parent="." unique_id=1740882279]
+
+[node name="AuthoredInteractionAnchors" type="Node3D" parent="." unique_id=509010872]
+
+[node name="WoodlandRoute" parent="." unique_id=1427452379 instance=ExtResource("5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -22.5)
+
+[node name="AncientRuin" parent="." unique_id=2123556336 instance=ExtResource("6")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -50)
+
+[node name="RebootFounderCat" parent="." unique_id=46655226 instance=ExtResource("2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 5)
+
+[node name="IsometricCameraRig" type="Node3D" parent="." unique_id=535662602]
+script = ExtResource("3")
+
+[node name="YawPivot" type="Node3D" parent="IsometricCameraRig" unique_id=487597161]
+
+[node name="PitchPivot" type="Node3D" parent="IsometricCameraRig/YawPivot" unique_id=258260975]
+transform = Transform3D(1, 0, 0, 0, 0.7880108, 0.6156615, 0, -0.6156615, 0.7880108, 0, 0, 0)
+
+[node name="Camera3D" type="Camera3D" parent="IsometricCameraRig/YawPivot/PitchPivot" unique_id=426019474]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 22)
+projection = 1
+current = true
+size = 19.0
+far = 120.0
+
+[node name="OcclusionFader" type="Node" parent="." unique_id=2072111846]
+script = ExtResource("4")
+
+[node name="DayEnvironmentController" type="Node" parent="."]
+script = ExtResource("8")
+
+[node name="WeatherPresentation" type="Node3D" parent="."]
+
+[node name="Rain" type="GPUParticles3D" parent="WeatherPresentation"]
+position = Vector3(0, 10, 0)
+emitting = false
+amount = 320
+lifetime = 1.25
+visibility_aabb = AABB(-14, -12, -14, 28, 24, 28)
+process_material = SubResource("RainProcess")
+draw_pass_1 = SubResource("RainMesh")
+metadata/_development_placeholder = true
+
+[node name="SunDisc" type="MeshInstance3D" parent="WeatherPresentation"]
+position = Vector3(-12, 14, -18)
+mesh = SubResource("SkyDiscMesh")
+material_override = SubResource("SunMaterial")
+metadata/_development_placeholder = true
+
+[node name="MoonDisc" type="MeshInstance3D" parent="WeatherPresentation"]
+visible = false
+position = Vector3(12, 14, -18)
+mesh = SubResource("SkyDiscMesh")
+material_override = SubResource("MoonMaterial")
+metadata/_development_placeholder = true
+
+[node name="Ambience" type="Node3D" parent="." unique_id=1785677335]
+
+[node name="ClearingAmbience" parent="Ambience" unique_id=1027240919 instance=ExtResource("7")]
+zone_id = &"clearing"
+radius = 23.0
+tone_hz = 146.0
+
+[node name="WoodlandAmbience" parent="Ambience" unique_id=1122026886 instance=ExtResource("7")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -34)
+zone_id = &"woodland"
+radius = 17.0
+tone_hz = 92.0
+
+[node name="RuinAmbience" parent="Ambience" unique_id=563056288 instance=ExtResource("7")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -50)
+zone_id = &"ruin"
+radius = 9.0
+tone_hz = 64.0
+
+[node name="Interface" type="CanvasLayer" parent="." unique_id=152533582]
+
+[node name="CalendarHUD" type="PanelContainer" parent="Interface"]
+offset_left = 880.0
+offset_top = 18.0
+offset_right = 1260.0
+offset_bottom = 142.0
+theme_override_styles/panel = SubResource("PromptPanel")
+
+[node name="Margin" type="MarginContainer" parent="Interface/CalendarHUD"]
+layout_mode = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 10
+
+[node name="VBox" type="VBoxContainer" parent="Interface/CalendarHUD/Margin"]
+layout_mode = 2
+
+[node name="Period" type="Label" parent="Interface/CalendarHUD/Margin/VBox"]
+layout_mode = 2
+text = "Day 1 — Morning"
+
+[node name="Weather" type="Label" parent="Interface/CalendarHUD/Margin/VBox"]
+layout_mode = 2
+text = "Weather: Clear"
+
+[node name="Forecast" type="Label" parent="Interface/CalendarHUD/Margin/VBox"]
+layout_mode = 2
+text = "Forecast: Clear → Rain → Clear"
+
+[node name="InteractionPromptPanel" type="PanelContainer" parent="Interface" unique_id=1197041825]
+visible = false
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -280.0
+offset_top = -86.0
+offset_right = 280.0
+offset_bottom = -30.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_styles/panel = SubResource("PromptPanel")
+
+[node name="InteractionPrompt" type="Label" parent="Interface/InteractionPromptPanel" unique_id=716352276 groups=["reboot_interaction_prompt"]]
+visible = false
+layout_mode = 2
+text = "[E] Inspect"
+label_settings = SubResource("PromptSettings")
+horizontal_alignment = 1
+
+[node name="Controls" type="Label" parent="Interface" unique_id=1774599927]
+offset_left = 20.0
+offset_top = 18.0
+offset_right = 490.0
+offset_bottom = 76.0
+text = "WASD / Arrows — Move     Q / R — Snap camera
+E at home — End day     F6 — Next period     F7 — Rain→sunrise test"
+label_settings = SubResource("PromptSettings")
+
+[node name="DaySummary" parent="." instance=ExtResource("9")]

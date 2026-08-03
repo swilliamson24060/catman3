@@ -8,3 +8,7 @@ class_name SaveData
 @export var discovered_patterns: Array[String] = []
 @export var unlocked_content: Array[String] = []
 @export var achievement_progress: Dictionary = {}
+@export var save_generation: String = "reboot"
+@export var world_seed: int = 1337
+@export var calendar_state: Dictionary = {}
+@export var weather_state: Dictionary = {}

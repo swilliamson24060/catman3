@@ -12,22 +12,33 @@ extends Node
 ## than crashing the load.
 
 const SAVE_PATH := "user://catmando_save.json"
-const SAVE_VERSION := 3
+const SAVE_VERSION := 4
+const LEGACY_SAVE_VERSION := 3
+const SAVE_GENERATION_REBOOT := "reboot"
+const SAVE_GENERATION_LEGACY := "legacy"
 
 var current: SaveData = SaveData.new()
 
 func new_game(founder_cat_id: String) -> void:
 	current = SaveData.new()
 	current.founder_cat_id = founder_cat_id
+	current.save_generation = _current_save_generation()
+	current.world_seed = int(Time.get_unix_time_from_system())
+	WeatherService.configure_seed(current.world_seed, 1)
+	CalendarService.restore_state({"day": 1, "period": "morning"})
 	AchievementService.reset_progress()
 
 func save_game(save_path: String = SAVE_PATH) -> bool:
 	var data := {
 		"version": SAVE_VERSION,
+		"save_generation": current.save_generation,
 		"founder_cat_id": current.founder_cat_id,
 		"discovered_patterns": current.discovered_patterns,
 		"unlocked_content": current.unlocked_content,
 		"achievement_progress": AchievementService.serialize_progress(),
+		"world_seed": current.world_seed,
+		"calendar_state": CalendarService.serialize_state(),
+		"weather_state": WeatherService.serialize_state(),
 		"inventory": Inventory.serialize(),
 		"town_storage": TownStorage.serialize(),
 		"buildings": BuildingManager.serialize(),
@@ -77,13 +88,30 @@ func load_game(save_path: String = SAVE_PATH) -> bool:
 		push_warning("[SaveService] Save version %d is newer than supported version %d." % [version, SAVE_VERSION])
 		return false
 
+	var migration := _migrate_to_current(parsed, version)
+	if not bool(migration.get("ok", false)):
+		push_warning("[SaveService] %s" % str(migration.get("message", "Save migration failed.")))
+		return false
+	parsed = migration.get("data", {})
+	var save_generation := str(parsed.get("save_generation", SAVE_GENERATION_LEGACY))
+	var expected_generation := _current_save_generation()
+	if save_generation != expected_generation:
+		push_warning("[SaveService] This is a %s save, but the project is running in %s mode. Switch feature/reboot_mode to load it; no data was changed." % [save_generation, expected_generation])
+		return false
+
 	current = SaveData.new()
+	current.save_generation = save_generation
 	current.founder_cat_id = str(parsed.get("founder_cat_id", ""))
 	current.discovered_patterns.assign(_as_string_array(parsed.get("discovered_patterns", [])))
 	current.unlocked_content.assign(_as_string_array(parsed.get("unlocked_content", [])))
 	current.achievement_progress = _as_dictionary(parsed.get("achievement_progress", {}))
+	current.world_seed = int(parsed.get("world_seed", 1337))
+	current.calendar_state = _as_dictionary(parsed.get("calendar_state", {}))
+	current.weather_state = _as_dictionary(parsed.get("weather_state", {}))
 	AchievementService.set_tracking_enabled(false)
 	AchievementService.restore_progress(current.achievement_progress)
+	WeatherService.restore_state(current.weather_state.merged({"world_seed": current.world_seed}, false))
+	CalendarService.restore_state(current.calendar_state)
 
 	Inventory.restore(_as_array(parsed.get("inventory", [])))
 	TownStorage.restore(_as_array(parsed.get("town_storage", [])))
@@ -96,6 +124,25 @@ func load_game(save_path: String = SAVE_PATH) -> bool:
 
 	print("[SaveService] Loaded game.")
 	return true
+
+func _migrate_to_current(source: Dictionary, version: int) -> Dictionary:
+	if version < 1:
+		return {"ok": false, "message": "Save version %d is invalid; no data was changed." % version}
+	if version <= LEGACY_SAVE_VERSION:
+		var migrated := source.duplicate(true)
+		migrated["version"] = SAVE_VERSION
+		migrated["save_generation"] = SAVE_GENERATION_LEGACY
+		print("[SaveService] Migrated legacy save schema v%d to v%d at the compatibility boundary." % [version, SAVE_VERSION])
+		return {"ok": true, "data": migrated}
+	if version == SAVE_VERSION:
+		var current_data := source.duplicate(true)
+		if not current_data.has("save_generation"):
+			return {"ok": false, "message": "Save schema v%d has no save_generation marker; no data was changed." % SAVE_VERSION}
+		return {"ok": true, "data": current_data}
+	return {"ok": false, "message": "Save version %d has no migration path; no data was changed." % version}
+
+func _current_save_generation() -> String:
+	return SAVE_GENERATION_REBOOT if bool(ProjectSettings.get_setting("feature/reboot_mode", true)) else SAVE_GENERATION_LEGACY
 
 func _as_array(value) -> Array:
 	return value if value is Array else []

@@ -1,0 +1,14 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/ambience_zone.gd" id="1"]
+
+[node name="AmbienceZone" type="Area3D"]
+collision_layer = 0
+collision_mask = 0
+monitoring = false
+script = ExtResource("1")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+
+[node name="AudioStreamPlayer3D" type="AudioStreamPlayer3D" parent="."]
+unit_size = 5.0
