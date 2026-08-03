@@ -4,7 +4,7 @@ extends CharacterBody3D
 signal conversation_requested(resident: ResidentAgent)
 signal activity_changed(resident_id: StringName, activity_id: StringName, state_name: StringName)
 
-enum State { ROUTINE_TRAVEL, ROUTINE_ACTIVITY, CONSIDERING, CONTRIBUTING, SOCIAL_TRAVEL, SOCIALIZING, TALKING, GOING_HOME, SLEEPING }
+enum State { ROUTINE_TRAVEL, ROUTINE_ACTIVITY, CONSIDERING, CONTRIBUTION_TRAVEL, CONTRIBUTING, SOCIAL_TRAVEL, SOCIALIZING, TALKING, GOING_HOME, SLEEPING }
 
 @export var move_speed: float = 2.6
 @export var arrival_distance: float = 0.35
@@ -21,6 +21,8 @@ var social_openness: float = 0.65
 var aspiration_step: int = 0
 var carried_item_id: StringName
 var social_session_id: StringName
+var project_phase_id: StringName
+var garden_routine_unlocked: bool = false
 var _score_breakdown: Array[String] = []
 var _stuck_seconds: float = 0.0
 var _last_distance: float = INF
@@ -57,7 +59,9 @@ func set_period(period_id: StringName) -> void:
 
 func _select_routine_activity() -> void:
 	var routines: Dictionary = definition.get("routines", {})
-	var candidates: Array = routines.get(String(current_period), [])
+	var candidates: Array = routines.get(String(current_period), []).duplicate(true)
+	if garden_routine_unlocked and current_period in [&"afternoon", &"evening"]:
+		candidates.append({"id":"tend_restored_garden", "label":"Enjoys the restored garden", "location":"community garden", "position":[-7.0,0.2,14.0], "specialty":str(definition.get("specialty", "")), "aspiration":str(definition.get("specialty", "")) == "gardening"})
 	if candidates.is_empty():
 		current_activity = {"id":"wait", "label":"Takes a quiet pause", "location":"village center", "position":[0.0,0.2,0.0]}
 	else:
@@ -113,7 +117,7 @@ func _physics_process(delta: float) -> void:
 	if calendar != null and calendar.is_paused() and current_state != State.TALKING:
 		velocity = Vector3.ZERO
 		return
-	if current_state not in [State.ROUTINE_TRAVEL, State.SOCIAL_TRAVEL, State.GOING_HOME]:
+	if current_state not in [State.ROUTINE_TRAVEL, State.CONTRIBUTION_TRAVEL, State.SOCIAL_TRAVEL, State.GOING_HOME]:
 		velocity = Vector3.ZERO
 		_animate_activity()
 		return
@@ -124,8 +128,8 @@ func _physics_process(delta: float) -> void:
 	if distance <= arrival_distance:
 		global_position = Vector3(target.x, global_position.y, target.z)
 		velocity = Vector3.ZERO
-		current_state = State.SOCIALIZING if bool(current_activity.get("social", false)) else (State.SLEEPING if current_period == &"night" else State.ROUTINE_ACTIVITY)
-		activity_bubble.visible = current_state == State.SOCIALIZING
+		current_state = State.CONTRIBUTING if bool(current_activity.get("project", false)) else (State.SOCIALIZING if bool(current_activity.get("social", false)) else (State.SLEEPING if current_period == &"night" else State.ROUTINE_ACTIVITY))
+		activity_bubble.visible = current_state in [State.SOCIALIZING, State.CONTRIBUTING]
 		_update_debug_label()
 		activity_changed.emit(resident_id, activity_id(), state_name())
 		return
@@ -146,6 +150,12 @@ func _animate_activity() -> void:
 		return
 	model_root.rotation.z = lerpf(model_root.rotation.z, sin(Time.get_ticks_msec() * 0.004) * 0.035, 0.12)
 	model_root.position.y = 0.06 + sin(Time.get_ticks_msec() * 0.006) * 0.035
+	if current_state == State.CONTRIBUTING:
+		var action := StringName(str(current_activity.get("work_action", "work")))
+		if action == &"build": model_root.rotation.x = sin(Time.get_ticks_msec() * 0.01) * 0.14
+		elif action == &"plant": model_root.position.y = 0.02 + absf(sin(Time.get_ticks_msec() * 0.007)) * 0.12
+		elif action == &"celebrate": model_root.position.y = 0.08 + absf(sin(Time.get_ticks_msec() * 0.012)) * 0.22
+		else: model_root.rotation.y += 0.008
 
 func request_contribution(specialty: StringName) -> Dictionary:
 	if current_period == &"night" or energy < 0.25:
@@ -153,6 +163,25 @@ func request_contribution(specialty: StringName) -> Dictionary:
 	if specialty != StringName(str(definition.get("specialty", ""))):
 		return {"accepted":false, "reason":"%s says this needs a %s's eye, but will check back later." % [display_name(), specialty]}
 	return {"accepted":true, "reason":"%s would like to help when the community project opens." % display_name()}
+
+func begin_project_contribution(phase_id: StringName, label: String, work_action: StringName, target: Vector3) -> void:
+	project_phase_id = phase_id
+	current_activity = {"id":"garden_%s" % phase_id, "label":label, "location":"community garden", "position":[target.x,target.y,target.z], "project":true, "work_action":String(work_action)}
+	activity_bubble.text = _project_icon(work_action)
+	activity_bubble.visible = false
+	_begin_travel()
+	current_state = State.CONTRIBUTION_TRAVEL
+
+func is_project_ready() -> bool:
+	return not project_phase_id.is_empty() and current_state == State.CONTRIBUTING
+
+func finish_project_contribution() -> void:
+	project_phase_id = &""
+	activity_bubble.visible = false
+	_select_routine_activity()
+
+func unlock_garden_routine() -> void:
+	garden_routine_unlocked = true
 
 func begin_social_activity(session_id: StringName, activity_id_value: StringName, label: String, location: String, target: Vector3, participant_ids: Array[StringName]) -> void:
 	social_session_id = session_id
@@ -209,7 +238,7 @@ func end_talking() -> void:
 	_select_routine_activity()
 
 func serialize_state() -> Dictionary:
-	return {"resident_id":String(resident_id), "position":[global_position.x,global_position.y,global_position.z], "home_id":str(definition.get("home_id", "")), "routine_period":String(current_period), "activity_id":String(activity_id()), "state":state_name(), "energy":energy, "mood":mood, "social_openness":social_openness, "aspiration_step":aspiration_step, "carried_item_id":String(carried_item_id)}
+	return {"resident_id":String(resident_id), "position":[global_position.x,global_position.y,global_position.z], "home_id":str(definition.get("home_id", "")), "routine_period":String(current_period), "activity_id":String(activity_id()), "state":state_name(), "energy":energy, "mood":mood, "social_openness":social_openness, "aspiration_step":aspiration_step, "carried_item_id":String(carried_item_id), "garden_routine_unlocked":garden_routine_unlocked}
 
 func restore_state(data: Dictionary) -> void:
 	if data.has("position"):
@@ -219,6 +248,7 @@ func restore_state(data: Dictionary) -> void:
 	social_openness = clampf(float(data.get("social_openness", 0.65)), 0.0, 1.0)
 	aspiration_step = maxi(int(data.get("aspiration_step", 0)), 0)
 	carried_item_id = StringName(str(data.get("carried_item_id", "")))
+	garden_routine_unlocked = bool(data.get("garden_routine_unlocked", false))
 
 func display_name() -> String:
 	return str(definition.get("display_name", resident_id))
@@ -261,3 +291,12 @@ func _activity_icon(activity_id_value: StringName) -> String:
 		&"celebration": return "★"
 		&"garden_gathering": return "❀"
 		_: return "…"
+
+func _project_icon(work_action: StringName) -> String:
+	match work_action:
+		&"clear": return "⌁"
+		&"build": return "▣"
+		&"inspect": return "◉"
+		&"plant": return "♣"
+		&"celebrate": return "★"
+		_: return "✦"

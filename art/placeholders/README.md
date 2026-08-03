@@ -42,3 +42,13 @@ No resident placeholder may ship without a reviewed replacement or explicit appr
 - Relationship changes are intentionally surfaced through visits, activity animation, dialogue memories, journal summaries, and transient HUD feedback before any numerical bond display.
 
 Final social-place art remains gated until capacities, slot spacing, and camera readability have been tested during the Community Garden milestone. No Milestone 4 social placeholder may ship without a reviewed replacement or explicit approval.
+
+## Milestone 5 community-project contract
+
+- `scenes/projects/community_project.tscn` owns the stable project root, five ordered `PhasePresentations`, and `ContributionSlots` for founder and residents. Final garden states replace presentation children without changing project ID, phase order, origin, footprint, slots, or interaction anchor.
+- The authored garden zone remains 15 × 11 m. Contribution props must preserve clear approach paths and visibility from the locked camera.
+- Reclaimed wood, smooth stone, and common seed piles are development-only material-source placeholders. Their colors communicate identity but never determine inventory or project logic.
+- The founder's `CarriedItemSocket` and residents' existing carried-item socket remain stable replacement seams. A visible cube and icon bubbles currently stand in for carry and five contribution actions.
+- The restored placeholder uses ordinary local flowers only. Rare colors, Resonance glow, special seeds, and First Bloom effects remain explicitly gated to Milestones 6–7.
+
+Village Kit Asset Batch C requirements are recorded in `docs/village_kit_art_brief.md`. No Milestone 5 project placeholder may ship without a reviewed replacement or explicit approval.

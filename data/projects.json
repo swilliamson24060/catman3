@@ -1,0 +1,16 @@
+{
+  "projects": [
+    {
+      "id": "project_restore_garden",
+      "display_name": "Restore the community garden",
+      "location": [-7.0, 0.0, 15.0],
+      "phases": [
+        {"id":"clear_debris", "label":"Clear debris", "resident_specialties":["history","gardening"], "material_needs":{}, "work_action":"clear"},
+        {"id":"repair_beds", "label":"Repair beds", "resident_specialties":["building"], "material_needs":{"reclaimed_wood":2}, "work_action":"build"},
+        {"id":"restore_irrigation", "label":"Restore irrigation", "resident_specialties":["building","history"], "material_needs":{"smooth_stone":2}, "work_action":"inspect"},
+        {"id":"plant", "label":"Plant the garden", "resident_specialties":["gardening"], "material_needs":{"garden_seed":2}, "work_action":"plant"},
+        {"id":"celebrate", "label":"Celebrate the work", "resident_specialties":["gardening","building","history"], "material_needs":{}, "work_action":"celebrate"}
+      ]
+    }
+  ]
+}

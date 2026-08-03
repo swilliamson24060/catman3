@@ -9,6 +9,9 @@ signal locator_changed(entries: Array[Dictionary])
 signal board_requested
 signal social_activity_started(session: Dictionary)
 signal social_activity_completed(session: Dictionary)
+signal project_contribution_started(session: Dictionary)
+signal project_contribution_completed(session: Dictionary)
+signal project_coordination_comment(text: String)
 
 const RESIDENT_SCENE := preload("res://scenes/residents/resident_agent.tscn")
 const RESTORE_GARDEN_PRIORITY := &"project_restore_garden"
@@ -21,6 +24,7 @@ var _pending_state: Dictionary = {}
 var _active_dialogue_resident: ResidentAgent
 var _social_sessions: Dictionary = {}
 var _next_social_session_index: int = 1
+var _project_session: Dictionary = {}
 
 var legacy_animal_manager: Node:
 	get: return get_node_or_null("/root/AnimalManager")
@@ -34,6 +38,7 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if _world_root == null or not is_instance_valid(_world_root):
 		return
+	_process_project_contribution(delta)
 	for session_id: StringName in _social_sessions.keys():
 		var session: Dictionary = _social_sessions[session_id]
 		if str(session.get("phase", "traveling")) == "traveling":
@@ -62,6 +67,7 @@ func unbind_world(world_root: Node3D) -> void:
 	if _world_root != world_root:
 		return
 	cancel_all_social_activities(false)
+	cancel_project_contribution(false)
 	_agents.clear()
 	_world_root = null
 
@@ -93,6 +99,7 @@ func new_game() -> void:
 	current_priority = &""
 	recent_discoveries.clear()
 	cancel_all_social_activities()
+	cancel_project_contribution()
 	_pending_state.clear()
 	if _world_root != null:
 		_spawn_residents()
@@ -103,7 +110,61 @@ func propose_priority(priority_id: StringName) -> bool:
 	current_priority = priority_id
 	priority_changed.emit(current_priority)
 	get_node("/root/CalendarService").record_project_progress("The community proposed restoring the abandoned garden.")
+	get_node("/root/CommunityProjectService").start_project(priority_id)
 	return true
+
+func consider_project_contributions() -> void:
+	if not _project_session.is_empty(): return
+	var service := get_node("/root/CommunityProjectService")
+	if not service.active or not service.materials_ready(): return
+	var specialties: Array[StringName] = service.required_specialties()
+	var best_agent: ResidentAgent
+	var best_score := -INF
+	for agent: ResidentAgent in get_agents():
+		if not service.can_resident_contribute(agent.resident_id): continue
+		var specialty := StringName(str(agent.definition.get("specialty", "")))
+		var score := (40.0 if specialty in specialties else 8.0) + agent.energy * 10.0 + agent.mood * 5.0
+		if str(agent.definition.get("aspiration_id", "")) == "aspiration_restore_garden": score += 20.0
+		if current_priority == RESTORE_GARDEN_PRIORITY: score += 12.0
+		if score > best_score:
+			best_score = score
+			best_agent = agent
+	if best_agent == null: return
+	var project := _world_root.get_node_or_null("Projects/RestoreGarden")
+	if project == null: return
+	_project_session = {"resident_id":String(best_agent.resident_id), "phase_id":String(service.current_phase_id()), "phase":"traveling", "remaining_seconds":2.0, "work_action":String(service.work_action())}
+	best_agent.begin_project_contribution(service.current_phase_id(), service.current_phase_label(), service.work_action(), project.contribution_slot_position(1))
+	project_contribution_started.emit(_project_session.duplicate(true))
+
+func _process_project_contribution(delta: float) -> void:
+	if _project_session.is_empty(): return
+	var agent := get_agent(StringName(str(_project_session.resident_id)))
+	if agent == null:
+		_project_session.clear()
+		return
+	if str(_project_session.phase) == "traveling" and agent.is_project_ready():
+		_project_session.phase = "performing"
+	elif str(_project_session.phase) == "performing":
+		_project_session.remaining_seconds = maxf(float(_project_session.remaining_seconds) - delta, 0.0)
+		if is_zero_approx(float(_project_session.remaining_seconds)):
+			var service := get_node("/root/CommunityProjectService")
+			var session := _project_session.duplicate(true)
+			agent.finish_project_contribution()
+			_project_session.clear()
+			service.contribute(agent.resident_id, false)
+			project_contribution_completed.emit(session)
+			project_coordination_comment.emit(_project_comment(StringName(str(session.phase_id)), agent.display_name()))
+
+func cancel_project_contribution(resume_routine: bool = true) -> void:
+	if _project_session.is_empty(): return
+	var agent := get_agent(StringName(str(_project_session.resident_id)))
+	if resume_routine and agent != null and agent.is_inside_tree(): agent.finish_project_contribution()
+	_project_session.clear()
+
+func on_community_project_completed(project_id: StringName) -> void:
+	if project_id != RESTORE_GARDEN_PRIORITY: return
+	for agent: ResidentAgent in get_agents(): agent.unlock_garden_routine()
+	project_coordination_comment.emit("The restored beds are ready for ordinary village flowers. Something rarer still waits beyond today's work.")
 
 func request_board() -> void:
 	board_requested.emit()
@@ -261,6 +322,7 @@ func _on_period_changed(period_id: StringName) -> void:
 	if _active_dialogue_resident != null:
 		close_dialogue()
 	cancel_all_social_activities()
+	cancel_project_contribution()
 	for agent: ResidentAgent in get_agents():
 		agent.set_period(period_id)
 	if period_id == &"evening":
@@ -327,6 +389,14 @@ func _social_memory_phrase(activity_id: StringName) -> String:
 		&"celebration": return "celebrated a village moment"
 		&"garden_gathering": return "enjoyed the garden together"
 		_: return "lost track of time in conversation"
+
+func _project_comment(phase_id: StringName, resident_name: String) -> String:
+	match phase_id:
+		&"clear_debris": return "%s: The old paths are visible again. Let's repair what the roots can still use." % resident_name
+		&"repair_beds": return "%s: The frames are sturdy. The water route comes next." % resident_name
+		&"restore_irrigation": return "%s: Water can reach every bed now. Common seeds will prove the soil." % resident_name
+		&"plant": return "%s: These familiar flowers belong here. The unusual colors are still only a hope." % resident_name
+		_: return "%s: We did this together. The garden can be part of our days again." % resident_name
 
 func _string_names(values: Array[StringName]) -> Array[String]:
 	var result: Array[String] = []

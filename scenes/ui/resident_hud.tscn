@@ -101,6 +101,11 @@ text = "Propose one shared priority. Residents decide when and how they can cont
 layout_mode = 2
 text = "Current priority: No priority proposed"
 
+[node name="ProjectStatus" type="Label" parent="CommunityBoard/Margin/VBox"]
+layout_mode = 2
+autowrap_mode = 2
+text = "Waiting for the village to propose restoration."
+
 [node name="Propose" type="Button" parent="CommunityBoard/Margin/VBox"]
 layout_mode = 2
 text = "Propose: Restore the garden"

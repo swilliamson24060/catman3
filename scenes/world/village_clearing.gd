@@ -52,8 +52,6 @@ func _build_clearing() -> void:
 	_create_block("HomeElowenPlaceholder", Vector3(4.2, 3.4, 4.2), Vector3(9.0, 1.7, 9.0), Color(0.6, 0.45, 0.76))
 	_create_block("WorkshopPlaceholder", Vector3(6.0, 4.2, 5.0), Vector3(15.0, 2.1, -5.5), Color(0.88, 0.5, 0.2))
 
-	for row in range(3):
-		_create_block("GardenBed%d" % row, Vector3(4.8, 0.45, 1.25), Vector3(-9.0 + float(row) * 3.8, 0.23, 15.0), Color(0.3, 0.2, 0.12), false)
 	_create_tree("OldGardenTree", Vector3(-7.0, 0.0, 19.0), 1.35)
 	_create_tree("CenterTree", Vector3(4.5, 0.0, 4.5), 1.0)
 	for tree_data: Array in [

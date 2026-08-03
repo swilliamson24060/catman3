@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scripts/player/reboot_founder_cat.gd" id="1"]
 [ext_resource type="PackedScene" path="res://kenney_cube-pets_1/Models/GLB format/animal-cat.glb" id="2"]
@@ -10,6 +10,9 @@ height = 1.25
 [sub_resource type="StandardMaterial3D" id="WatermarkMaterial"]
 albedo_color = Color(0.24, 0.72, 0.92, 1)
 roughness = 0.8
+
+[sub_resource type="BoxMesh" id="CarryMesh"]
+size = Vector3(0.38, 0.38, 0.38)
 
 [node name="RebootFounderCat" type="CharacterBody3D"]
 script = ExtResource("1")
@@ -27,5 +30,14 @@ scale = Vector3(1.05, 1.05, 1.05)
 [node name="PlaceholderWatermark" type="MeshInstance3D" parent="VisualRoot"]
 position = Vector3(0, 1.65, 0)
 mesh = null
+material_override = SubResource("WatermarkMaterial")
+metadata/_development_placeholder = true
+
+[node name="CarriedItemSocket" type="Marker3D" parent="."]
+position = Vector3(0.48, 0.9, 0)
+
+[node name="CarriedMaterial" type="MeshInstance3D" parent="CarriedItemSocket"]
+visible = false
+mesh = SubResource("CarryMesh")
 material_override = SubResource("WatermarkMaterial")
 metadata/_development_placeholder = true

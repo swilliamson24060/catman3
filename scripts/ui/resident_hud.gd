@@ -7,6 +7,7 @@ extends CanvasLayer
 @onready var dialogue_close: Button = $DialoguePanel/Margin/VBox/Close
 @onready var board_panel: PanelContainer = $CommunityBoard
 @onready var board_status: Label = $CommunityBoard/Margin/VBox/Status
+@onready var project_status: Label = $CommunityBoard/Margin/VBox/ProjectStatus
 @onready var propose_button: Button = $CommunityBoard/Margin/VBox/Propose
 @onready var board_close: Button = $CommunityBoard/Margin/VBox/Close
 @onready var locator_text: RichTextLabel = $ResidentLocator/Margin/VBox/Residents
@@ -21,7 +22,11 @@ func _ready() -> void:
 	manager.board_requested.connect(_open_board)
 	manager.priority_changed.connect(_on_priority_changed)
 	manager.locator_changed.connect(_refresh_locator)
+	manager.project_coordination_comment.connect(_on_project_comment)
 	get_node("/root/RelationshipService").bond_changed.connect(_on_bond_changed)
+	get_node("/root/CommunityProjectService").project_progress_changed.connect(_on_project_progress)
+	get_node("/root/CommunityProjectService").phase_changed.connect(func(_project_id: StringName, _phase_id: StringName, _phase_index: int) -> void: _refresh_project_status())
+	get_node("/root/CommunityProjectService").project_completed.connect(func(_project_id: StringName) -> void: _refresh_project_status())
 	dialogue_close.pressed.connect(manager.close_dialogue)
 	propose_button.pressed.connect(_propose_priority)
 	board_close.pressed.connect(_close_board)
@@ -31,6 +36,7 @@ func _ready() -> void:
 	relationship_timer.timeout.connect(func() -> void: relationship_toast.visible = false)
 	_refresh_locator(manager.locator_entries())
 	_on_priority_changed(manager.current_priority)
+	_refresh_project_status()
 
 func _on_dialogue_requested(resident: ResidentAgent, text: String) -> void:
 	dialogue_title.text = "%s — %s" % [resident.display_name(), str(resident.definition.get("specialty", "resident")).capitalize()]
@@ -64,6 +70,18 @@ func _on_priority_changed(_priority_id: StringName) -> void:
 	board_status.text = "Current priority: %s" % manager.priority_display_name()
 	propose_button.disabled = manager.current_priority == &"project_restore_garden"
 	propose_button.text = "Garden restoration proposed" if propose_button.disabled else "Propose: Restore the garden"
+	_refresh_project_status()
+
+func _refresh_project_status() -> void:
+	project_status.text = get_node("/root/CommunityProjectService").progress_summary()
+
+func _on_project_progress(_project_id: StringName, _summary: String) -> void:
+	_refresh_project_status()
+
+func _on_project_comment(text: String) -> void:
+	relationship_text.text = text
+	relationship_toast.visible = true
+	relationship_timer.start()
 
 func _refresh_locator(entries: Array[Dictionary]) -> void:
 	var lines: Array[String] = ["[b]Resident Almanac[/b]"]

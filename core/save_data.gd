@@ -14,3 +14,4 @@ class_name SaveData
 @export var weather_state: Dictionary = {}
 @export var resident_state: Dictionary = {}
 @export var relationship_state: Dictionary = {}
+@export var community_project_state: Dictionary = {}

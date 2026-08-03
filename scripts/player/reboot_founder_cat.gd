@@ -13,9 +13,22 @@ var _gravity: float = float(ProjectSettings.get_setting("physics/3d/default_grav
 var _active_anchor: InteractionAnchor
 
 @onready var prompt_label: Label = get_tree().get_first_node_in_group("reboot_interaction_prompt") as Label
+@onready var carried_material_visual: MeshInstance3D = $CarriedItemSocket/CarriedMaterial
 
 func _ready() -> void:
 	add_to_group("reboot_player")
+	get_node("/root/CommunityProjectService").carried_material_changed.connect(_on_carried_material_changed)
+	_on_carried_material_changed(get_node("/root/CommunityProjectService").carried_material)
+
+func _on_carried_material_changed(material_id: StringName) -> void:
+	carried_material_visual.visible = not material_id.is_empty()
+	if material_id.is_empty(): return
+	var material := StandardMaterial3D.new()
+	match material_id:
+		&"reclaimed_wood": material.albedo_color = Color(0.72, 0.42, 0.18)
+		&"smooth_stone": material.albedo_color = Color(0.52, 0.58, 0.62)
+		_: material.albedo_color = Color(0.76, 0.68, 0.22)
+	carried_material_visual.material_override = material
 
 func _unhandled_input(event: InputEvent) -> void:
 	if input_enabled and event.is_action_pressed("interact") and _active_anchor != null:

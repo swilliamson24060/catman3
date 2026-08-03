@@ -41,6 +41,7 @@ SettlementManager="*res://autoload/settlement_manager.gd"
 ScaffoldService="*res://core/scaffold_service.gd"
 CalendarService="*res://core/calendar_service.gd"
 RelationshipService="*res://core/relationship_service.gd"
+CommunityProjectService="*res://core/community_project_service.gd"
 ResidentManager="*res://core/resident_manager.gd"
 SeasonalResonanceService="*res://core/seasonal_resonance_service.gd"
 
