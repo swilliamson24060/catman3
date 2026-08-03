@@ -35,6 +35,8 @@ func _ready() -> void:
 	get_node("/root/RumorService").rumor_acquired.connect(func(_id: StringName, _text: String) -> void: _refresh_almanac())
 	get_node("/root/DiscoveryService").discovery_changed.connect(func(_id: StringName, _state: StringName) -> void: _refresh_almanac())
 	get_node("/root/InvestigationService").table_requested.connect(_open_investigation)
+	get_node("/root/SeasonalResonanceService").feedback_changed.connect(func(_result: Dictionary) -> void: _refresh_almanac())
+	get_node("/root/SeasonalResonanceService").activation_completed.connect(func(_pattern_id: StringName) -> void: _refresh_almanac())
 	$InvestigationTable/Margin/VBox/Investigate.pressed.connect(_investigate_selected)
 	$InvestigationTable/Margin/VBox/Close.pressed.connect(_close_investigation)
 	dialogue_close.pressed.connect(manager.close_dialogue)
@@ -119,7 +121,9 @@ func _refresh_almanac() -> void:
 	for entry: Dictionary in get_node("/root/DiscoveryService").entries_for_state([&"found", &"unidentified", &"investigation_available", &"investigated"]): unidentified_lines.append("• %s — purpose unknown" % entry.label)
 	var interpreted_lines: Array[String] = []
 	for entry: Dictionary in get_node("/root/DiscoveryService").entries_for_state([&"interpreted"]): interpreted_lines.append("• [b]%s[/b]\n  %s" % [entry.display_name, entry.interpretation])
-	almanac_text.text = "[b]Rumors[/b]\n%s\n\n[b]Unidentified Finds[/b]\n%s\n\n[b]Interpreted Finds[/b]\n%s\n\n[b]Confirmed Patterns[/b]\nNone yet — experiments begin in a later milestone." % ["\n".join(rumor_lines) if not rumor_lines.is_empty() else "None yet.", "\n".join(unidentified_lines) if not unidentified_lines.is_empty() else "None yet.", "\n".join(interpreted_lines) if not interpreted_lines.is_empty() else "None yet."]
+	var resonance := get_node("/root/SeasonalResonanceService")
+	var experiment_note := "\n\nLatest experiment: %s" % str(resonance.current_result.get("tier_name", "Dormant")) if not resonance.activated else ""
+	almanac_text.text = "[b]Rumors[/b]\n%s\n\n[b]Unidentified Finds[/b]\n%s\n\n[b]Interpreted Finds[/b]\n%s\n\n[b]Confirmed Patterns[/b]\n%s%s" % ["\n".join(rumor_lines) if not rumor_lines.is_empty() else "None yet.", "\n".join(unidentified_lines) if not unidentified_lines.is_empty() else "None yet.", "\n".join(interpreted_lines) if not interpreted_lines.is_empty() else "None yet.", resonance.confirmed_pattern_text(), experiment_note]
 
 func _open_investigation(pending: Array[StringName]) -> void:
 	_pending_investigations = pending.duplicate()

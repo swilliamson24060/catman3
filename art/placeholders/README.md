@@ -6,6 +6,13 @@
 - Cyan, copper, gold, purple, and stone placeholders distinguish discovery categories only; gameplay identity comes from `data/discoveries.json`.
 - Woodland landmarks lead before optional markers. A marker becomes visible only after a revisit/help request.
 - The workshop investigation table and Almanac panels are development placeholders with production dimensions documented in `docs/exploration_art_brief.md`.
+
+## Milestone 7 Resonance contracts
+
+- `scenes/resonance/resonance_plinth.tscn` preserves ground origin, a 0.9 m `ComponentSlot`, 1.1 m `VFXSocket`, and a separate interaction anchor.
+- `scenes/resonance/resonance_site.tscn` owns replaceable feedback lines, center pulse, three-tone audio seam, and First Bloom flower presentation.
+- Cyan lens, copper wheel, and gold seed packet are silhouette placeholders only; component roles are data-driven and remain hidden in player-facing UI.
+- Tier colors are development shorthand backed by distinct mote/line/pulse behavior. Production accessibility treatment remains scheduled for Milestone 10.
 All Milestone 1 geometry is development-only greybox content. Runtime-created nodes carry `development_placeholder=true`; reusable scene assets carry `_development_placeholder` metadata.
 
 - Godot scale is 1 unit = 1 meter.

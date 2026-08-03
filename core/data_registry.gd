@@ -233,6 +233,8 @@ func _normalize_references() -> void:
 			upkeep["item"] = _canonical_reference(_items, str(upkeep["item"]), animal_namespace)
 
 	for pattern: Dictionary in _resonance_patterns.values():
+		if pattern.has("geometry"):
+			continue
 		var pattern_namespace: String = pattern.get("namespace", CORE_NAMESPACE)
 		pattern["anchor_building_type"] = _canonical_reference(_buildings, str(pattern.get("anchor_building_type", "")), pattern_namespace)
 		for offset: Dictionary in pattern.get("required_offsets", []):
@@ -276,6 +278,8 @@ func _validate_references() -> void:
 				load_errors.append("Building '%s' consumes unknown item '%s'" % [building.get("id"), item_id])
 
 	for pattern in _resonance_patterns.values():
+		if pattern.has("geometry"):
+			continue
 		var anchor: String = pattern.get("anchor_building_type", "")
 		if not _id_exists_anywhere(_buildings, anchor):
 			load_errors.append("Resonance pattern '%s' references unknown anchor building '%s'" % [pattern.get("id"), anchor])

@@ -1,0 +1,58 @@
+[gd_scene format=3 uid="uid://7xodi6yn32c"]
+
+[ext_resource type="Script" uid="uid://dow6rj0mgkqyk" path="res://scripts/resonance/resonance_plinth.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/world/interaction_anchor.tscn" id="2"]
+
+[sub_resource type="StandardMaterial3D" id="StoneMat"]
+albedo_color = Color(0.42, 0.46, 0.43, 1)
+
+[sub_resource type="CylinderMesh" id="PlinthMesh"]
+top_radius = 0.65
+bottom_radius = 0.78
+height = 0.75
+
+[sub_resource type="ParticleProcessMaterial" id="MoteProcess"]
+emission_shape = 1
+emission_sphere_radius = 0.5
+direction = Vector3(0, 1, 0)
+initial_velocity_min = 0.25
+initial_velocity_max = 0.55
+gravity = Vector3(0, 0, 0)
+scale_min = 0.08
+scale_max = 0.16
+
+[sub_resource type="StandardMaterial3D" id="MoteMat"]
+shading_mode = 0
+albedo_color = Color(0.55, 0.9, 1, 0.8)
+
+[sub_resource type="SphereMesh" id="MoteMesh"]
+material = SubResource("MoteMat")
+radius = 0.06
+height = 0.12
+
+[node name="ResonancePlinth" type="Node3D" unique_id=1796083922]
+script = ExtResource("1")
+metadata/_development_placeholder = true
+
+[node name="Stone" type="MeshInstance3D" parent="." unique_id=1341764745]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.375, 0)
+material_override = SubResource("StoneMat")
+mesh = SubResource("PlinthMesh")
+
+[node name="ComponentSlot" type="Marker3D" parent="." unique_id=1356590762]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+
+[node name="ComponentVisual" type="Node3D" parent="ComponentSlot" unique_id=392394442]
+
+[node name="VFXSocket" type="Marker3D" parent="." unique_id=448493665]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, 0)
+
+[node name="FeedbackMotes" type="GPUParticles3D" parent="." unique_id=1839189286]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+emitting = false
+lifetime = 1.2
+process_material = SubResource("MoteProcess")
+draw_pass_1 = SubResource("MoteMesh")
+
+[node name="InteractionAnchor" parent="." unique_id=67025708 instance=ExtResource("2")]
+prompt = "Place an interpreted component"

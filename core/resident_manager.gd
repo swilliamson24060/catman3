@@ -12,6 +12,7 @@ signal social_activity_completed(session: Dictionary)
 signal project_contribution_started(session: Dictionary)
 signal project_contribution_completed(session: Dictionary)
 signal project_coordination_comment(text: String)
+signal resonance_reaction(text: String, witnessed_residents: Array[StringName])
 
 const RESIDENT_SCENE := preload("res://scenes/residents/resident_agent.tscn")
 const RESTORE_GARDEN_PRIORITY := &"project_restore_garden"
@@ -193,6 +194,32 @@ func record_discovery_context(display_name: String) -> void:
 		recent_discoveries.append(display_name)
 	while recent_discoveries.size() > 3:
 		recent_discoveries.pop_front()
+
+func residents_near(position: Vector3, radius: float) -> Array[StringName]:
+	var result: Array[StringName] = []
+	for agent: ResidentAgent in get_agents():
+		if agent.global_position.distance_to(position) <= radius: result.append(agent.resident_id)
+	return result
+
+func react_to_resonance(tier: int, activation: bool, witnessed: Array[StringName]) -> void:
+	var text := "The old stones answer with a steady echo. The arrangement feels close." if tier == 2 else "The old tree pulses softly. The arrangement is waiting for the right morning."
+	if activation: text = "Rain and sunrise move through the stones — The First Bloom has awakened."
+	for resident_id: StringName in witnessed:
+		var agent := get_agent(resident_id)
+		if agent != null: agent.begin_resonance_reaction(tier, activation)
+	resonance_reaction.emit(text, witnessed)
+	project_coordination_comment.emit(text)
+	_resume_resonance_reactions_later(witnessed)
+
+func _resume_resonance_reactions_later(witnessed: Array[StringName]) -> void:
+	await get_tree().create_timer(2.0).timeout
+	for resident_id: StringName in witnessed:
+		var agent := get_agent(resident_id)
+		if agent != null and agent.activity_id() in [&"resonance_reaction", &"first_bloom_reaction"]: agent.set_period(agent.current_period)
+
+func apply_first_bloom_aspiration() -> void:
+	var mara := get_agent(&"resident_mara")
+	if mara != null: mara.aspiration_step = maxi(mara.aspiration_step, 1)
 
 func get_agent(resident_id: StringName) -> ResidentAgent:
 	return _agents.get(resident_id) as ResidentAgent

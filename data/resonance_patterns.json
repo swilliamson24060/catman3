@@ -31,6 +31,30 @@
         { "target": "catnip_garden", "stat": "production_rate", "modifier_type": "multiplier", "value": 1.50 },
         { "target": "global_mice", "stat": "movement_speed", "modifier_type": "additive", "value": 0.15 }
       ]
+    },
+    {
+      "id": "resonance_first_bloom",
+      "display_name": "The First Bloom",
+      "clue_ids": ["clue_ruin_triangle", "discovery_old_plaque"],
+      "geometry": {
+        "shape": "triangle",
+        "tolerance_meters": 0.65,
+        "rotation_invariant": true,
+        "scale_range": [3.5, 5.5],
+        "center_requirement": {"type": "landmark", "id": "old_garden_tree"},
+        "nodes": [
+          {"role": "water", "allowed_components": ["component_rain_lens"]},
+          {"role": "motion", "allowed_components": ["component_copper_gear"]},
+          {"role": "life", "allowed_components": ["component_heirloom_seeds"]}
+        ]
+      },
+      "condition": {"weather_history": ["rain"], "day_period": "morning", "transition": "rain_to_sunrise"},
+      "effects": [
+        {"type": "unlock_flower_palette", "palette_id": "first_bloom_colors"},
+        {"type": "enable_social_activity", "activity_id": "garden_gathering"},
+        {"type": "advance_aspiration", "aspiration_id": "aspiration_restore_garden"},
+        {"type": "play_world_sequence", "sequence_id": "sequence_first_bloom"}
+      ]
     }
   ]
 }

@@ -208,6 +208,13 @@ func begin_investigation_meet(target: Vector3) -> void:
 	current_activity = {"id":"investigation_meet", "label":"Meets the founder to study a find", "location":"workshop investigation table", "position":[target.x,target.y,target.z]}
 	_begin_travel()
 
+func begin_resonance_reaction(tier: int, activation: bool) -> void:
+	current_activity = {"id":"first_bloom_reaction" if activation else "resonance_reaction", "label":"Celebrates The First Bloom" if activation else "Listens to the answering stones", "location":"community garden", "position":[global_position.x,global_position.y,global_position.z], "work_action":"celebrate" if activation else "inspect", "project":true}
+	current_state = State.CONTRIBUTING
+	activity_bubble.text = "✦" if activation else "△"
+	activity_bubble.visible = true
+	_update_debug_label()
+
 func is_social_ready(session_id: StringName) -> bool:
 	return social_session_id == session_id and current_state == State.SOCIALIZING
 

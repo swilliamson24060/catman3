@@ -18,3 +18,4 @@ class_name SaveData
 @export var rumor_state: Dictionary = {}
 @export var discovery_state: Dictionary = {}
 @export var investigation_state: Dictionary = {}
+@export var seasonal_resonance_state: Dictionary = {}

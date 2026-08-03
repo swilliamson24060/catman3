@@ -38,6 +38,7 @@ func new_game(founder_cat_id: String) -> void:
 	get_node("/root/RumorService").reset()
 	get_node("/root/DiscoveryService").reset()
 	get_node("/root/InvestigationService").reset()
+	get_node("/root/SeasonalResonanceService").reset()
 	AchievementService.reset_progress()
 
 func save_game(save_path: String = SAVE_PATH) -> bool:
@@ -57,6 +58,7 @@ func save_game(save_path: String = SAVE_PATH) -> bool:
 		"rumor_state": get_node("/root/RumorService").serialize_state(),
 		"discovery_state": get_node("/root/DiscoveryService").serialize_state(),
 		"investigation_state": get_node("/root/InvestigationService").serialize_state(),
+		"seasonal_resonance_state": get_node("/root/SeasonalResonanceService").serialize_state(),
 		"inventory": Inventory.serialize(),
 		"town_storage": TownStorage.serialize(),
 		"buildings": BuildingManager.serialize(),
@@ -132,6 +134,7 @@ func load_game(save_path: String = SAVE_PATH) -> bool:
 	current.rumor_state = _as_dictionary(parsed.get("rumor_state", {}))
 	current.discovery_state = _as_dictionary(parsed.get("discovery_state", {}))
 	current.investigation_state = _as_dictionary(parsed.get("investigation_state", {}))
+	current.seasonal_resonance_state = _as_dictionary(parsed.get("seasonal_resonance_state", {}))
 	AchievementService.set_tracking_enabled(false)
 	AchievementService.restore_progress(current.achievement_progress)
 	WeatherService.restore_state(current.weather_state.merged({"world_seed": current.world_seed}, false))
@@ -142,6 +145,7 @@ func load_game(save_path: String = SAVE_PATH) -> bool:
 	get_node("/root/DiscoveryService").restore_state(current.discovery_state)
 	get_node("/root/InvestigationService").restore_state(current.investigation_state)
 	get_node("/root/ResidentManager").restore_state(current.resident_state)
+	get_node("/root/SeasonalResonanceService").restore_state(current.seasonal_resonance_state)
 
 	Inventory.restore(_as_array(parsed.get("inventory", [])))
 	TownStorage.restore(_as_array(parsed.get("town_storage", [])))

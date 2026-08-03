@@ -20,7 +20,7 @@ func _run() -> void:
 	assert(root.has_node("CalendarService"))
 	assert(root.has_node("ResidentManager"))
 	assert(root.has_node("SeasonalResonanceService"))
-	assert(not root.get_node("SeasonalResonanceService").supports_seasonal_evaluation())
+	assert(root.get_node("SeasonalResonanceService").supports_seasonal_evaluation(), "Milestone 7 should activate the reboot evaluator without replacing the legacy service")
 
 	_write_legacy_save()
 	var save_service := root.get_node("SaveService")

@@ -13,6 +13,7 @@
 [ext_resource type="PackedScene" path="res://scenes/social/social_place.tscn" id="11"]
 [ext_resource type="PackedScene" path="res://scenes/projects/community_project.tscn" id="12"]
 [ext_resource type="PackedScene" path="res://scenes/projects/material_source.tscn" id="13"]
+[ext_resource type="PackedScene" path="res://scenes/resonance/resonance_site.tscn" id="14"]
 
 [sub_resource type="Environment" id="Environment"]
 background_mode = 1
@@ -114,6 +115,9 @@ position = Vector3(-15, 0.2, -5)
 material_id = &"garden_seed"
 display_name = "common seeds"
 placeholder_color = Color(0.76, 0.68, 0.22, 1)
+
+[node name="FirstBloomResonanceSite" parent="." instance=ExtResource("14")]
+position = Vector3(-7, 0.2, 19)
 
 [node name="SocialPlaces" type="Node3D" parent="."]
 
