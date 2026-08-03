@@ -564,6 +564,10 @@ Placeholder art: benches, table, mugs, and work props made from primitives; icon
 
 Final art required: none yet. Social-prop dimensions are still being learned.
 
+**Status (2026-08-03): Complete.** `RelationshipService` now owns symmetric bonds, preference-based compatibility, remembered moments, diminishing repeat rewards, persisted relationship state, and an idempotent future-facing social-activity enable API. The clearing contains four authored social places—old tree, workshop porch, garden table, and cottage stoop—with atomic paired/group reservations and distinct participant slots. Residents can plan, travel to, visibly perform, and exit conversations, shared meals, collaboration, visits, and celebrations; these activities create dialogue memories, journal summaries, transient HUD feedback, and save-safe relationship state. Newly enabled activities enter candidate selection immediately without a reload. Primitive social props and icon bubbles follow the replacement contract in `art/placeholders/README.md`.
+
+**Justified deviations:** Milestone 4 ships authored social places only; player-created social areas remain deferred until the placement and project footprints are proven in later milestones. Relationship values remain hidden from player-facing UI by design, while tests inspect them through the service API. `garden_gathering` is wired through the enable API and authored place support but remains disabled until a later Resonance effect enables it. The automatic evening demonstration chooses the strongest available pair for an old-tree conversation; the full activity set remains available to planners and future systems. Social travel continues to use the Milestone 3 authored steering and recovery seam rather than locking a navigation bake while the garden footprint is still changing. No Milestone 5 project phases, material requirements, contribution slots, or completion logic were introduced.
+
 ### Milestone 5 — Community garden project
 
 **Goal:** Prove peaceful strategy and cooperative settlement growth.

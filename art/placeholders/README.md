@@ -32,3 +32,13 @@ The sky gradient specification, rain particles, wet-surface treatment, and perio
 - Text-only resident names and aspiration dialogue stand in for portrait cards and expressions.
 
 No resident placeholder may ship without a reviewed replacement or explicit approval.
+
+## Milestone 4 social-place contract
+
+- Social places use `scenes/social/social_place.tscn` with stable `Presentation` and `Slots` children. Final benches, tables, porches, stoops, mugs, tools, and celebration props may replace presentation children without changing the place ID, capacity, activity IDs, or reservation API.
+- Slot transforms are the authoritative non-overlapping participant positions. Replacement props must preserve enough clearance and sightlines for every authored slot.
+- `ActivityBubble` is a development-only icon label that communicates conversation, meal, collaboration, visit, celebration, or future enabled activity. Final animation and VFX may replace it while retaining the resident activity-state interface.
+- Placeholder colors and prop styles communicate place identity only; they never determine compatibility, bond rewards, activity availability, or resident decisions.
+- Relationship changes are intentionally surfaced through visits, activity animation, dialogue memories, journal summaries, and transient HUD feedback before any numerical bond display.
+
+Final social-place art remains gated until capacities, slot spacing, and camera readability have been tested during the Community Garden milestone. No Milestone 4 social placeholder may ship without a reviewed replacement or explicit approval.

@@ -29,6 +29,9 @@ func new_game(founder_cat_id: String) -> void:
 	var resident_manager := get_node_or_null("/root/ResidentManager")
 	if resident_manager != null:
 		resident_manager.new_game()
+	var relationship_service := get_node_or_null("/root/RelationshipService")
+	if relationship_service != null:
+		relationship_service.reset()
 	AchievementService.reset_progress()
 
 func save_game(save_path: String = SAVE_PATH) -> bool:
@@ -43,6 +46,7 @@ func save_game(save_path: String = SAVE_PATH) -> bool:
 		"calendar_state": CalendarService.serialize_state(),
 		"weather_state": WeatherService.serialize_state(),
 		"resident_state": get_node("/root/ResidentManager").serialize_state(),
+		"relationship_state": get_node("/root/RelationshipService").serialize_state(),
 		"inventory": Inventory.serialize(),
 		"town_storage": TownStorage.serialize(),
 		"buildings": BuildingManager.serialize(),
@@ -113,10 +117,12 @@ func load_game(save_path: String = SAVE_PATH) -> bool:
 	current.calendar_state = _as_dictionary(parsed.get("calendar_state", {}))
 	current.weather_state = _as_dictionary(parsed.get("weather_state", {}))
 	current.resident_state = _as_dictionary(parsed.get("resident_state", {}))
+	current.relationship_state = _as_dictionary(parsed.get("relationship_state", {}))
 	AchievementService.set_tracking_enabled(false)
 	AchievementService.restore_progress(current.achievement_progress)
 	WeatherService.restore_state(current.weather_state.merged({"world_seed": current.world_seed}, false))
 	CalendarService.restore_state(current.calendar_state)
+	get_node("/root/RelationshipService").restore_state(current.relationship_state)
 	get_node("/root/ResidentManager").restore_state(current.resident_state)
 
 	Inventory.restore(_as_array(parsed.get("inventory", [])))

@@ -4,7 +4,7 @@ extends CharacterBody3D
 signal conversation_requested(resident: ResidentAgent)
 signal activity_changed(resident_id: StringName, activity_id: StringName, state_name: StringName)
 
-enum State { ROUTINE_TRAVEL, ROUTINE_ACTIVITY, CONSIDERING, CONTRIBUTING, TALKING, GOING_HOME, SLEEPING }
+enum State { ROUTINE_TRAVEL, ROUTINE_ACTIVITY, CONSIDERING, CONTRIBUTING, SOCIAL_TRAVEL, SOCIALIZING, TALKING, GOING_HOME, SLEEPING }
 
 @export var move_speed: float = 2.6
 @export var arrival_distance: float = 0.35
@@ -20,6 +20,7 @@ var mood: float = 0.75
 var social_openness: float = 0.65
 var aspiration_step: int = 0
 var carried_item_id: StringName
+var social_session_id: StringName
 var _score_breakdown: Array[String] = []
 var _stuck_seconds: float = 0.0
 var _last_distance: float = INF
@@ -30,6 +31,7 @@ var _last_distance: float = INF
 @onready var speech_bubble_anchor: Marker3D = $SpeechBubbleAnchor
 @onready var carried_item_socket: Marker3D = $CarriedItemSocket
 @onready var debug_label: Label3D = $DebugActivity
+@onready var activity_bubble: Label3D = $ActivityBubble
 
 func _ready() -> void:
 	add_to_group("reboot_residents")
@@ -90,6 +92,11 @@ func score_activity(candidate: Dictionary) -> Dictionary:
 	var manager := get_node_or_null("/root/ResidentManager")
 	var priority_score := 8.0 if manager != null and manager.current_priority == &"project_restore_garden" and bool(candidate.get("aspiration", false)) else 0.0
 	var relationship_score := 0.0
+	var relationship_service := get_node_or_null("/root/RelationshipService")
+	if relationship_service != null:
+		var partner_ids: Array = candidate.get("partner_ids", [])
+		for partner_id: Variant in partner_ids:
+			relationship_score += float(relationship_service.bond(resident_id, StringName(str(partner_id)))) * 0.08 + relationship_service.compatibility_score(resident_id, StringName(str(partner_id)))
 	return {"score": schedule_score + specialty_score + aspiration_score + distance_score + weather_score + comfort_score + priority_score + relationship_score, "schedule":schedule_score, "specialty":specialty_score, "aspiration":aspiration_score, "distance":distance_score, "weather":weather_score, "comfort":comfort_score, "priority":priority_score, "relationship":relationship_score}
 
 func _begin_travel() -> void:
@@ -106,7 +113,7 @@ func _physics_process(delta: float) -> void:
 	if calendar != null and calendar.is_paused() and current_state != State.TALKING:
 		velocity = Vector3.ZERO
 		return
-	if current_state not in [State.ROUTINE_TRAVEL, State.GOING_HOME]:
+	if current_state not in [State.ROUTINE_TRAVEL, State.SOCIAL_TRAVEL, State.GOING_HOME]:
 		velocity = Vector3.ZERO
 		_animate_activity()
 		return
@@ -117,7 +124,8 @@ func _physics_process(delta: float) -> void:
 	if distance <= arrival_distance:
 		global_position = Vector3(target.x, global_position.y, target.z)
 		velocity = Vector3.ZERO
-		current_state = State.SLEEPING if current_period == &"night" else State.ROUTINE_ACTIVITY
+		current_state = State.SOCIALIZING if bool(current_activity.get("social", false)) else (State.SLEEPING if current_period == &"night" else State.ROUTINE_ACTIVITY)
+		activity_bubble.visible = current_state == State.SOCIALIZING
 		_update_debug_label()
 		activity_changed.emit(resident_id, activity_id(), state_name())
 		return
@@ -146,6 +154,30 @@ func request_contribution(specialty: StringName) -> Dictionary:
 		return {"accepted":false, "reason":"%s says this needs a %s's eye, but will check back later." % [display_name(), specialty]}
 	return {"accepted":true, "reason":"%s would like to help when the community project opens." % display_name()}
 
+func begin_social_activity(session_id: StringName, activity_id_value: StringName, label: String, location: String, target: Vector3, participant_ids: Array[StringName]) -> void:
+	social_session_id = session_id
+	current_activity = {"id":String(activity_id_value), "label":label, "location":location, "position":[target.x,target.y,target.z], "social":true, "partner_ids":participant_ids}
+	current_state = State.SOCIAL_TRAVEL
+	activity_bubble.text = _activity_icon(activity_id_value)
+	activity_bubble.visible = false
+	_begin_social_travel()
+
+func _begin_social_travel() -> void:
+	navigation_agent.target_position = activity_position()
+	current_state = State.SOCIAL_TRAVEL
+	_stuck_seconds = 0.0
+	_last_distance = global_position.distance_to(activity_position())
+	_update_debug_label()
+	activity_changed.emit(resident_id, activity_id(), state_name())
+
+func finish_social_activity() -> void:
+	social_session_id = &""
+	activity_bubble.visible = false
+	_select_routine_activity()
+
+func is_social_ready(session_id: StringName) -> bool:
+	return social_session_id == session_id and current_state == State.SOCIALIZING
+
 func conversation_text() -> String:
 	var weather := get_node_or_null("/root/WeatherService")
 	var weather_line := "The clearing feels settled today."
@@ -158,9 +190,15 @@ func conversation_text() -> String:
 	var discovery_line := ""
 	if manager != null and not manager.recent_discoveries.is_empty():
 		discovery_line = "\nI have been thinking about our recent discovery: %s." % manager.recent_discoveries.back()
+	var relationship_line := ""
+	var relationship_service := get_node_or_null("/root/RelationshipService")
+	if relationship_service != null:
+		var memories: Array[Dictionary] = relationship_service.memories_for(resident_id, 1)
+		if not memories.is_empty():
+			relationship_line = "\nI still smile about this: %s" % str(memories[0].description)
 	var steps: Array = definition.get("aspiration_steps", [])
 	var aspiration := str(steps[clampi(aspiration_step, 0, steps.size() - 1)]) if not steps.is_empty() else "Find a place in the community."
-	return "%s\n\n%s\n%s%s\n\nI hope to: %s" % [current_activity.get("label", "Taking a quiet pause."), weather_line, priority_line, discovery_line, aspiration]
+	return "%s\n\n%s\n%s%s%s\n\nI hope to: %s" % [current_activity.get("label", "Taking a quiet pause."), weather_line, priority_line, discovery_line, relationship_line, aspiration]
 
 func begin_talking() -> void:
 	current_state = State.TALKING
@@ -214,3 +252,12 @@ func _vector3(value: Variant) -> Vector3:
 	if value is Array and value.size() >= 3:
 		return Vector3(float(value[0]), float(value[1]), float(value[2]))
 	return Vector3.ZERO
+
+func _activity_icon(activity_id_value: StringName) -> String:
+	match activity_id_value:
+		&"shared_meal": return "☕"
+		&"collaboration": return "✦"
+		&"visit": return "⌂"
+		&"celebration": return "★"
+		&"garden_gathering": return "❀"
+		_: return "…"

@@ -13,6 +13,7 @@
       "aspiration_id": "aspiration_restore_garden",
       "aspiration_steps": ["Learn what the old garden once grew", "Help restore the abandoned beds", "See unusual flowers return"],
       "color": "df7f78",
+      "relationship_seeds": {"resident_pip": 12, "resident_elowen": 8},
       "routines": {
         "morning": [{"id":"inspect_garden", "label":"Checks the old garden beds", "location":"abandoned garden", "position":[-8.0,0.2,13.0], "specialty":"gardening", "aspiration":true}, {"id":"water_home", "label":"Tends seedlings at home", "location":"Mara's cottage", "position":[-17.0,0.2,-7.0], "specialty":"gardening"}],
         "afternoon": [{"id":"study_tree", "label":"Studies the old garden tree", "location":"old garden tree", "position":[-7.0,0.2,17.0], "specialty":"gardening", "aspiration":true}, {"id":"walk_center", "label":"Walks through the clearing", "location":"village center", "position":[-2.0,0.2,2.0]}],
@@ -33,6 +34,7 @@
       "aspiration_id": "aspiration_repair_irrigation",
       "aspiration_steps": ["Inventory the workshop's surviving tools", "Understand the broken irrigation parts", "Build something the whole village uses"],
       "color": "62a9df",
+      "relationship_seeds": {"resident_mara": 12, "resident_elowen": 6},
       "routines": {
         "morning": [{"id":"sort_tools", "label":"Sorts tools at the workshop", "location":"workshop", "position":[13.0,0.2,-2.0], "specialty":"building", "aspiration":true}],
         "afternoon": [{"id":"survey_workshop", "label":"Measures the workshop plot", "location":"workshop", "position":[15.0,0.2,-1.0], "specialty":"building", "aspiration":true}, {"id":"inspect_gate", "label":"Checks the woodland gate", "location":"woodland gate", "position":[2.0,0.2,-17.0], "specialty":"building"}],
@@ -53,6 +55,7 @@
       "aspiration_id": "aspiration_decode_ruin",
       "aspiration_steps": ["Record the ruin's repeating marks", "Compare the garden and ruin histories", "Interpret the first complete pattern"],
       "color": "aa79d8",
+      "relationship_seeds": {"resident_mara": 8, "resident_pip": 6},
       "routines": {
         "morning": [{"id":"village_notes", "label":"Collects village stories", "location":"village center", "position":[2.0,0.2,1.0], "specialty":"history"}],
         "afternoon": [{"id":"study_ruin", "label":"Studies the ancient ruin", "location":"ancient ruin", "position":[0.0,0.2,-46.0], "specialty":"history", "aspiration":true}, {"id":"listen_gate", "label":"Listens for woodland clues", "location":"woodland gate", "position":[-2.0,0.2,-17.0], "specialty":"history"}],

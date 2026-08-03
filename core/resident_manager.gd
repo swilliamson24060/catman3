@@ -7,6 +7,8 @@ signal dialogue_closed(resident_id: StringName)
 signal priority_changed(priority_id: StringName)
 signal locator_changed(entries: Array[Dictionary])
 signal board_requested
+signal social_activity_started(session: Dictionary)
+signal social_activity_completed(session: Dictionary)
 
 const RESIDENT_SCENE := preload("res://scenes/residents/resident_agent.tscn")
 const RESTORE_GARDEN_PRIORITY := &"project_restore_garden"
@@ -17,6 +19,8 @@ var _agents: Dictionary = {}
 var _world_root: Node3D
 var _pending_state: Dictionary = {}
 var _active_dialogue_resident: ResidentAgent
+var _social_sessions: Dictionary = {}
+var _next_social_session_index: int = 1
 
 var legacy_animal_manager: Node:
 	get: return get_node_or_null("/root/AnimalManager")
@@ -25,6 +29,28 @@ func _ready() -> void:
 	if bool(ProjectSettings.get_setting("feature/reboot_mode", true)):
 		get_node("/root/CalendarService").resident_schedule_changed.connect(_on_period_changed)
 		get_node("/root/WeatherService").forecast_changed.connect(_on_forecast_changed)
+		get_node("/root/RelationshipService").social_activity_enabled.connect(_on_social_activity_enabled)
+
+func _process(delta: float) -> void:
+	if _world_root == null or not is_instance_valid(_world_root):
+		return
+	for session_id: StringName in _social_sessions.keys():
+		var session: Dictionary = _social_sessions[session_id]
+		if str(session.get("phase", "traveling")) == "traveling":
+			var all_ready := true
+			for resident_id_value: Variant in session.participant_ids:
+				var agent := get_agent(StringName(str(resident_id_value)))
+				if agent == null or not agent.is_social_ready(session_id):
+					all_ready = false
+					break
+			if all_ready:
+				session.phase = "performing"
+				_social_sessions[session_id] = session
+		elif str(session.get("phase", "")) == "performing":
+			session.remaining_seconds = maxf(float(session.get("remaining_seconds", 6.0)) - delta, 0.0)
+			_social_sessions[session_id] = session
+			if is_zero_approx(float(session.remaining_seconds)):
+				complete_social_activity(session_id)
 
 func bind_world(world_root: Node3D) -> void:
 	if not bool(ProjectSettings.get_setting("feature/reboot_mode", true)):
@@ -32,12 +58,20 @@ func bind_world(world_root: Node3D) -> void:
 	_world_root = world_root
 	_spawn_residents()
 
+func unbind_world(world_root: Node3D) -> void:
+	if _world_root != world_root:
+		return
+	cancel_all_social_activities(false)
+	_agents.clear()
+	_world_root = null
+
 func _spawn_residents() -> void:
 	for agent: ResidentAgent in _agents.values():
 		if is_instance_valid(agent):
 			agent.queue_free()
 	_agents.clear()
-	var saved_residents: Dictionary = _pending_state.get("residents", {})
+	var saved_state := _pending_state.duplicate(true)
+	var saved_residents: Dictionary = saved_state.get("residents", {})
 	for definition_value: Variant in get_node("/root/DataRegistry").get_all_residents():
 		if not definition_value is Dictionary:
 			continue
@@ -49,14 +83,16 @@ func _spawn_residents() -> void:
 		agent.activity_changed.connect(_on_agent_activity_changed)
 		agent.configure(definition, saved_residents.get(String(resident_id), {}))
 		_agents[resident_id] = agent
-	current_priority = StringName(str(_pending_state.get("current_priority", current_priority)))
+	current_priority = StringName(str(saved_state.get("current_priority", current_priority)))
 	_pending_state.clear()
+	_restore_social_sessions(saved_state.get("social_sessions", []))
 	residents_spawned.emit(_agents.size())
 	_emit_locator()
 
 func new_game() -> void:
 	current_priority = &""
 	recent_discoveries.clear()
+	cancel_all_social_activities()
 	_pending_state.clear()
 	if _world_root != null:
 		_spawn_residents()
@@ -90,6 +126,95 @@ func get_agents() -> Array[ResidentAgent]:
 		result.append(agent)
 	return result
 
+func social_activity_candidates(agent: ResidentAgent) -> Array[Dictionary]:
+	var candidates: Array[Dictionary] = []
+	var relationship_service := get_node("/root/RelationshipService")
+	for activity_id: StringName in relationship_service.enabled_social_activities():
+		var places: Array[SocialPlace] = relationship_service.social_places_for(activity_id)
+		if places.is_empty():
+			continue
+		var best_partner: ResidentAgent
+		var best_relationship: float = -INF
+		for other: ResidentAgent in get_agents():
+			if other == agent:
+				continue
+			var relationship_weight: float = float(relationship_service.bond(agent.resident_id, other.resident_id)) + float(relationship_service.compatibility_score(agent.resident_id, other.resident_id))
+			if relationship_weight > best_relationship:
+				best_relationship = relationship_weight
+				best_partner = other
+		if best_partner != null:
+			candidates.append({"id":activity_id, "place_id":places[0].place_id, "partner_ids":[best_partner.resident_id], "relationship_weight":best_relationship})
+	return candidates
+
+func plan_social_activity(activity_id: StringName, participant_ids: Array[StringName], place_id: StringName, duration_seconds: float = 6.0) -> StringName:
+	var relationship_service := get_node("/root/RelationshipService")
+	if not relationship_service.is_social_activity_enabled(activity_id) or participant_ids.size() < 2:
+		return &""
+	var place: SocialPlace = relationship_service.get_social_place(place_id)
+	if place == null or not place.supports_activity(activity_id) or not place.reserve_group(participant_ids):
+		return &""
+	for resident_id: StringName in participant_ids:
+		if get_agent(resident_id) == null:
+			place.release_group(participant_ids)
+			return &""
+	var session_id := StringName("social_%d" % _next_social_session_index)
+	_next_social_session_index += 1
+	var label := _social_activity_label(activity_id)
+	var session := {"session_id":String(session_id), "activity_id":String(activity_id), "place_id":String(place_id), "participant_ids":_string_names(participant_ids), "phase":"traveling", "remaining_seconds":maxf(duration_seconds, 0.1)}
+	_social_sessions[session_id] = session
+	for resident_id: StringName in participant_ids:
+		var partners: Array[StringName] = participant_ids.duplicate()
+		partners.erase(resident_id)
+		get_agent(resident_id).begin_social_activity(session_id, activity_id, label, place.display_name, place.slot_position_for(resident_id), partners)
+	get_node("/root/EventBus").social_activity_changed.emit(activity_id, true)
+	social_activity_started.emit(session.duplicate(true))
+	return session_id
+
+func complete_social_activity(session_id: StringName) -> bool:
+	if not _social_sessions.has(session_id):
+		return false
+	var session: Dictionary = _social_sessions[session_id]
+	var participant_ids := _string_name_array(session.participant_ids)
+	var activity_id := StringName(str(session.activity_id))
+	var place: SocialPlace = get_node("/root/RelationshipService").get_social_place(StringName(str(session.place_id)))
+	if place != null:
+		place.release_group(participant_ids)
+	for resident_id: StringName in participant_ids:
+		var agent := get_agent(resident_id)
+		if agent != null:
+			agent.finish_social_activity()
+	for left_index in range(participant_ids.size()):
+		for right_index in range(left_index + 1, participant_ids.size()):
+			var left := participant_ids[left_index]
+			var right := participant_ids[right_index]
+			var description := "%s and %s %s." % [get_agent(left).display_name(), get_agent(right).display_name(), _social_memory_phrase(activity_id)]
+			get_node("/root/RelationshipService").record_moment(left, right, activity_id, description, "%s:%s" % [session.place_id, _current_day()])
+			get_node("/root/EventBus").relationship_moment.emit(left, right, activity_id)
+	_social_sessions.erase(session_id)
+	get_node("/root/EventBus").social_activity_changed.emit(activity_id, false)
+	social_activity_completed.emit(session.duplicate(true))
+	_emit_locator()
+	return true
+
+func cancel_social_activity(session_id: StringName, resume_routines: bool = true) -> bool:
+	if not _social_sessions.has(session_id):
+		return false
+	var session: Dictionary = _social_sessions[session_id]
+	var participant_ids := _string_name_array(session.participant_ids)
+	var place: SocialPlace = get_node("/root/RelationshipService").get_social_place(StringName(str(session.place_id)))
+	if place != null:
+		place.release_group(participant_ids)
+	for resident_id: StringName in participant_ids:
+		var agent := get_agent(resident_id)
+		if resume_routines and agent != null and agent.is_inside_tree():
+			agent.finish_social_activity()
+	_social_sessions.erase(session_id)
+	return true
+
+func cancel_all_social_activities(resume_routines: bool = true) -> void:
+	for session_id: StringName in _social_sessions.keys():
+		cancel_social_activity(session_id, resume_routines)
+
 func set_debug_visualization(enabled: bool) -> void:
 	for agent: ResidentAgent in get_agents():
 		agent.show_debug_scores = enabled
@@ -106,7 +231,7 @@ func serialize_state() -> Dictionary:
 	var resident_states: Dictionary = {}
 	for resident_id: StringName in _agents:
 		resident_states[String(resident_id)] = (_agents[resident_id] as ResidentAgent).serialize_state()
-	return {"current_priority":String(current_priority), "recent_discoveries":recent_discoveries.duplicate(), "residents":resident_states}
+	return {"current_priority":String(current_priority), "recent_discoveries":recent_discoveries.duplicate(), "residents":resident_states, "social_sessions":_social_sessions.values()}
 
 func restore_state(data: Dictionary) -> void:
 	_pending_state = data.duplicate(true)
@@ -135,8 +260,11 @@ func _on_conversation_requested(resident: ResidentAgent) -> void:
 func _on_period_changed(period_id: StringName) -> void:
 	if _active_dialogue_resident != null:
 		close_dialogue()
+	cancel_all_social_activities()
 	for agent: ResidentAgent in get_agents():
 		agent.set_period(period_id)
+	if period_id == &"evening":
+		call_deferred("_schedule_evening_social")
 	_emit_locator()
 
 func _on_forecast_changed(_forecast: Array[String]) -> void:
@@ -150,6 +278,71 @@ func _on_agent_activity_changed(_resident_id: StringName, _activity_id: StringNa
 
 func _emit_locator() -> void:
 	locator_changed.emit(locator_entries())
+
+func _schedule_evening_social() -> void:
+	if not _social_sessions.is_empty() or get_agents().size() < 2:
+		return
+	var relationship_service := get_node("/root/RelationshipService")
+	var best_pair: Array[StringName] = []
+	var best_score: float = -INF
+	var agents := get_agents()
+	for left_index in range(agents.size()):
+		for right_index in range(left_index + 1, agents.size()):
+			var left: ResidentAgent = agents[left_index]
+			var right: ResidentAgent = agents[right_index]
+			var score: float = float(relationship_service.bond(left.resident_id, right.resident_id)) + float(relationship_service.compatibility_score(left.resident_id, right.resident_id))
+			if score > best_score:
+				best_score = score
+				best_pair = [left.resident_id, right.resident_id]
+	if not best_pair.is_empty():
+		plan_social_activity(&"conversation", best_pair, &"old_tree")
+
+func _on_social_activity_enabled(_activity_id: StringName) -> void:
+	_emit_locator()
+
+func _restore_social_sessions(saved_sessions: Variant) -> void:
+	if not saved_sessions is Array:
+		return
+	for saved_value: Variant in saved_sessions:
+		if not saved_value is Dictionary:
+			continue
+		var saved: Dictionary = saved_value
+		var duration := float(saved.get("remaining_seconds", 6.0))
+		plan_social_activity(StringName(str(saved.get("activity_id", ""))), _string_name_array(saved.get("participant_ids", [])), StringName(str(saved.get("place_id", ""))), duration)
+
+func _social_activity_label(activity_id: StringName) -> String:
+	match activity_id:
+		&"shared_meal": return "Shares a peaceful meal"
+		&"collaboration": return "Works side by side"
+		&"visit": return "Visits a neighbor"
+		&"celebration": return "Celebrates together"
+		&"garden_gathering": return "Gathers among the flowers"
+		_: return "Chats with a friend"
+
+func _social_memory_phrase(activity_id: StringName) -> String:
+	match activity_id:
+		&"shared_meal": return "shared a quiet meal"
+		&"collaboration": return "found an easy rhythm working together"
+		&"visit": return "made time for a neighborly visit"
+		&"celebration": return "celebrated a village moment"
+		&"garden_gathering": return "enjoyed the garden together"
+		_: return "lost track of time in conversation"
+
+func _string_names(values: Array[StringName]) -> Array[String]:
+	var result: Array[String] = []
+	for value: StringName in values:
+		result.append(String(value))
+	return result
+
+func _string_name_array(values: Variant) -> Array[StringName]:
+	var result: Array[StringName] = []
+	if values is Array:
+		for value: Variant in values:
+			result.append(StringName(str(value)))
+	return result
+
+func _current_day() -> int:
+	return int(get_node("/root/CalendarService").current_day)
 
 func _string_array(value: Variant) -> Array[String]:
 	var result: Array[String] = []

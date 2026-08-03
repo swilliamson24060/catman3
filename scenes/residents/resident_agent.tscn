@@ -53,3 +53,13 @@ outline_size = 6
 billboard = 1
 no_depth_test = true
 metadata/_development_placeholder = true
+
+[node name="ActivityBubble" type="Label3D" parent="."]
+visible = false
+position = Vector3(0, 1.78, 0)
+text = "…"
+font_size = 40
+outline_size = 8
+billboard = 1
+no_depth_test = true
+metadata/_development_placeholder = true

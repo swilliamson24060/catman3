@@ -31,6 +31,11 @@ func _ready() -> void:
 	get_node("/root/ResidentManager").bind_world(self)
 	print("[Reboot] Milestone 1 clearing booted. Legacy prototype remains at %s" % LEGACY_SCENE_PATH)
 
+func _exit_tree() -> void:
+	var manager := get_node_or_null("/root/ResidentManager")
+	if manager != null:
+		manager.unbind_world(self)
+
 func get_authored_destinations() -> Dictionary:
 	return DESTINATIONS.duplicate()
 

@@ -10,6 +10,9 @@ extends CanvasLayer
 @onready var propose_button: Button = $CommunityBoard/Margin/VBox/Propose
 @onready var board_close: Button = $CommunityBoard/Margin/VBox/Close
 @onready var locator_text: RichTextLabel = $ResidentLocator/Margin/VBox/Residents
+@onready var relationship_toast: PanelContainer = $RelationshipToast
+@onready var relationship_text: Label = $RelationshipToast/Margin/Text
+@onready var relationship_timer: Timer = $RelationshipToast/Timer
 
 func _ready() -> void:
 	var manager := get_node("/root/ResidentManager")
@@ -18,11 +21,14 @@ func _ready() -> void:
 	manager.board_requested.connect(_open_board)
 	manager.priority_changed.connect(_on_priority_changed)
 	manager.locator_changed.connect(_refresh_locator)
+	get_node("/root/RelationshipService").bond_changed.connect(_on_bond_changed)
 	dialogue_close.pressed.connect(manager.close_dialogue)
 	propose_button.pressed.connect(_propose_priority)
 	board_close.pressed.connect(_close_board)
 	dialogue_panel.visible = false
 	board_panel.visible = false
+	relationship_toast.visible = false
+	relationship_timer.timeout.connect(func() -> void: relationship_toast.visible = false)
 	_refresh_locator(manager.locator_entries())
 	_on_priority_changed(manager.current_priority)
 
@@ -69,3 +75,8 @@ func _set_player_input(enabled: bool) -> void:
 	var player := get_tree().get_first_node_in_group("reboot_player") as RebootFounderCat
 	if player != null:
 		player.input_enabled = enabled
+
+func _on_bond_changed(_resident_a: StringName, _resident_b: StringName, _new_bond: int, visible_message: String) -> void:
+	relationship_text.text = visible_message
+	relationship_toast.visible = true
+	relationship_timer.start()

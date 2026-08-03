@@ -10,6 +10,7 @@
 [ext_resource type="Script" path="res://scripts/world/day_environment_controller.gd" id="8"]
 [ext_resource type="PackedScene" path="res://scenes/ui/day_summary.tscn" id="9"]
 [ext_resource type="PackedScene" path="res://scenes/ui/resident_hud.tscn" id="10"]
+[ext_resource type="PackedScene" path="res://scenes/social/social_place.tscn" id="11"]
 
 [sub_resource type="Environment" id="Environment"]
 background_mode = 1
@@ -86,6 +87,40 @@ directional_shadow_max_distance = 80.0
 [node name="Residents" type="Node3D" parent="."]
 
 [node name="CommunityBoard" type="Node3D" parent="."]
+
+[node name="SocialPlaces" type="Node3D" parent="."]
+
+[node name="OldTreeBench" parent="SocialPlaces" instance=ExtResource("11")]
+position = Vector3(-4.8, 0, 18.5)
+place_id = &"old_tree"
+display_name = "Old garden tree"
+activity_ids = Array[StringName]([&"conversation", &"visit", &"celebration", &"garden_gathering"])
+capacity = 3
+placeholder_style = "bench"
+
+[node name="WorkshopPorch" parent="SocialPlaces" instance=ExtResource("11")]
+position = Vector3(12.0, 0, -2.0)
+place_id = &"workshop_porch"
+display_name = "Workshop porch"
+activity_ids = Array[StringName]([&"collaboration", &"conversation", &"visit"])
+capacity = 3
+placeholder_style = "porch"
+
+[node name="GardenTable" parent="SocialPlaces" instance=ExtResource("11")]
+position = Vector3(-6.0, 0, 11.0)
+place_id = &"garden_table"
+display_name = "Garden table"
+activity_ids = Array[StringName]([&"shared_meal", &"conversation", &"celebration", &"garden_gathering"])
+capacity = 4
+placeholder_style = "table"
+
+[node name="CottageStoop" parent="SocialPlaces" instance=ExtResource("11")]
+position = Vector3(-14.0, 0, -6.0)
+place_id = &"cottage_stoop"
+display_name = "Cottage stoop"
+activity_ids = Array[StringName]([&"visit", &"conversation", &"shared_meal"])
+capacity = 2
+placeholder_style = "stoop"
 
 [node name="WoodlandRoute" parent="." unique_id=1427452379 instance=ExtResource("5")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -22.5)
