@@ -47,6 +47,7 @@ DiscoveryService="*res://core/discovery_service.gd"
 InvestigationService="*res://core/investigation_service.gd"
 ResidentManager="*res://core/resident_manager.gd"
 SeasonalResonanceService="*res://core/seasonal_resonance_service.gd"
+CommunityMachineService="*res://core/community_machine_service.gd"
 
 [display]
 

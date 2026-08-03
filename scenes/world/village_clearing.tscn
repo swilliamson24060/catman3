@@ -14,6 +14,7 @@
 [ext_resource type="PackedScene" path="res://scenes/projects/community_project.tscn" id="12"]
 [ext_resource type="PackedScene" path="res://scenes/projects/material_source.tscn" id="13"]
 [ext_resource type="PackedScene" path="res://scenes/resonance/resonance_site.tscn" id="14"]
+[ext_resource type="PackedScene" path="res://scenes/machines/irrigation_machine.tscn" id="15"]
 
 [sub_resource type="Environment" id="Environment"]
 background_mode = 1
@@ -118,6 +119,11 @@ placeholder_color = Color(0.76, 0.68, 0.22, 1)
 
 [node name="FirstBloomResonanceSite" parent="." instance=ExtResource("14")]
 position = Vector3(-7, 0.2, 19)
+
+[node name="WorkshopMachineSlot" type="Node3D" parent="."]
+position = Vector3(16.0, 0.2, -1.0)
+
+[node name="GardenIrrigationAssembly" parent="WorkshopMachineSlot" instance=ExtResource("15")]
 
 [node name="SocialPlaces" type="Node3D" parent="."]
 

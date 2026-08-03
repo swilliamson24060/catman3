@@ -30,6 +30,8 @@ var _body_colors: Dictionary = {}
 var _eye_colors: Dictionary = {}
 var _decorations: Dictionary = {}
 var _residents: Dictionary = {}
+var _community_machines: Dictionary = {}
+var _craft_families: Dictionary = {}
 
 var load_errors: Array[String] = []
 
@@ -48,6 +50,8 @@ func _load_all() -> void:
 	_eye_colors.clear()
 	_decorations.clear()
 	_residents.clear()
+	_community_machines.clear()
+	_craft_families.clear()
 	load_errors.clear()
 
 	# --- Pass 1: gather + merge everything, core first, then expansions ---
@@ -65,6 +69,8 @@ func _load_all() -> void:
 	_load_fragment(CORE_DATA_DIR + "coat_palette.json", "eye_colors", CORE_NAMESPACE)
 	_load_fragment(CORE_DATA_DIR + "coat_palette.json", "decorations", CORE_NAMESPACE)
 	_load_fragment(CORE_DATA_DIR + "residents.json", "residents", CORE_NAMESPACE)
+	_load_fragment(CORE_DATA_DIR + "community_machines.json", "community_machines", CORE_NAMESPACE)
+	_load_fragment(CORE_DATA_DIR + "crafts.json", "craft_families", CORE_NAMESPACE)
 
 	for file_path in _list_expansion_files():
 		var mod_namespace := file_path.get_file().get_basename().to_snake_case()
@@ -82,6 +88,8 @@ func _load_all() -> void:
 		_load_fragment(file_path, "eye_colors", mod_namespace)
 		_load_fragment(file_path, "decorations", mod_namespace)
 		_load_fragment(file_path, "residents", mod_namespace)
+		_load_fragment(file_path, "community_machines", mod_namespace)
+		_load_fragment(file_path, "craft_families", mod_namespace)
 
 	# --- Pass 2: now that everything is merged, canonicalize and validate ---
 	_normalize_references()
@@ -159,6 +167,10 @@ func _registry_for(top_level_key: String) -> Dictionary:
 			return _decorations
 		"residents":
 			return _residents
+		"community_machines":
+			return _community_machines
+		"craft_families":
+			return _craft_families
 	return {}
 
 ## Bare ids default to the core: namespace, but that's only a shortcut, not
@@ -366,6 +378,18 @@ func get_resident(id: String) -> Dictionary:
 
 func get_all_residents() -> Array:
 	return _residents.values()
+
+func get_community_machine(id: String) -> Dictionary:
+	return _resolve(_community_machines, id)
+
+func get_all_community_machines() -> Array:
+	return _community_machines.values()
+
+func get_craft_family(id: String) -> Dictionary:
+	return _resolve(_craft_families, id)
+
+func get_all_craft_families() -> Array:
+	return _craft_families.values()
 
 func get_animal_types_with_housing_available(built_building_ids: Array) -> Array:
 	var available: Array = []

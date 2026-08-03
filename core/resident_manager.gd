@@ -221,6 +221,17 @@ func apply_first_bloom_aspiration() -> void:
 	var mara := get_agent(&"resident_mara")
 	if mara != null: mara.aspiration_step = maxi(mara.aspiration_step, 1)
 
+func react_to_machine_state(machine_state: StringName) -> void:
+	var pip := get_agent(&"resident_pip")
+	if pip == null: return
+	if machine_state == &"maintenance":
+		pip.begin_machine_activity(&"maintain_irrigation", "Maintains the communal irrigation gear", Vector3(16.0, 0.2, 1.1), &"maintain")
+	elif machine_state == &"operating":
+		pip.begin_machine_activity(&"operate_irrigation", "Guides flowers through the dye assembly", Vector3(16.0, 0.2, 1.1), &"operate")
+	elif machine_state in [&"installed_idle", &"resonant"] and pip.current_period in [&"morning", &"afternoon"]:
+		pip.begin_machine_activity(&"inspect_irrigation", "Checks the village irrigation assembly", Vector3(16.0, 0.2, 1.1), &"inspect")
+	_emit_locator()
+
 func get_agent(resident_id: StringName) -> ResidentAgent:
 	return _agents.get(resident_id) as ResidentAgent
 

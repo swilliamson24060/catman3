@@ -1,0 +1,15 @@
+{
+  "craft_families": [
+    {
+      "id": "craft_family_natural_dyes",
+      "display_name": "First Bloom Natural Dyes",
+      "unlock_effect_id": "first_bloom_colors",
+      "renewable_input": "First Bloom flowers",
+      "crafts": [
+        {"id":"craft_sunrise_cloth", "display_name":"Sunrise cloth", "output_color":"f2a65a"},
+        {"id":"craft_rainpetal_cloth", "display_name":"Rainpetal cloth", "output_color":"70a8d8"},
+        {"id":"craft_bloomberry_cloth", "display_name":"Bloomberry cloth", "output_color":"c86b98"}
+      ]
+    }
+  ]
+}

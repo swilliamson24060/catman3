@@ -13,6 +13,13 @@
 - `scenes/resonance/resonance_site.tscn` owns replaceable feedback lines, center pulse, three-tone audio seam, and First Bloom flower presentation.
 - Cyan lens, copper wheel, and gold seed packet are silhouette placeholders only; component roles are data-driven and remain hidden in player-facing UI.
 - Tier colors are development shorthand backed by distinct mote/line/pulse behavior. Production accessibility treatment remains scheduled for Milestone 10.
+
+## Milestone 8 machine and craft contracts
+
+- `scenes/machines/irrigation_machine.tscn` is the only active machine in the slice and keeps a ground-contact origin plus stable `OperatorSocket`, `InputSocket`, `OutputSocket`, and `WaterVFXSocket` nodes.
+- The modular cyan box, copper gear, particles, tray, status label, and cloth blocks are development placeholders. Machine identity, state, operator, and craft family come from `data/community_machines.json` and `data/crafts.json`, never from color or mesh names.
+- Replacements must preserve the incomplete, installed-idle, operating, Resonant, and maintenance presentations. Input, moving-work, and output beats must remain visibly distinct at gameplay zoom.
+- Cloth swatches are persistent evidence of completed crafts, not inventory quantities or production-rate indicators. The slice supports only First Bloom natural dyes.
 All Milestone 1 geometry is development-only greybox content. Runtime-created nodes carry `development_placeholder=true`; reusable scene assets carry `_development_placeholder` metadata.
 
 - Godot scale is 1 unit = 1 meter.

@@ -37,6 +37,9 @@ func _ready() -> void:
 	get_node("/root/InvestigationService").table_requested.connect(_open_investigation)
 	get_node("/root/SeasonalResonanceService").feedback_changed.connect(func(_result: Dictionary) -> void: _refresh_almanac())
 	get_node("/root/SeasonalResonanceService").activation_completed.connect(func(_pattern_id: StringName) -> void: _refresh_almanac())
+	get_node("/root/CommunityMachineService").machine_state_changed.connect(_on_machine_state_changed)
+	get_node("/root/CommunityMachineService").craft_family_unlocked.connect(func(_family_id: StringName) -> void: _refresh_almanac())
+	get_node("/root/CommunityMachineService").craft_completed.connect(_on_craft_completed)
 	$InvestigationTable/Margin/VBox/Investigate.pressed.connect(_investigate_selected)
 	$InvestigationTable/Margin/VBox/Close.pressed.connect(_close_investigation)
 	dialogue_close.pressed.connect(manager.close_dialogue)
@@ -97,6 +100,18 @@ func _on_project_comment(text: String) -> void:
 	relationship_toast.visible = true
 	relationship_timer.start()
 
+func _on_machine_state_changed(_state_id: StringName, summary: String) -> void:
+	relationship_text.text = summary
+	relationship_toast.visible = true
+	relationship_timer.start()
+	_refresh_almanac()
+
+func _on_craft_completed(_craft_id: StringName, display_name: String) -> void:
+	relationship_text.text = "%s is ready at the workshop — a visible new use for the First Bloom." % display_name
+	relationship_toast.visible = true
+	relationship_timer.start()
+	_refresh_almanac()
+
 func _refresh_locator(entries: Array[Dictionary]) -> void:
 	var lines: Array[String] = ["[b]Resident Almanac[/b]"]
 	for entry: Dictionary in entries:
@@ -122,8 +137,10 @@ func _refresh_almanac() -> void:
 	var interpreted_lines: Array[String] = []
 	for entry: Dictionary in get_node("/root/DiscoveryService").entries_for_state([&"interpreted"]): interpreted_lines.append("• [b]%s[/b]\n  %s" % [entry.display_name, entry.interpretation])
 	var resonance := get_node("/root/SeasonalResonanceService")
+	var machine := get_node("/root/CommunityMachineService")
 	var experiment_note := "\n\nLatest experiment: %s" % str(resonance.current_result.get("tier_name", "Dormant")) if not resonance.activated else ""
-	almanac_text.text = "[b]Rumors[/b]\n%s\n\n[b]Unidentified Finds[/b]\n%s\n\n[b]Interpreted Finds[/b]\n%s\n\n[b]Confirmed Patterns[/b]\n%s%s" % ["\n".join(rumor_lines) if not rumor_lines.is_empty() else "None yet.", "\n".join(unidentified_lines) if not unidentified_lines.is_empty() else "None yet.", "\n".join(interpreted_lines) if not interpreted_lines.is_empty() else "None yet.", resonance.confirmed_pattern_text(), experiment_note]
+	var craft_text: String = str(machine.interaction_summary())
+	almanac_text.text = "[b]Rumors[/b]\n%s\n\n[b]Unidentified Finds[/b]\n%s\n\n[b]Interpreted Finds[/b]\n%s\n\n[b]Confirmed Patterns[/b]\n%s%s\n\n[b]Community Capability[/b]\n%s" % ["\n".join(rumor_lines) if not rumor_lines.is_empty() else "None yet.", "\n".join(unidentified_lines) if not unidentified_lines.is_empty() else "None yet.", "\n".join(interpreted_lines) if not interpreted_lines.is_empty() else "None yet.", resonance.confirmed_pattern_text(), experiment_note, craft_text]
 
 func _open_investigation(pending: Array[StringName]) -> void:
 	_pending_investigations = pending.duplicate()

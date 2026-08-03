@@ -1,0 +1,13 @@
+{
+  "community_machines": [
+    {
+      "id": "machine_garden_irrigation",
+      "display_name": "Garden Irrigation Assembly",
+      "slot_id": "workshop_machine_slot",
+      "component_ids": ["component_rain_lens", "component_copper_gear", "component_heirloom_seeds"],
+      "states": ["incomplete", "installed_idle", "operating", "resonant", "maintenance"],
+      "operator_resident_id": "resident_pip",
+      "craft_family_id": "craft_family_natural_dyes"
+    }
+  ]
+}

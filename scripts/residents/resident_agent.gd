@@ -155,6 +155,7 @@ func _animate_activity() -> void:
 		if action == &"build": model_root.rotation.x = sin(Time.get_ticks_msec() * 0.01) * 0.14
 		elif action == &"plant": model_root.position.y = 0.02 + absf(sin(Time.get_ticks_msec() * 0.007)) * 0.12
 		elif action == &"celebrate": model_root.position.y = 0.08 + absf(sin(Time.get_ticks_msec() * 0.012)) * 0.22
+		elif action in [&"operate", &"maintain"]: model_root.rotation.x = sin(Time.get_ticks_msec() * 0.009) * 0.11
 		else: model_root.rotation.y += 0.008
 
 func request_contribution(specialty: StringName) -> Dictionary:
@@ -214,6 +215,13 @@ func begin_resonance_reaction(tier: int, activation: bool) -> void:
 	activity_bubble.text = "✦" if activation else "△"
 	activity_bubble.visible = true
 	_update_debug_label()
+
+func begin_machine_activity(activity_id_value: StringName, label: String, target: Vector3, action: StringName) -> void:
+	current_activity = {"id":String(activity_id_value), "label":label, "location":"workshop machine slot", "position":[target.x,target.y,target.z], "work_action":String(action), "project":true, "machine":true}
+	activity_bubble.text = "⚙"
+	activity_bubble.visible = false
+	_begin_travel()
+	current_state = State.CONTRIBUTION_TRAVEL
 
 func is_social_ready(session_id: StringName) -> bool:
 	return social_session_id == session_id and current_state == State.SOCIALIZING

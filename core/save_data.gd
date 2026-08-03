@@ -19,3 +19,4 @@ class_name SaveData
 @export var discovery_state: Dictionary = {}
 @export var investigation_state: Dictionary = {}
 @export var seasonal_resonance_state: Dictionary = {}
+@export var community_machine_state: Dictionary = {}

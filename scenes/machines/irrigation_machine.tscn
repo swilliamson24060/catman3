@@ -1,0 +1,140 @@
+[gd_scene load_steps=12 format=3]
+
+[ext_resource type="Script" path="res://scripts/machines/irrigation_machine.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/world/interaction_anchor.tscn" id="2"]
+
+[sub_resource type="StandardMaterial3D" id="MachineMaterial"]
+albedo_color = Color(0.22, 0.62, 0.66, 1)
+roughness = 0.72
+
+[sub_resource type="StandardMaterial3D" id="GearMaterial"]
+albedo_color = Color(0.82, 0.48, 0.18, 1)
+metallic = 0.65
+
+[sub_resource type="StandardMaterial3D" id="InputMaterial"]
+albedo_color = Color(0.74, 0.34, 0.58, 1)
+
+[sub_resource type="StandardMaterial3D" id="WaterMaterial"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(0.35, 0.72, 1, 0.75)
+
+[sub_resource type="BoxMesh" id="Box"]
+size = Vector3(2.8, 1.6, 1.6)
+
+[sub_resource type="CylinderMesh" id="Gear"]
+top_radius = 0.72
+bottom_radius = 0.72
+height = 0.22
+radial_segments = 12
+
+[sub_resource type="BoxMesh" id="Tray"]
+size = Vector3(1.1, 0.16, 0.8)
+
+[sub_resource type="BoxMesh" id="Swatch"]
+size = Vector3(0.62, 0.06, 0.8)
+
+[sub_resource type="SphereMesh" id="Part"]
+radius = 0.36
+height = 0.72
+
+[sub_resource type="ParticleProcessMaterial" id="WaterProcess"]
+emission_shape = 1
+emission_sphere_radius = 0.18
+direction = Vector3(0, 1, 0)
+spread = 16.0
+gravity = Vector3(0, -4, 0)
+initial_velocity_min = 1.8
+initial_velocity_max = 2.8
+
+[sub_resource type="QuadMesh" id="WaterDrop"]
+material = SubResource("WaterMaterial")
+size = Vector2(0.08, 0.18)
+
+[node name="IrrigationMachine" type="Node3D"]
+script = ExtResource("1")
+
+[node name="States" type="Node3D" parent="."]
+
+[node name="Incomplete" type="Node3D" parent="States"]
+
+[node name="LoosePartA" type="MeshInstance3D" parent="States/Incomplete"]
+position = Vector3(-0.7, 0.38, 0)
+mesh = SubResource("Part")
+material_override = SubResource("MachineMaterial")
+
+[node name="LoosePartB" type="MeshInstance3D" parent="States/Incomplete"]
+position = Vector3(0.65, 0.25, 0.25)
+rotation = Vector3(0, 0, 1.1)
+mesh = SubResource("Gear")
+material_override = SubResource("GearMaterial")
+
+[node name="Installed" type="Node3D" parent="States"]
+visible = false
+
+[node name="Body" type="MeshInstance3D" parent="States/Installed"]
+position = Vector3(0, 0.8, 0)
+mesh = SubResource("Box")
+material_override = SubResource("MachineMaterial")
+
+[node name="Gear" type="MeshInstance3D" parent="States/Installed"]
+position = Vector3(0, 0.9, 0.92)
+rotation = Vector3(1.5708, 0, 0)
+mesh = SubResource("Gear")
+material_override = SubResource("GearMaterial")
+
+[node name="InputTray" type="MeshInstance3D" parent="States/Installed"]
+position = Vector3(-1.55, 0.72, 0)
+mesh = SubResource("Tray")
+material_override = SubResource("InputMaterial")
+
+[node name="Water" type="GPUParticles3D" parent="States/Installed"]
+position = Vector3(1.15, 1.4, 0)
+emitting = false
+amount = 28
+lifetime = 0.9
+process_material = SubResource("WaterProcess")
+draw_pass_1 = SubResource("WaterDrop")
+
+[node name="OutputSwatches" type="Node3D" parent="States/Installed"]
+
+[node name="Sunrise" type="MeshInstance3D" parent="States/Installed/OutputSwatches"]
+visible = false
+position = Vector3(1.75, 0.16, -0.65)
+mesh = SubResource("Swatch")
+
+[node name="Rainpetal" type="MeshInstance3D" parent="States/Installed/OutputSwatches"]
+visible = false
+position = Vector3(1.75, 0.18, 0)
+mesh = SubResource("Swatch")
+
+[node name="Bloomberry" type="MeshInstance3D" parent="States/Installed/OutputSwatches"]
+visible = false
+position = Vector3(1.75, 0.2, 0.65)
+mesh = SubResource("Swatch")
+
+[node name="StatusLabel" type="Label3D" parent="."]
+position = Vector3(0, 2.35, 0)
+text = "WORKSHOP MACHINE SLOT\nAssembly incomplete"
+font_size = 28
+outline_size = 8
+billboard = 1
+no_depth_test = true
+metadata/_development_placeholder = true
+
+[node name="OperatorSocket" type="Marker3D" parent="."]
+position = Vector3(0, 0, 2.1)
+
+[node name="InputSocket" type="Marker3D" parent="."]
+position = Vector3(-1.55, 0.75, 0)
+
+[node name="OutputSocket" type="Marker3D" parent="."]
+position = Vector3(1.75, 0.2, 0)
+
+[node name="WaterVFXSocket" type="Marker3D" parent="."]
+position = Vector3(1.15, 1.4, 0)
+
+[node name="InteractionAnchor" parent="." instance=ExtResource("2")]
+position = Vector3(0, 0, 1.6)
+anchor_id = &"irrigation_machine"
+prompt = "Inspect the communal irrigation machine"
