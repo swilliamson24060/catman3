@@ -232,6 +232,33 @@ func react_to_machine_state(machine_state: StringName) -> void:
 		pip.begin_machine_activity(&"inspect_irrigation", "Checks the village irrigation assembly", Vector3(16.0, 0.2, 1.1), &"inspect")
 	_emit_locator()
 
+func begin_celebration_contribution(resident_id: StringName, contribution_id: StringName, label: String, target: Vector3, action: StringName) -> bool:
+	var agent := get_agent(resident_id)
+	if agent == null: return false
+	agent.begin_event_activity(contribution_id, label, target, action)
+	_emit_locator()
+	return true
+
+func celebration_contribution_ready(resident_id: StringName) -> bool:
+	var agent := get_agent(resident_id)
+	return agent != null and agent.is_event_ready()
+
+func finish_celebration_contribution(resident_id: StringName) -> void:
+	var agent := get_agent(resident_id)
+	if agent != null: agent.finish_event_activity()
+	_emit_locator()
+
+func release_celebration_residents() -> void:
+	for agent: ResidentAgent in get_agents():
+		if bool(agent.current_activity.get("event", false)): agent.finish_event_activity()
+	_emit_locator()
+
+func find_social_session(activity_id: StringName, place_id: StringName) -> StringName:
+	for session_id: StringName in _social_sessions:
+		var session: Dictionary = _social_sessions[session_id]
+		if str(session.get("activity_id", "")) == String(activity_id) and str(session.get("place_id", "")) == String(place_id): return session_id
+	return &""
+
 func get_agent(resident_id: StringName) -> ResidentAgent:
 	return _agents.get(resident_id) as ResidentAgent
 

@@ -30,7 +30,7 @@ func apply_state(components: Array[StringName], result: Dictionary, activated: b
 
 func play_activation_sequence() -> void:
 	center_pulse.visible = true
-	center_pulse.scale = Vector3.ONE * 1.8
+	center_pulse.scale = Vector3.ONE * (1.25 if bool(get_node("/root/UserExperienceService").get_preference(&"reduced_flash", false)) else 1.8)
 	_play_tones(4)
 
 func _on_feedback_changed(result: Dictionary) -> void:
@@ -38,7 +38,8 @@ func _on_feedback_changed(result: Dictionary) -> void:
 	_play_tones(int(result.get("tier", 0)))
 
 func _apply_feedback(tier: int) -> void:
-	status_label.text = ["DORMANT", "STIRRING", "ECHOING", "ALIGNED — WAITING", "ACTIVATED"][clampi(tier, 0, 4)]
+	var cue: Dictionary = get_node("/root/UserExperienceService").tier_accessible_cue(tier)
+	status_label.text = "%s %s — %s" % [cue.symbol, str(cue.name).to_upper(), str(cue.motion).to_upper()]
 	for plinth: Node in plinths: plinth.set_feedback(tier)
 	feedback_lines.visible = tier >= 2
 	center_pulse.visible = tier >= 3

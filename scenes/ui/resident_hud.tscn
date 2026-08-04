@@ -209,3 +209,54 @@ text = "A friendship moment"
 [node name="Timer" type="Timer" parent="RelationshipToast"]
 wait_time = 4.0
 one_shot = true
+
+[node name="CelebrationPanel" type="PanelContainer" parent="."]
+visible = false
+offset_left = 350.0
+offset_top = 170.0
+offset_right = 930.0
+offset_bottom = 545.0
+theme_override_styles/panel = SubResource("Panel")
+
+[node name="Margin" type="MarginContainer" parent="CelebrationPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 22
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_right = 22
+theme_override_constants/margin_bottom = 18
+
+[node name="VBox" type="VBoxContainer" parent="CelebrationPanel/Margin"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="CelebrationPanel/Margin/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 26
+text = "The First Bloom Celebration"
+
+[node name="Portrait" type="Label" parent="CelebrationPanel/Margin/VBox"]
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+theme_override_font_sizes/font_size = 38
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "✦"
+
+[node name="Text" type="RichTextLabel" parent="CelebrationPanel/Margin/VBox"]
+custom_minimum_size = Vector2(520, 120)
+layout_mode = 2
+bbcode_enabled = true
+fit_content = true
+text = "Choose one finishing touch. Either choice leads to the gathering."
+
+[node name="ChoiceA" type="Button" parent="CelebrationPanel/Margin/VBox"]
+layout_mode = 2
+text = "Hang sunrise bunting"
+
+[node name="ChoiceB" type="Button" parent="CelebrationPanel/Margin/VBox"]
+layout_mode = 2
+text = "Set out firefly lanterns"
+
+[node name="Continue" type="Button" parent="CelebrationPanel/Margin/VBox"]
+visible = false
+layout_mode = 2
+text = "Continue"

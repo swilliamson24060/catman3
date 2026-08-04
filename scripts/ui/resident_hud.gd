@@ -19,8 +19,11 @@ extends CanvasLayer
 @onready var investigation_list: ItemList = $InvestigationTable/Margin/VBox/Finds
 @onready var investigation_result: RichTextLabel = $InvestigationTable/Margin/VBox/Result
 var _pending_investigations: Array[StringName] = []
+var _celebration_modal_open: bool = false
+var _celebration_choice_ids: Array[StringName] = []
 
 func _ready() -> void:
+	add_to_group("resident_hud")
 	var manager := get_node("/root/ResidentManager")
 	manager.dialogue_requested.connect(_on_dialogue_requested)
 	manager.dialogue_closed.connect(_on_dialogue_closed)
@@ -40,24 +43,47 @@ func _ready() -> void:
 	get_node("/root/CommunityMachineService").machine_state_changed.connect(_on_machine_state_changed)
 	get_node("/root/CommunityMachineService").craft_family_unlocked.connect(func(_family_id: StringName) -> void: _refresh_almanac())
 	get_node("/root/CommunityMachineService").craft_completed.connect(_on_craft_completed)
+	var celebration := get_node("/root/CelebrationService")
+	celebration.state_changed.connect(_on_celebration_state_changed)
+	celebration.choice_requested.connect(_on_celebration_choice_requested)
+	celebration.closing_line_requested.connect(_on_celebration_closing_line)
+	celebration.celebration_completed.connect(_on_celebration_completed)
+	celebration.demo_acknowledgement_requested.connect(_on_demo_acknowledgement)
 	$InvestigationTable/Margin/VBox/Investigate.pressed.connect(_investigate_selected)
 	$InvestigationTable/Margin/VBox/Close.pressed.connect(_close_investigation)
 	dialogue_close.pressed.connect(manager.close_dialogue)
 	propose_button.pressed.connect(_propose_priority)
 	board_close.pressed.connect(_close_board)
+	$CelebrationPanel/Margin/VBox/ChoiceA.pressed.connect(func() -> void: _choose_celebration(0))
+	$CelebrationPanel/Margin/VBox/ChoiceB.pressed.connect(func() -> void: _choose_celebration(1))
+	$CelebrationPanel/Margin/VBox/Continue.pressed.connect(_advance_celebration)
 	dialogue_panel.visible = false
 	board_panel.visible = false
 	relationship_toast.visible = false
 	investigation_panel.visible = false
+	$CelebrationPanel.visible = false
 	relationship_timer.timeout.connect(func() -> void: relationship_toast.visible = false)
 	_refresh_locator(manager.locator_entries())
 	_on_priority_changed(manager.current_priority)
 	_refresh_project_status()
 	_refresh_almanac()
+	$ResidentLocator.visible = false
+	$Almanac.visible = false
+
+func almanac_document() -> String:
+	_refresh_almanac()
+	return almanac_text.text
+
+func open_named_panel(panel_name: String) -> void:
+	if panel_name == "CommunityBoard": _open_board()
+
+func close_navigation_panels() -> void:
+	if board_panel.visible: _close_board()
 
 func _on_dialogue_requested(resident: ResidentAgent, text: String) -> void:
-	dialogue_title.text = "%s — %s" % [resident.display_name(), str(resident.definition.get("specialty", "resident")).capitalize()]
-	dialogue_text.text = text
+	var experience := get_node("/root/UserExperienceService")
+	dialogue_title.text = "%s — %s" % [resident.display_name(), str(resident.definition.get("specialty", "resident")).capitalize()] if bool(experience.get_preference(&"subtitle_speaker", true)) else "Conversation"
+	dialogue_text.text = text if bool(experience.get_preference(&"subtitles", true)) else "Subtitles are disabled in Settings."
 	dialogue_panel.visible = true
 	dialogue_close.grab_focus()
 	_set_player_input(false)
@@ -112,6 +138,75 @@ func _on_craft_completed(_craft_id: StringName, display_name: String) -> void:
 	relationship_timer.start()
 	_refresh_almanac()
 
+func _on_celebration_state_changed(_state_id: StringName, summary: String) -> void:
+	relationship_text.text = summary
+	relationship_toast.visible = true
+	relationship_timer.start()
+	_refresh_almanac()
+
+func _on_celebration_choice_requested(choices: Array[Dictionary]) -> void:
+	if choices.size() < 2: return
+	_celebration_choice_ids = [StringName(str(choices[0].get("id", ""))), StringName(str(choices[1].get("id", "")))]
+	$CelebrationPanel/Margin/VBox/Title.text = "Choose a finishing touch"
+	$CelebrationPanel/Margin/VBox/Portrait.text = "✦"
+	$CelebrationPanel/Margin/VBox/Text.text = "Either choice completes the preparations; it changes the gathering's look, never its success."
+	$CelebrationPanel/Margin/VBox/ChoiceA.text = str(choices[0].get("label", "Choice A"))
+	$CelebrationPanel/Margin/VBox/ChoiceB.text = str(choices[1].get("label", "Choice B"))
+	$CelebrationPanel/Margin/VBox/ChoiceA.visible = true
+	$CelebrationPanel/Margin/VBox/ChoiceB.visible = true
+	$CelebrationPanel/Margin/VBox/Continue.visible = false
+	_open_celebration_modal()
+
+func _choose_celebration(index: int) -> void:
+	if index < 0 or index >= _celebration_choice_ids.size(): return
+	if get_node("/root/CelebrationService").choose_decoration(_celebration_choice_ids[index]): _close_celebration_modal()
+
+func _on_celebration_closing_line(line: Dictionary, line_index: int, line_count: int) -> void:
+	$CelebrationPanel/Margin/VBox/Title.text = "%s — after the gathering" % str(line.get("speaker", "Neighbor"))
+	$CelebrationPanel/Margin/VBox/Portrait.text = str(line.get("portrait", "✦"))
+	$CelebrationPanel/Margin/VBox/Text.text = str(line.get("text", ""))
+	$CelebrationPanel/Margin/VBox/ChoiceA.visible = false
+	$CelebrationPanel/Margin/VBox/ChoiceB.visible = false
+	$CelebrationPanel/Margin/VBox/Continue.text = "Return to village life" if line_index + 1 >= line_count else "Continue"
+	$CelebrationPanel/Margin/VBox/Continue.visible = true
+	_open_celebration_modal()
+
+func _advance_celebration() -> void:
+	if get_node("/root/CelebrationService").state == &"closing":
+		get_node("/root/CelebrationService").advance_closing_conversation()
+	else:
+		_close_celebration_modal()
+
+func _on_celebration_completed() -> void:
+	_close_celebration_modal()
+	_refresh_almanac()
+
+func _on_demo_acknowledgement() -> void:
+	$CelebrationPanel/Margin/VBox/Title.text = "Vertical slice complete"
+	$CelebrationPanel/Margin/VBox/Portrait.text = "✦"
+	$CelebrationPanel/Margin/VBox/Text.text = "Thank you for helping the village discover The First Bloom. Your save continues into ordinary village days."
+	$CelebrationPanel/Margin/VBox/ChoiceA.visible = false
+	$CelebrationPanel/Margin/VBox/ChoiceB.visible = false
+	$CelebrationPanel/Margin/VBox/Continue.text = "Continue playing"
+	$CelebrationPanel/Margin/VBox/Continue.visible = true
+	_open_celebration_modal()
+
+func _open_celebration_modal() -> void:
+	$CelebrationPanel.visible = true
+	if not _celebration_modal_open:
+		_celebration_modal_open = true
+		get_node("/root/CalendarService").push_modal_pause()
+		_set_player_input(false)
+	if $CelebrationPanel/Margin/VBox/ChoiceA.visible: $CelebrationPanel/Margin/VBox/ChoiceA.grab_focus()
+	else: $CelebrationPanel/Margin/VBox/Continue.grab_focus()
+
+func _close_celebration_modal() -> void:
+	$CelebrationPanel.visible = false
+	if _celebration_modal_open:
+		_celebration_modal_open = false
+		get_node("/root/CalendarService").pop_modal_pause()
+		_set_player_input(true)
+
 func _refresh_locator(entries: Array[Dictionary]) -> void:
 	var lines: Array[String] = ["[b]Resident Almanac[/b]"]
 	for entry: Dictionary in entries:
@@ -140,7 +235,9 @@ func _refresh_almanac() -> void:
 	var machine := get_node("/root/CommunityMachineService")
 	var experiment_note := "\n\nLatest experiment: %s" % str(resonance.current_result.get("tier_name", "Dormant")) if not resonance.activated else ""
 	var craft_text: String = str(machine.interaction_summary())
-	almanac_text.text = "[b]Rumors[/b]\n%s\n\n[b]Unidentified Finds[/b]\n%s\n\n[b]Interpreted Finds[/b]\n%s\n\n[b]Confirmed Patterns[/b]\n%s%s\n\n[b]Community Capability[/b]\n%s" % ["\n".join(rumor_lines) if not rumor_lines.is_empty() else "None yet.", "\n".join(unidentified_lines) if not unidentified_lines.is_empty() else "None yet.", "\n".join(interpreted_lines) if not interpreted_lines.is_empty() else "None yet.", resonance.confirmed_pattern_text(), experiment_note, craft_text]
+	var celebration := get_node("/root/CelebrationService")
+	var distant_text := "\n".join(celebration.distant_rumors) if not celebration.distant_rumors.is_empty() else "None yet."
+	almanac_text.text = "[b]Rumors[/b]\n%s\n\n[b]Unidentified Finds[/b]\n%s\n\n[b]Interpreted Finds[/b]\n%s\n\n[b]Confirmed Patterns[/b]\n%s%s\n\n[b]Community Capability[/b]\n%s\n\n[b]Village Event[/b]\n%s\n\n[b]Distant Pattern Rumors[/b]\n%s" % ["\n".join(rumor_lines) if not rumor_lines.is_empty() else "None yet.", "\n".join(unidentified_lines) if not unidentified_lines.is_empty() else "None yet.", "\n".join(interpreted_lines) if not interpreted_lines.is_empty() else "None yet.", resonance.confirmed_pattern_text(), experiment_note, craft_text, celebration.status_summary(), distant_text]
 
 func _open_investigation(pending: Array[StringName]) -> void:
 	_pending_investigations = pending.duplicate()

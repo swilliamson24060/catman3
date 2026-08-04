@@ -32,6 +32,7 @@ var _decorations: Dictionary = {}
 var _residents: Dictionary = {}
 var _community_machines: Dictionary = {}
 var _craft_families: Dictionary = {}
+var _village_events: Dictionary = {}
 
 var load_errors: Array[String] = []
 
@@ -52,6 +53,7 @@ func _load_all() -> void:
 	_residents.clear()
 	_community_machines.clear()
 	_craft_families.clear()
+	_village_events.clear()
 	load_errors.clear()
 
 	# --- Pass 1: gather + merge everything, core first, then expansions ---
@@ -71,6 +73,7 @@ func _load_all() -> void:
 	_load_fragment(CORE_DATA_DIR + "residents.json", "residents", CORE_NAMESPACE)
 	_load_fragment(CORE_DATA_DIR + "community_machines.json", "community_machines", CORE_NAMESPACE)
 	_load_fragment(CORE_DATA_DIR + "crafts.json", "craft_families", CORE_NAMESPACE)
+	_load_fragment(CORE_DATA_DIR + "village_events.json", "village_events", CORE_NAMESPACE)
 
 	for file_path in _list_expansion_files():
 		var mod_namespace := file_path.get_file().get_basename().to_snake_case()
@@ -90,6 +93,7 @@ func _load_all() -> void:
 		_load_fragment(file_path, "residents", mod_namespace)
 		_load_fragment(file_path, "community_machines", mod_namespace)
 		_load_fragment(file_path, "craft_families", mod_namespace)
+		_load_fragment(file_path, "village_events", mod_namespace)
 
 	# --- Pass 2: now that everything is merged, canonicalize and validate ---
 	_normalize_references()
@@ -171,6 +175,8 @@ func _registry_for(top_level_key: String) -> Dictionary:
 			return _community_machines
 		"craft_families":
 			return _craft_families
+		"village_events":
+			return _village_events
 	return {}
 
 ## Bare ids default to the core: namespace, but that's only a shortcut, not
@@ -390,6 +396,12 @@ func get_craft_family(id: String) -> Dictionary:
 
 func get_all_craft_families() -> Array:
 	return _craft_families.values()
+
+func get_village_event(id: String) -> Dictionary:
+	return _resolve(_village_events, id)
+
+func get_all_village_events() -> Array:
+	return _village_events.values()
 
 func get_animal_types_with_housing_available(built_building_ids: Array) -> Array:
 	var available: Array = []

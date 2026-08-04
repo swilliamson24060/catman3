@@ -15,6 +15,8 @@
 [ext_resource type="PackedScene" path="res://scenes/projects/material_source.tscn" id="13"]
 [ext_resource type="PackedScene" path="res://scenes/resonance/resonance_site.tscn" id="14"]
 [ext_resource type="PackedScene" path="res://scenes/machines/irrigation_machine.tscn" id="15"]
+[ext_resource type="PackedScene" path="res://scenes/events/first_bloom_celebration.tscn" id="16"]
+[ext_resource type="PackedScene" path="res://scenes/ui/reboot_ui_shell.tscn" id="17"]
 
 [sub_resource type="Environment" id="Environment"]
 background_mode = 1
@@ -124,6 +126,9 @@ position = Vector3(-7, 0.2, 19)
 position = Vector3(16.0, 0.2, -1.0)
 
 [node name="GardenIrrigationAssembly" parent="WorkshopMachineSlot" instance=ExtResource("15")]
+
+[node name="FirstBloomCelebration" parent="." instance=ExtResource("16")]
+position = Vector3(-7, 0.22, 12.5)
 
 [node name="SocialPlaces" type="Node3D" parent="."]
 
@@ -236,6 +241,7 @@ tone_hz = 64.0
 [node name="Interface" type="CanvasLayer" parent="." unique_id=152533582]
 
 [node name="CalendarHUD" type="PanelContainer" parent="Interface"]
+visible = false
 offset_left = 880.0
 offset_top = 18.0
 offset_right = 1260.0
@@ -287,6 +293,7 @@ label_settings = SubResource("PromptSettings")
 horizontal_alignment = 1
 
 [node name="Controls" type="Label" parent="Interface" unique_id=1774599927]
+visible = false
 offset_left = 20.0
 offset_top = 18.0
 offset_right = 490.0
@@ -298,3 +305,5 @@ label_settings = SubResource("PromptSettings")
 [node name="DaySummary" parent="." instance=ExtResource("9")]
 
 [node name="ResidentHUD" parent="." instance=ExtResource("10")]
+
+[node name="RebootUIShell" parent="." instance=ExtResource("17")]

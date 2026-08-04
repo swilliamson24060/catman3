@@ -223,6 +223,27 @@ func begin_machine_activity(activity_id_value: StringName, label: String, target
 	_begin_travel()
 	current_state = State.CONTRIBUTION_TRAVEL
 
+func begin_event_activity(activity_id_value: StringName, label: String, target: Vector3, action: StringName) -> void:
+	current_activity = {"id":String(activity_id_value), "label":label, "location":"First Bloom celebration", "position":[target.x,target.y,target.z], "work_action":String(action), "project":true, "event":true}
+	activity_bubble.text = "✦"
+	activity_bubble.visible = false
+	_begin_travel()
+	current_state = State.CONTRIBUTION_TRAVEL
+
+func is_event_ready() -> bool:
+	if not bool(current_activity.get("event", false)):
+		return false
+	# Event staging owns an exact authored slot. Treat arrival at that slot as
+	# ready even while a modal pause prevents the normal physics-state handoff;
+	# this keeps save restoration and accessible menus from trapping residents.
+	var flat_offset := activity_position() - global_position
+	flat_offset.y = 0.0
+	return current_state == State.CONTRIBUTING or flat_offset.length() <= arrival_distance
+
+func finish_event_activity() -> void:
+	activity_bubble.visible = false
+	_select_routine_activity()
+
 func is_social_ready(session_id: StringName) -> bool:
 	return social_session_id == session_id and current_state == State.SOCIALIZING
 

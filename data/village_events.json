@@ -1,0 +1,25 @@
+{
+  "village_events": [
+    {
+      "id": "event_first_bloom_celebration",
+      "display_name": "The First Bloom Celebration",
+      "trigger_pattern_id": "resonance_first_bloom",
+      "social_activity_id": "garden_gathering",
+      "social_place_id": "garden_table",
+      "contributions": [
+        {"resident_id":"resident_mara", "id":"flower_table", "label":"Mara gathers bright flowers for the table", "action":"plant", "slot":0},
+        {"resident_id":"resident_pip", "id":"festival_lights", "label":"Pip strings gentle lights between the posts", "action":"build", "slot":1},
+        {"resident_id":"resident_elowen", "id":"story_cards", "label":"Elowen lays out the garden's remembered stories", "action":"inspect", "slot":2}
+      ],
+      "choices": [
+        {"id":"sunrise_bunting", "label":"Hang sunrise bunting", "description":"Warm cloth strips frame the gathering."},
+        {"id":"firefly_lanterns", "label":"Set out firefly lanterns", "description":"Soft lights make the flowers glow."}
+      ],
+      "closing_lines": [
+        {"speaker":"Mara", "portrait":"M", "text":"The garden feels like part of our days again—not a task we finished, but a place we can keep tending together."},
+        {"speaker":"Pip", "portrait":"P", "text":"And the old assembly makes color instead of numbers. I want to see what else these patterns can teach our tools."},
+        {"speaker":"Elowen", "portrait":"E", "text":"Travelers mention wind-marked stones beyond the north ridge. We needn't hurry. When we're curious, there will be another path."}
+      ]
+    }
+  ]
+}

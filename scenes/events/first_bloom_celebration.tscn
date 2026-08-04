@@ -1,0 +1,156 @@
+[gd_scene format=3 uid="uid://d23x0e3w6q3c5"]
+
+[ext_resource type="Script" uid="uid://532bd8gu0vhv" path="res://scripts/events/first_bloom_celebration.gd" id="1"]
+
+[sub_resource type="StandardMaterial3D" id="FlowerMaterial"]
+albedo_color = Color(0.93, 0.35, 0.62, 1)
+
+[sub_resource type="CylinderMesh" id="Flower"]
+top_radius = 0.12
+bottom_radius = 0.18
+height = 0.5
+
+[sub_resource type="StandardMaterial3D" id="LanternMaterial"]
+shading_mode = 0
+albedo_color = Color(0.7, 0.95, 0.48, 1)
+
+[sub_resource type="SphereMesh" id="Orb"]
+radius = 0.16
+height = 0.32
+
+[sub_resource type="StandardMaterial3D" id="StoryMaterial"]
+albedo_color = Color(0.55, 0.42, 0.78, 1)
+
+[sub_resource type="BoxMesh" id="SmallBox"]
+size = Vector3(0.65, 0.25, 0.65)
+
+[sub_resource type="StandardMaterial3D" id="BuntingMaterial"]
+albedo_color = Color(0.98, 0.48, 0.24, 1)
+
+[sub_resource type="BoxMesh" id="Strip"]
+size = Vector3(5.5, 0.12, 0.16)
+
+[sub_resource type="StandardMaterial3D" id="FoodMaterial"]
+albedo_color = Color(0.94, 0.72, 0.28, 1)
+
+[node name="FirstBloomCelebration" type="Node3D" unique_id=2144809500]
+visible = false
+script = ExtResource("1")
+
+[node name="ContributionSlots" type="Node3D" parent="." unique_id=58927524]
+
+[node name="MaraSlot" type="Marker3D" parent="ContributionSlots" unique_id=2082484139]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.4, 0, 0.8)
+
+[node name="PipSlot" type="Marker3D" parent="ContributionSlots" unique_id=1748000760]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.4, 0, 0.8)
+
+[node name="ElowenSlot" type="Marker3D" parent="ContributionSlots" unique_id=842650948]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1.7)
+
+[node name="ContributionProps" type="Node3D" parent="." unique_id=283063382]
+
+[node name="FlowerTable" type="Node3D" parent="ContributionProps" unique_id=1812196060]
+visible = false
+
+[node name="FlowerA" type="MeshInstance3D" parent="ContributionProps/FlowerTable" unique_id=249991469]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0.35, -0.2)
+material_override = SubResource("FlowerMaterial")
+mesh = SubResource("Flower")
+
+[node name="FlowerB" type="MeshInstance3D" parent="ContributionProps/FlowerTable" unique_id=928576790]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.6, 0.35, -0.1)
+material_override = SubResource("FlowerMaterial")
+mesh = SubResource("Flower")
+
+[node name="FestivalLights" type="Node3D" parent="ContributionProps" unique_id=1347594914]
+visible = false
+
+[node name="OrbA" type="MeshInstance3D" parent="ContributionProps/FestivalLights" unique_id=396880280]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 2.1, 0)
+material_override = SubResource("LanternMaterial")
+mesh = SubResource("Orb")
+
+[node name="OrbB" type="MeshInstance3D" parent="ContributionProps/FestivalLights" unique_id=1630264175]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 2.1, 0)
+material_override = SubResource("LanternMaterial")
+mesh = SubResource("Orb")
+
+[node name="StoryCards" type="Node3D" parent="ContributionProps" unique_id=1597549582]
+visible = false
+
+[node name="CardA" type="MeshInstance3D" parent="ContributionProps/StoryCards" unique_id=1281688028]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.3, 0.18, -0.55)
+material_override = SubResource("StoryMaterial")
+mesh = SubResource("SmallBox")
+
+[node name="CardB" type="MeshInstance3D" parent="ContributionProps/StoryCards" unique_id=353096091]
+transform = Transform3D(0.9393727, 0, 0.3428978, 0, 1, 0, -0.3428978, 0, 0.9393727, -0.35, 0.18, -0.45)
+material_override = SubResource("StoryMaterial")
+mesh = SubResource("SmallBox")
+
+[node name="PlayerChoices" type="Node3D" parent="." unique_id=2094596132]
+
+[node name="SunriseBunting" type="Node3D" parent="PlayerChoices" unique_id=1691031985]
+visible = false
+
+[node name="StripA" type="MeshInstance3D" parent="PlayerChoices/SunriseBunting" unique_id=731261393]
+transform = Transform3D(0.99680173, 0.07991469, 0, -0.07991469, 0.99680173, 0, 0, 0, 1, 0, 2.55, 0.8)
+material_override = SubResource("BuntingMaterial")
+mesh = SubResource("Strip")
+
+[node name="StripB" type="MeshInstance3D" parent="PlayerChoices/SunriseBunting" unique_id=256067847]
+transform = Transform3D(0.99680173, -0.07991469, 0, 0.07991469, 0.99680173, 0, 0, 0, 1, 0, 2.35, -0.8)
+material_override = SubResource("FlowerMaterial")
+mesh = SubResource("Strip")
+
+[node name="FireflyLanterns" type="Node3D" parent="PlayerChoices" unique_id=1658864850]
+visible = false
+
+[node name="LanternA" type="MeshInstance3D" parent="PlayerChoices/FireflyLanterns" unique_id=399056490]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.2, 1.5, -0.8)
+material_override = SubResource("LanternMaterial")
+mesh = SubResource("SmallBox")
+
+[node name="LanternB" type="MeshInstance3D" parent="PlayerChoices/FireflyLanterns" unique_id=18101252]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.2, 1.5, -0.8)
+material_override = SubResource("LanternMaterial")
+mesh = SubResource("SmallBox")
+
+[node name="GatheringLights" type="Node3D" parent="." unique_id=76075922]
+visible = false
+
+[node name="LightA" type="MeshInstance3D" parent="GatheringLights" unique_id=761110674]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.3, 2.2, 0.2)
+material_override = SubResource("LanternMaterial")
+mesh = SubResource("Orb")
+
+[node name="LightB" type="MeshInstance3D" parent="GatheringLights" unique_id=472797370]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, -0.2)
+material_override = SubResource("LanternMaterial")
+mesh = SubResource("Orb")
+
+[node name="LightC" type="MeshInstance3D" parent="GatheringLights" unique_id=1049049842]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.3, 2.2, 0.2)
+material_override = SubResource("LanternMaterial")
+mesh = SubResource("Orb")
+
+[node name="FoodBlocks" type="Node3D" parent="." unique_id=165631800]
+
+[node name="FoodA" type="MeshInstance3D" parent="FoodBlocks" unique_id=360854489]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.7, 0.18, 0.3)
+material_override = SubResource("FoodMaterial")
+mesh = SubResource("SmallBox")
+
+[node name="FoodB" type="MeshInstance3D" parent="FoodBlocks" unique_id=716414458]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.7, 0.18, 0.3)
+material_override = SubResource("FoodMaterial")
+mesh = SubResource("SmallBox")
+
+[node name="StatusLabel" type="Label3D" parent="." unique_id=1288153968]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.3, 0)
+billboard = 1
+no_depth_test = true
+font_size = 28
+outline_size = 8
+metadata/_development_placeholder = true

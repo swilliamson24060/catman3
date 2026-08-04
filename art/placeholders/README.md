@@ -20,6 +20,21 @@
 - The modular cyan box, copper gear, particles, tray, status label, and cloth blocks are development placeholders. Machine identity, state, operator, and craft family come from `data/community_machines.json` and `data/crafts.json`, never from color or mesh names.
 - Replacements must preserve the incomplete, installed-idle, operating, Resonant, and maintenance presentations. Input, moving-work, and output beats must remain visibly distinct at gameplay zoom.
 - Cloth swatches are persistent evidence of completed crafts, not inventory quantities or production-rate indicators. The slice supports only First Bloom natural dyes.
+
+## Milestone 9 celebration contracts
+
+- `scenes/events/first_bloom_celebration.tscn` owns three stable `ContributionSlots`, separate resident contribution props, two mutually exclusive player-choice presentations, gathering lights, and a status-label seam.
+- Flower cylinders, light orbs, food blocks, story cards, and bunting strips are development placeholders. Resident IDs, contribution order, choices, and closing dialogue come from `data/village_events.json`; colors and node names never decide event progress.
+- Production replacements preserve Mara's flower-table beat, Pip's light-hanging beat, Elowen's story-card beat, the `sunrise_bunting` and `firefly_lanterns` variants, and unobstructed four-participant garden-table clearance.
+- Text initials are temporary portrait substitutes. The procedural four-note gathering motif is a development-only audio layer behind the event-state transition.
+
+## Milestone 10 UI contracts
+
+- Theme boxes, text labels, text portraits, and monochrome Resonance symbols are development-only placeholders behind `RebootUIShell` and the existing modal interfaces.
+- The gameplay HUD and Village Journal use anchored containers from a 1280 × 720 reference and must remain readable at every larger supported viewport.
+- Five Resonance states always combine a unique word, symbol, and motion description; production color and audio may reinforce but never replace those channels.
+- Batch H may replace theme resources, icons, glyphs, frames, portraits, and typography without changing input actions, service state, or screen contracts.
+
 All Milestone 1 geometry is development-only greybox content. Runtime-created nodes carry `development_placeholder=true`; reusable scene assets carry `_development_placeholder` metadata.
 
 - Godot scale is 1 unit = 1 meter.
