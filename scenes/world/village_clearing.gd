@@ -3,6 +3,7 @@ extends Node3D
 
 const LEGACY_SCENE_PATH := "res://scenes/world/main.tscn"
 const INTERACTION_ANCHOR := preload("res://scenes/world/interaction_anchor.tscn")
+const EXPLORATION_STAGE_ORIGIN := Vector3(0.0, 0.0, 30.0)
 
 const DESTINATIONS := {
 	&"village_center": Vector3(0.0, 0.0, 0.0),
@@ -29,13 +30,20 @@ func _ready() -> void:
 	_spawn_authored_anchors()
 	_spawn_community_board()
 	_spawn_investigation_table()
+	_spawn_growth_plot_anchor()
+	_spawn_expedition_post()
+	_spawn_exploration_stage()
 	get_node("/root/ResidentManager").bind_world(self)
+	get_node("/root/ExpeditionService").bind_world($ExplorationStage)
 	print("[Reboot] Milestone 1 clearing booted. Legacy prototype remains at %s" % LEGACY_SCENE_PATH)
 
 func _exit_tree() -> void:
 	var manager := get_node_or_null("/root/ResidentManager")
 	if manager != null:
 		manager.unbind_world(self)
+	var expedition_service := get_node_or_null("/root/ExpeditionService")
+	if expedition_service != null:
+		expedition_service.unbind_world($ExplorationStage)
 
 func get_authored_destinations() -> Dictionary:
 	return DESTINATIONS.duplicate()
@@ -100,6 +108,13 @@ func _on_anchor_activated(anchor_id: StringName) -> void:
 	elif anchor_id == &"ruin_overlook":
 		get_node("/root/RumorService").acquire(&"rumor_triangle")
 		get_node("/root/DiscoveryService").reveal_rumor(&"clue_ruin_triangle")
+	elif anchor_id == &"growth_plot":
+		var growth := get_node("/root/GrowthPlotService")
+		growth.check_growth()
+		if not growth.is_growing():
+			growth.plant_seed(randi())
+	elif anchor_id == &"expedition_post":
+		get_node("/root/ExpeditionService").request_post()
 
 func _spawn_community_board() -> void:
 	_create_block("CommunityBoardPlaceholder", Vector3(2.2, 1.8, 0.25), Vector3(5.5, 0.9, -0.5), Color(0.82, 0.65, 0.28), false)
@@ -125,6 +140,36 @@ func _spawn_investigation_table() -> void:
 	plaque_anchor.position = Vector3(-8.7, 0.0, 18.0)
 	plaque_anchor.activated.connect(_on_anchor_activated)
 	$AuthoredInteractionAnchors.add_child(plaque_anchor)
+
+func _spawn_growth_plot_anchor() -> void:
+	_create_block("GrowthPlotMarker", Vector3(1.0, 0.3, 1.0), Vector3(9.0, 0.15, 10.5), Color(0.55, 0.4, 0.2), false)
+	var anchor := INTERACTION_ANCHOR.instantiate() as InteractionAnchor
+	anchor.name = "GrowthPlotAnchor"
+	anchor.anchor_id = &"growth_plot"
+	anchor.prompt = "Tend the growth plot"
+	anchor.position = Vector3(9.0, 0.0, 10.5)
+	anchor.activated.connect(_on_anchor_activated)
+	$AuthoredInteractionAnchors.add_child(anchor)
+
+func _spawn_expedition_post() -> void:
+	_create_block("ExpeditionPostMarker", Vector3(0.8, 1.6, 0.8), Vector3(11.0, 0.8, 10.5), Color(0.42, 0.34, 0.22))
+	var anchor := INTERACTION_ANCHOR.instantiate() as InteractionAnchor
+	anchor.name = "ExpeditionPostAnchor"
+	anchor.anchor_id = &"expedition_post"
+	anchor.prompt = "Plan an expedition"
+	anchor.position = Vector3(11.0, 0.0, 10.5)
+	anchor.activated.connect(_on_anchor_activated)
+	$AuthoredInteractionAnchors.add_child(anchor)
+
+## An always-present, initially-empty container. ExpeditionService adds the
+## single currently-visited ExplorationArea into it on visit and frees it on
+## leaving -- built in code rather than authored into the .tscn since it
+## starts empty and only ever holds one transient child at a time.
+func _spawn_exploration_stage() -> void:
+	var stage := Node3D.new()
+	stage.name = "ExplorationStage"
+	stage.position = EXPLORATION_STAGE_ORIGIN
+	add_child(stage)
 
 func _create_ground(node_name: String, size: Vector3, position: Vector3, color: Color, collision: bool = false) -> void:
 	var body := StaticBody3D.new()

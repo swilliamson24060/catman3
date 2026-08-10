@@ -63,6 +63,7 @@ func _physics_process(delta: float) -> void:
 		var target_yaw := atan2(-desired_direction.x, -desired_direction.z)
 		rotation.y = lerp_angle(rotation.y, target_yaw, minf(1.0, turn_speed * delta))
 	move_and_slide()
+	get_node("/root/ExpeditionService").notify_founder_moved(global_position)
 
 func _update_interaction_anchor() -> void:
 	var nearest: InteractionAnchor

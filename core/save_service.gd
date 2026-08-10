@@ -43,6 +43,8 @@ func new_game(founder_cat_id: String) -> void:
 	get_node("/root/CelebrationService").reset()
 	get_node("/root/UserExperienceService").reset_story_state()
 	AchievementService.reset_progress()
+	get_node("/root/GrowthPlotService").new_game()
+	get_node("/root/ExpeditionService").new_game()
 
 func save_game(save_path: String = SAVE_PATH) -> bool:
 	var data := {
@@ -65,6 +67,8 @@ func save_game(save_path: String = SAVE_PATH) -> bool:
 		"community_machine_state": get_node("/root/CommunityMachineService").serialize_state(),
 		"celebration_state": get_node("/root/CelebrationService").serialize_state(),
 		"user_experience_state": get_node("/root/UserExperienceService").serialize_state(),
+		"growth_plot_state": get_node("/root/GrowthPlotService").serialize_state(),
+		"exploration_state": get_node("/root/ExpeditionService").serialize_state(),
 		"inventory": Inventory.serialize(),
 		"town_storage": TownStorage.serialize(),
 		"buildings": BuildingManager.serialize(),
@@ -144,6 +148,8 @@ func load_game(save_path: String = SAVE_PATH) -> bool:
 	current.community_machine_state = _as_dictionary(parsed.get("community_machine_state", {}))
 	current.celebration_state = _as_dictionary(parsed.get("celebration_state", {}))
 	current.user_experience_state = _as_dictionary(parsed.get("user_experience_state", {}))
+	current.growth_plot_state = _as_dictionary(parsed.get("growth_plot_state", {}))
+	current.exploration_state = _as_dictionary(parsed.get("exploration_state", {}))
 	AchievementService.set_tracking_enabled(false)
 	AchievementService.restore_progress(current.achievement_progress)
 	WeatherService.restore_state(current.weather_state.merged({"world_seed": current.world_seed}, false))
@@ -158,6 +164,11 @@ func load_game(save_path: String = SAVE_PATH) -> bool:
 	get_node("/root/CommunityMachineService").restore_state(current.community_machine_state)
 	get_node("/root/CelebrationService").restore_state(current.celebration_state)
 	get_node("/root/UserExperienceService").restore_state(current.user_experience_state)
+	get_node("/root/GrowthPlotService").restore_state(current.growth_plot_state)
+	# Must run after ResidentManager.restore_state() above, which respawns every
+	# agent fresh via a normal routine -- this re-flags the correct freshly-
+	# spawned agent as away, overriding that default.
+	get_node("/root/ExpeditionService").restore_state(current.exploration_state)
 
 	Inventory.restore(_as_array(parsed.get("inventory", [])))
 	TownStorage.restore(_as_array(parsed.get("town_storage", [])))

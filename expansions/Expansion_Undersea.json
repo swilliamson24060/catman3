@@ -35,5 +35,19 @@
       "upkeep": { "item": "kelp", "amount": 1, "interval": 60.0 },
       "attracts": {}
     }
+  ],
+  "terrain_tiles": [
+    {
+      "id": "kelp_bed",
+      "display_name": "Kelp Bed",
+      "scene_path": "res://world/tiles/kelp_bed.tscn",
+      "starter": false,
+      "adjacency": {
+        "north": ["grass", "pond_edge", "kelp_bed"],
+        "south": ["grass", "pond_edge", "kelp_bed"],
+        "east": ["grass", "pond_edge", "kelp_bed"],
+        "west": ["grass", "pond_edge", "kelp_bed"]
+      }
+    }
   ]
 }

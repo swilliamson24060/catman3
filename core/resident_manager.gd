@@ -138,6 +138,7 @@ func consider_project_contributions() -> void:
 	var best_agent: ResidentAgent
 	var best_score := -INF
 	for agent: ResidentAgent in get_agents():
+		if agent.is_away(): continue
 		if not service.can_resident_contribute(agent.resident_id): continue
 		var specialty := StringName(str(agent.definition.get("specialty", "")))
 		var score := (40.0 if specialty in specialties else 8.0) + agent.energy * 10.0 + agent.mood * 5.0
@@ -278,7 +279,7 @@ func social_activity_candidates(agent: ResidentAgent) -> Array[Dictionary]:
 		var best_partner: ResidentAgent
 		var best_relationship: float = -INF
 		for other: ResidentAgent in get_agents():
-			if other == agent:
+			if other == agent or other.is_away():
 				continue
 			var relationship_weight: float = float(relationship_service.bond(agent.resident_id, other.resident_id)) + float(relationship_service.compatibility_score(agent.resident_id, other.resident_id))
 			if relationship_weight > best_relationship:
@@ -405,6 +406,7 @@ func _on_period_changed(period_id: StringName) -> void:
 	cancel_all_social_activities()
 	cancel_project_contribution()
 	for agent: ResidentAgent in get_agents():
+		if agent.is_away(): continue
 		agent.set_period(period_id)
 	if period_id == &"evening":
 		call_deferred("_schedule_evening_social")
@@ -414,6 +416,7 @@ func _on_forecast_changed(_forecast: Array[String]) -> void:
 	# Weather preference is part of scoring, so a changed day may alter the
 	# resident's choice without adding a separate hidden need system.
 	for agent: ResidentAgent in get_agents():
+		if agent.is_away(): continue
 		agent.set_period(agent.current_period)
 
 func _on_agent_activity_changed(_resident_id: StringName, _activity_id: StringName, _state: StringName) -> void:
@@ -423,12 +426,17 @@ func _emit_locator() -> void:
 	locator_changed.emit(locator_entries())
 
 func _schedule_evening_social() -> void:
-	if not _social_sessions.is_empty() or get_agents().size() < 2:
+	if not _social_sessions.is_empty():
+		return
+	var agents: Array[ResidentAgent] = []
+	for agent: ResidentAgent in get_agents():
+		if not agent.is_away():
+			agents.append(agent)
+	if agents.size() < 2:
 		return
 	var relationship_service := get_node("/root/RelationshipService")
 	var best_pair: Array[StringName] = []
 	var best_score: float = -INF
-	var agents := get_agents()
 	for left_index in range(agents.size()):
 		for right_index in range(left_index + 1, agents.size()):
 			var left: ResidentAgent = agents[left_index]

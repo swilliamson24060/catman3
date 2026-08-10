@@ -50,6 +50,8 @@ SeasonalResonanceService="*res://core/seasonal_resonance_service.gd"
 CommunityMachineService="*res://core/community_machine_service.gd"
 CelebrationService="*res://core/celebration_service.gd"
 UserExperienceService="*res://core/user_experience_service.gd"
+GrowthPlotService="*res://core/growth_plot_service.gd"
+ExpeditionService="*res://core/expedition_service.gd"
 
 [display]
 

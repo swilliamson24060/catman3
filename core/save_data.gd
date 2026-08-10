@@ -22,3 +22,5 @@ class_name SaveData
 @export var community_machine_state: Dictionary = {}
 @export var celebration_state: Dictionary = {}
 @export var user_experience_state: Dictionary = {}
+@export var growth_plot_state: Dictionary = {}
+@export var exploration_state: Dictionary = {}

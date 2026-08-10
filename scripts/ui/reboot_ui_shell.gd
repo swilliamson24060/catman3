@@ -1,7 +1,7 @@
 class_name RebootUIShell
 extends CanvasLayer
 
-const SCREEN_NAMES := ["Community Board", "Village Almanac", "Investigation", "Day Journal", "Optional Map", "Settings", "Guidance History"]
+const SCREEN_NAMES := ["Community Board", "Village Almanac", "Investigation", "Day Journal", "Optional Map", "Expedition Post", "Settings", "Guidance History"]
 var top_bar: PanelContainer
 var status_label: Label
 var context_label: Label
@@ -63,6 +63,7 @@ func open_screen(screen_name: String) -> void:
 		"Investigation": _show_investigation_help()
 		"Day Journal": _show_journal()
 		"Optional Map": _show_map()
+		"Expedition Post": _show_expedition_post()
 		"Settings": _show_settings()
 		"Guidance History": _show_history()
 	_open_modal(); $Content/Body/VBox/Close.grab_focus()
@@ -120,6 +121,7 @@ func _connect_services() -> void:
 	get_node("/root/InvestigationService").investigation_completed.connect(func(_result: Dictionary) -> void: experience.record_lesson(&"investigation"))
 	get_node("/root/SeasonalResonanceService").component_changed.connect(func(_slot: int, _component: StringName) -> void: experience.record_lesson(&"component_placement"))
 	get_node("/root/SeasonalResonanceService").feedback_changed.connect(_on_resonance_feedback)
+	get_node("/root/ExpeditionService").post_requested.connect(func() -> void: open_screen("Expedition Post"))
 
 func _refresh_status() -> void:
 	if status_label == null: return
@@ -140,6 +142,44 @@ func _show_investigation_help() -> void: content_text.text = "[b]Investigation t
 func _show_journal() -> void: content_text.text = "[b]Persistent journal[/b]\n%s\n\n[b]Guidance and system messages[/b]\n%s" % [get_node("/root/CommunityProjectService").progress_summary(), "\n".join(_history) if not _history.is_empty() else "No critical messages have been missed."]
 func _show_map() -> void: content_text.text = "[b]Optional landmark map — not required for play[/b]\n\nCottages · Village center · Workshop\n                 │\n      Garden — Woodland gate\n                 │\n           Three-branch route\n                 │\n            Ancient ruin\n\nResident locations remain in the Almanac. Rumor markers appear only when requested."
 func _show_history() -> void: content_text.text = "[b]Retained information[/b]\n%s" % ("\n\n".join(_history) if not _history.is_empty() else "Core objectives, discoveries, and patterns remain in their dedicated screens.")
+
+func _show_expedition_post() -> void:
+	content_text.visible = false; settings_box.visible = true
+	for child: Node in settings_box.get_children(): child.queue_free()
+	var expedition := get_node("/root/ExpeditionService")
+	var resident_manager := get_node("/root/ResidentManager")
+
+	var available_heading := Label.new(); available_heading.text = "Available residents"; settings_box.add_child(available_heading)
+	var available: Array = expedition.available_residents()
+	if available.is_empty():
+		var none_label := Label.new(); none_label.text = "Everyone is already away."; settings_box.add_child(none_label)
+	for agent in available:
+		var row := HBoxContainer.new(); settings_box.add_child(row)
+		var label := Label.new(); label.text = agent.display_name(); label.custom_minimum_size.x = 180; row.add_child(label)
+		var send := Button.new(); send.text = "Send exploring"; send.pressed.connect(_on_send_exploring.bind(agent.resident_id)); row.add_child(send)
+
+	var away_heading := Label.new(); away_heading.text = "Away on expedition"; settings_box.add_child(away_heading)
+	var away_ids: Array = expedition.away_residents()
+	if away_ids.is_empty():
+		var none_away := Label.new(); none_away.text = "No one is away right now."; settings_box.add_child(none_away)
+	for resident_id in away_ids:
+		var agent = resident_manager.get_agent(resident_id)
+		var row := HBoxContainer.new(); settings_box.add_child(row)
+		var label := Label.new(); label.text = agent.display_name() if agent != null else String(resident_id); label.custom_minimum_size.x = 180; row.add_child(label)
+		var visit := Button.new(); visit.text = "Visit"; visit.pressed.connect(_on_visit_area.bind(resident_id)); row.add_child(visit)
+		var recall := Button.new(); recall.text = "Bring home"; recall.pressed.connect(_on_bring_home.bind(resident_id)); row.add_child(recall)
+
+func _on_send_exploring(resident_id: StringName) -> void:
+	get_node("/root/ExpeditionService").depart(resident_id)
+	_show_expedition_post()
+
+func _on_bring_home(resident_id: StringName) -> void:
+	get_node("/root/ExpeditionService").recall(resident_id)
+	_show_expedition_post()
+
+func _on_visit_area(resident_id: StringName) -> void:
+	get_node("/root/ExpeditionService").visit_area(resident_id)
+	close_all()
 
 func _show_settings() -> void:
 	content_text.visible = false; settings_box.visible = true

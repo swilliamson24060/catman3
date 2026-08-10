@@ -33,8 +33,10 @@ var _residents: Dictionary = {}
 var _community_machines: Dictionary = {}
 var _craft_families: Dictionary = {}
 var _village_events: Dictionary = {}
+var _terrain_tiles: Dictionary = {}
 
 var load_errors: Array[String] = []
+var _json_parse_error_files: Dictionary = {}  # file_path -> true, dedupes parse-error logging
 
 func _ready() -> void:
 	_load_all()
@@ -54,7 +56,9 @@ func _load_all() -> void:
 	_community_machines.clear()
 	_craft_families.clear()
 	_village_events.clear()
+	_terrain_tiles.clear()
 	load_errors.clear()
+	_json_parse_error_files.clear()
 
 	# --- Pass 1: gather + merge everything, core first, then expansions ---
 	_load_fragment(CORE_DATA_DIR + "buildings.json", "buildings", CORE_NAMESPACE)
@@ -74,6 +78,7 @@ func _load_all() -> void:
 	_load_fragment(CORE_DATA_DIR + "community_machines.json", "community_machines", CORE_NAMESPACE)
 	_load_fragment(CORE_DATA_DIR + "crafts.json", "craft_families", CORE_NAMESPACE)
 	_load_fragment(CORE_DATA_DIR + "village_events.json", "village_events", CORE_NAMESPACE)
+	_load_fragment(CORE_DATA_DIR + "terrain_tiles.json", "terrain_tiles", CORE_NAMESPACE)
 
 	for file_path in _list_expansion_files():
 		var mod_namespace := file_path.get_file().get_basename().to_snake_case()
@@ -94,14 +99,15 @@ func _load_all() -> void:
 		_load_fragment(file_path, "community_machines", mod_namespace)
 		_load_fragment(file_path, "craft_families", mod_namespace)
 		_load_fragment(file_path, "village_events", mod_namespace)
+		_load_fragment(file_path, "terrain_tiles", mod_namespace)
 
 	# --- Pass 2: now that everything is merged, canonicalize and validate ---
 	_normalize_references()
 	_validate_references()
 
-	print("[DataRegistry] Loaded %d buildings, %d founder cats, %d animal types, %d residents, %d items, %d resonance patterns, %d achievements, %d audio cues, %d/%d/%d coat colors/eyes/decorations" % [
+	print("[DataRegistry] Loaded %d buildings, %d founder cats, %d animal types, %d residents, %d items, %d resonance patterns, %d achievements, %d audio cues, %d/%d/%d coat colors/eyes/decorations, %d terrain tiles" % [
 		_buildings.size(), _founder_cats.size(), _animal_types.size(), _residents.size(), _items.size(), _resonance_patterns.size(), _achievements.size(), _audio_cues.size(),
-		_body_colors.size(), _eye_colors.size(), _decorations.size()
+		_body_colors.size(), _eye_colors.size(), _decorations.size(), _terrain_tiles.size()
 	])
 	if load_errors.is_empty():
 		print("[DataRegistry] Validation passed with no errors.")
@@ -129,7 +135,19 @@ func _load_fragment(file_path: String, top_level_key: String, mod_namespace: Str
 		return
 	var text := FileAccess.get_file_as_string(file_path)
 	var parsed = JSON.parse_string(text)
-	if parsed == null or not (parsed is Dictionary) or not parsed.has(top_level_key):
+	if parsed == null:
+		# A file that exists but fails to parse is almost always a hand-broken
+		# JSON file, not "this category isn't in this file" (that case is
+		# `parsed.has(top_level_key)` below, and stays silent -- every
+		# expansion file is probed for every category, so a missing key is
+		# the normal/expected path, not an error). _load_fragment is called
+		# once per category against the same file_path, so dedupe here --
+		# otherwise one broken file logs the same error once per category.
+		if not _json_parse_error_files.has(file_path):
+			_json_parse_error_files[file_path] = true
+			load_errors.append("Could not parse %s as JSON" % file_path)
+		return
+	if not (parsed is Dictionary) or not parsed.has(top_level_key):
 		return
 
 	var target := _registry_for(top_level_key)
@@ -177,6 +195,8 @@ func _registry_for(top_level_key: String) -> Dictionary:
 			return _craft_families
 		"village_events":
 			return _village_events
+		"terrain_tiles":
+			return _terrain_tiles
 	return {}
 
 ## Bare ids default to the core: namespace, but that's only a shortcut, not
@@ -276,6 +296,15 @@ func _normalize_references() -> void:
 			normalized_unlocks.append(normalized)
 		achievement["unlocks"] = normalized_unlocks
 
+	for tile: Dictionary in _terrain_tiles.values():
+		var tile_namespace: String = tile.get("namespace", CORE_NAMESPACE)
+		var adjacency: Dictionary = tile.get("adjacency", {})
+		for direction: String in adjacency:
+			var normalized_neighbors: Array = []
+			for neighbor_id: Variant in adjacency[direction]:
+				normalized_neighbors.append(_canonical_reference(_terrain_tiles, str(neighbor_id), tile_namespace))
+			adjacency[direction] = normalized_neighbors
+
 func _validate_references() -> void:
 	for resident: Dictionary in _residents.values():
 		for field: String in ["display_name", "specialty", "home_id", "aspiration_id"]:
@@ -328,6 +357,13 @@ func _validate_references() -> void:
 		for content_id in achievement.get("unlocks", []):
 			if not _id_exists_anywhere(_buildings, content_id) and not _id_exists_anywhere(_items, content_id) and not _id_exists_anywhere(_animal_types, content_id):
 				load_errors.append("Achievement '%s' unlocks unknown content id '%s'" % [achievement.get("id"), content_id])
+
+	for tile in _terrain_tiles.values():
+		var adjacency: Dictionary = tile.get("adjacency", {})
+		for direction: String in adjacency:
+			for neighbor_id: Variant in adjacency[direction]:
+				if not _id_exists_anywhere(_terrain_tiles, str(neighbor_id)):
+					load_errors.append("Terrain tile '%s' adjacency[%s] references unknown tile '%s'" % [tile.get("id"), direction, neighbor_id])
 
 # --- Public getters -------------------------------------------------------
 
@@ -402,6 +438,12 @@ func get_village_event(id: String) -> Dictionary:
 
 func get_all_village_events() -> Array:
 	return _village_events.values()
+
+func get_terrain_tile(id: String) -> Dictionary:
+	return _resolve(_terrain_tiles, id)
+
+func get_all_terrain_tiles() -> Array:
+	return _terrain_tiles.values()
 
 func get_animal_types_with_housing_available(built_building_ids: Array) -> Array:
 	var available: Array = []

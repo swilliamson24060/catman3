@@ -1,0 +1,52 @@
+{
+  "terrain_tiles": [
+    {
+      "id": "grass",
+      "display_name": "Grass",
+      "scene_path": "res://world/tiles/grass.tscn",
+      "starter": true,
+      "adjacency": {
+        "north": ["grass", "path", "pond_edge", "sapling"],
+        "south": ["grass", "path", "pond_edge", "sapling"],
+        "east": ["grass", "path", "pond_edge", "sapling"],
+        "west": ["grass", "path", "pond_edge", "sapling"]
+      }
+    },
+    {
+      "id": "path",
+      "display_name": "Path",
+      "scene_path": "res://world/tiles/path.tscn",
+      "starter": true,
+      "adjacency": {
+        "north": ["grass", "path"],
+        "south": ["grass", "path"],
+        "east": ["grass", "path"],
+        "west": ["grass", "path"]
+      }
+    },
+    {
+      "id": "sapling",
+      "display_name": "Sapling",
+      "scene_path": "res://world/tiles/sapling.tscn",
+      "starter": true,
+      "adjacency": {
+        "north": ["grass"],
+        "south": ["grass"],
+        "east": ["grass"],
+        "west": ["grass"]
+      }
+    },
+    {
+      "id": "pond_edge",
+      "display_name": "Pond Edge",
+      "scene_path": "res://world/tiles/pond_edge.tscn",
+      "starter": true,
+      "adjacency": {
+        "north": ["grass", "pond_edge"],
+        "south": ["grass", "pond_edge"],
+        "east": ["grass", "pond_edge"],
+        "west": ["grass", "pond_edge"]
+      }
+    }
+  ]
+}

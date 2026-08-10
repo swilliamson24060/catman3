@@ -4,7 +4,7 @@ extends CharacterBody3D
 signal conversation_requested(resident: ResidentAgent)
 signal activity_changed(resident_id: StringName, activity_id: StringName, state_name: StringName)
 
-enum State { ROUTINE_TRAVEL, ROUTINE_ACTIVITY, CONSIDERING, CONTRIBUTION_TRAVEL, CONTRIBUTING, SOCIAL_TRAVEL, SOCIALIZING, TALKING, GOING_HOME, SLEEPING }
+enum State { ROUTINE_TRAVEL, ROUTINE_ACTIVITY, CONSIDERING, CONTRIBUTION_TRAVEL, CONTRIBUTING, SOCIAL_TRAVEL, SOCIALIZING, TALKING, GOING_HOME, SLEEPING, AWAY }
 
 @export var move_speed: float = 2.6
 @export var arrival_distance: float = 0.35
@@ -268,6 +268,26 @@ func conversation_text() -> String:
 	var steps: Array = definition.get("aspiration_steps", [])
 	var aspiration := str(steps[clampi(aspiration_step, 0, steps.size() - 1)]) if not steps.is_empty() else "Find a place in the community."
 	return "%s\n\n%s\n%s%s%s\n\nI hope to: %s" % [current_activity.get("label", "Taking a quiet pause."), weather_line, priority_line, discovery_line, relationship_line, aspiration]
+
+## Sent off on (or returned from) a solo expedition -- ExpeditionService owns
+## the decision, this just applies it. Hidden and unreachable while away
+## rather than idling in place: v1 keeps the trip entirely off-screen at
+## home ("just around the bend"), narratively resolved by ExpeditionService.
+func set_away(value: bool) -> void:
+	if value:
+		current_state = State.AWAY
+		velocity = Vector3.ZERO
+		visible = false
+		interaction_anchor.enabled = false
+		_update_debug_label()
+		activity_changed.emit(resident_id, activity_id(), state_name())
+	else:
+		visible = true
+		interaction_anchor.enabled = true
+		_select_routine_activity()
+
+func is_away() -> bool:
+	return current_state == State.AWAY
 
 func begin_talking() -> void:
 	current_state = State.TALKING
