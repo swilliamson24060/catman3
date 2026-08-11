@@ -1,7 +1,6 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/residents/resident_agent.gd" id="1"]
-[ext_resource type="PackedScene" path="res://kenney_cube-pets_1/Models/GLB format/animal-bunny.glb" id="2"]
 [ext_resource type="PackedScene" path="res://scenes/world/interaction_anchor.tscn" id="3"]
 
 [sub_resource type="CapsuleShape3D" id="Capsule"]
@@ -27,9 +26,6 @@ avoidance_enabled = true
 
 [node name="ModelRoot" type="Node3D" parent="."]
 position = Vector3(0, 0.06, 0)
-scale = Vector3(0.72, 0.72, 0.72)
-
-[node name="CubePetModel" parent="ModelRoot" instance=ExtResource("2")]
 
 [node name="InteractionAnchor" parent="." instance=ExtResource("3")]
 

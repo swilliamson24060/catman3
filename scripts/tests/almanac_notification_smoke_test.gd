@@ -32,7 +32,7 @@ func _run() -> void:
 		push_error(_failure)
 		quit(1)
 		return
-	shell.event_toast.visible = false
+	shell._event_toast_panel.visible = false
 	shell._event_toast_queue.clear()
 
 	# Default delay: not one period change early, fires exactly on schedule.
@@ -42,11 +42,11 @@ func _run() -> void:
 	for _i in range(service.DEFAULT_DELAY_PERIODS - 1):
 		calendar.debug_jump_to_period(&"afternoon")
 	await process_frame
-	_check(not shell.event_toast.visible, "the notification must not fire before its delay elapses")
+	_check(not shell._event_toast_panel.visible, "the notification must not fire before its delay elapses")
 	calendar.debug_jump_to_period(&"evening")
 	await process_frame
-	_check(shell.event_toast.visible and shell.event_toast.text.to_lower().contains("almanac"), "the notification must fire once the default delay elapses")
-	shell.event_toast.visible = false
+	_check(shell._event_toast_panel.visible and shell.event_toast.text.to_lower().contains("almanac"), "the notification must fire once the default delay elapses")
+	shell._event_toast_panel.visible = false
 	shell._event_toast_queue.clear()
 
 	# A custom, per-call delay: tunable independently of the default without
@@ -54,8 +54,8 @@ func _run() -> void:
 	service.schedule(&"test_fast_discovery", 1)
 	calendar.debug_jump_to_period(&"night")
 	await process_frame
-	_check(shell.event_toast.visible, "a custom shorter delay must fire on its own schedule, independent of the default")
-	shell.event_toast.visible = false
+	_check(shell._event_toast_panel.visible, "a custom shorter delay must fire on its own schedule, independent of the default")
+	shell._event_toast_panel.visible = false
 	shell._event_toast_queue.clear()
 
 	# A delay of 0 (the founder-selection use case) fires immediately -- no
@@ -64,11 +64,11 @@ func _run() -> void:
 	_check(not service.has_unread(), "reset() must clear the unread flag along with pending entries")
 	service.schedule(&"test_immediate", 0)
 	await process_frame
-	_check(shell.event_toast.visible, "a 0 delay must fire the very next frame, not wait for any period change")
+	_check(shell._event_toast_panel.visible, "a 0 delay must fire the very next frame, not wait for any period change")
 	_check(service.has_unread(), "firing must raise the unread flag")
 	service.acknowledge_unread()
 	_check(not service.has_unread(), "acknowledge_unread() must clear it, the same action opening the Almanac performs")
-	shell.event_toast.visible = false
+	shell._event_toast_panel.visible = false
 	shell._event_toast_queue.clear()
 
 	# Multiple pending entries count down independently, not off one shared clock.

@@ -29,10 +29,13 @@ var _capturing_action: StringName = &""
 var _history: Array[String] = []
 var _panel_style: StyleBoxFlat
 var boundary_notice: Label
+var _boundary_notice_panel: PanelContainer
 var _boundary_notice_hide_at: float = -1.0
 var event_toast: Label
+var _event_toast_panel: PanelContainer
 var _event_toast_hide_at: float = -1.0
 var _event_toast_queue: Array[String] = []
+var _event_toast_tween: Tween
 
 func _ready() -> void:
 	layer = 20
@@ -66,9 +69,9 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _process(_delta: float) -> void:
 	_refresh_status()
-	if boundary_notice != null and boundary_notice.visible and Time.get_ticks_msec() / 1000.0 >= _boundary_notice_hide_at:
-		boundary_notice.visible = false
-	if event_toast != null and event_toast.visible and Time.get_ticks_msec() / 1000.0 >= _event_toast_hide_at:
+	if _boundary_notice_panel != null and _boundary_notice_panel.visible and Time.get_ticks_msec() / 1000.0 >= _boundary_notice_hide_at:
+		_boundary_notice_panel.visible = false
+	if _event_toast_panel != null and _event_toast_panel.visible and Time.get_ticks_msec() / 1000.0 >= _event_toast_hide_at:
 		_advance_event_toast()
 
 ## Called (repeatedly, while pressed against a boundary wall) by
@@ -77,7 +80,7 @@ func _process(_delta: float) -> void:
 ## message up without flicker.
 func show_boundary_notice(text: String, duration: float = 2.0) -> void:
 	boundary_notice.text = text
-	boundary_notice.visible = true
+	_boundary_notice_panel.visible = true
 	_boundary_notice_hide_at = Time.get_ticks_msec() / 1000.0 + duration
 
 ## One-off event feedback (a new rumor, a fresh discovery) for interactions
@@ -86,20 +89,34 @@ func show_boundary_notice(text: String, duration: float = 2.0) -> void:
 ## show_boundary_notice above, these can arrive back-to-back from a single
 ## interaction (finding something also acquires its rumor in the same call),
 ## so they queue instead of overwriting each other.
+##
+## Backed by a bordered panel and a brief pop-in, not bare floating text --
+## a plain Label here was too easy to miss against a busy 3D background, and
+## the player has no reason to be scanning the top of the screen for it.
 func show_event_toast(text: String, duration: float = 3.5) -> void:
-	if event_toast.visible:
+	if _event_toast_panel.visible:
 		_event_toast_queue.append(text)
 		return
 	event_toast.text = text
-	event_toast.visible = true
+	_event_toast_panel.visible = true
 	_event_toast_hide_at = Time.get_ticks_msec() / 1000.0 + duration
+	_pop_event_toast()
 
 func _advance_event_toast() -> void:
 	if _event_toast_queue.is_empty():
-		event_toast.visible = false
+		_event_toast_panel.visible = false
 		return
 	event_toast.text = _event_toast_queue.pop_front()
 	_event_toast_hide_at = Time.get_ticks_msec() / 1000.0 + 3.5
+	_pop_event_toast()
+
+func _pop_event_toast() -> void:
+	if _event_toast_tween != null and _event_toast_tween.is_valid():
+		_event_toast_tween.kill()
+	_event_toast_panel.pivot_offset = _event_toast_panel.size / 2.0
+	_event_toast_panel.scale = Vector2(0.82, 0.82)
+	_event_toast_tween = create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_event_toast_tween.tween_property(_event_toast_panel, "scale", Vector2.ONE, 0.22)
 
 func open_menu() -> void:
 	_close_legacy_panels(); menu_panel.visible = true; content_panel.visible = false; _open_modal()
@@ -134,7 +151,7 @@ func show_dialog(title: String, body: String, on_continue: Callable = Callable()
 	# firing their own ambient "Found:"/"Rumor:" toasts as a side effect of
 	# the same interaction) -- without this, a toast can silently expire in
 	# the background, unseen, while the dialog has focus.
-	event_toast.visible = false
+	_event_toast_panel.visible = false
 	_event_toast_queue.clear()
 	intro_title_label.text = title
 	intro_body_label.text = body
@@ -246,8 +263,15 @@ func _build_theme_shell() -> void:
 	ask_list_box = VBoxContainer.new(); ask_list_box.name = "List"; ask_list_box.add_theme_constant_override("separation", 6); ask_vbox.add_child(ask_list_box)
 	var ask_never_mind := Button.new(); ask_never_mind.name = "NeverMind"; ask_never_mind.text = "Never mind"; ask_never_mind.pressed.connect(_on_ask_never_mind); ask_vbox.add_child(ask_never_mind)
 	ask_panel.visible = false
-	boundary_notice = Label.new(); boundary_notice.name = "BoundaryNotice"; add_child(boundary_notice); boundary_notice.add_theme_font_size_override("font_size", 20); boundary_notice.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; boundary_notice.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM); boundary_notice.offset_top = -90; boundary_notice.offset_bottom = -60; boundary_notice.offset_left = -220; boundary_notice.offset_right = 220; boundary_notice.visible = false
-	event_toast = Label.new(); event_toast.name = "EventToast"; add_child(event_toast); event_toast.add_theme_font_size_override("font_size", 20); event_toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; event_toast.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART; event_toast.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP); event_toast.offset_top = 100; event_toast.offset_bottom = 160; event_toast.offset_left = -260; event_toast.offset_right = 260; event_toast.visible = false
+	# Both notices below sit on the shared bordered _panel_style rather than
+	# floating as bare Labels -- unbacked white text over a busy 3D scene has
+	# no visual weight and is easy to miss entirely (see show_event_toast).
+	_boundary_notice_panel = PanelContainer.new(); _boundary_notice_panel.name = "BoundaryNoticePanel"; add_child(_boundary_notice_panel); _boundary_notice_panel.add_theme_stylebox_override("panel", _panel_style); _boundary_notice_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM); _boundary_notice_panel.offset_top = -98; _boundary_notice_panel.offset_bottom = -54; _boundary_notice_panel.offset_left = -240; _boundary_notice_panel.offset_right = 240; _boundary_notice_panel.visible = false
+	var boundary_margin := MarginContainer.new(); boundary_margin.name = "Margin"; boundary_margin.add_theme_constant_override("margin_left", 16); boundary_margin.add_theme_constant_override("margin_right", 16); boundary_margin.add_theme_constant_override("margin_top", 10); boundary_margin.add_theme_constant_override("margin_bottom", 10); _boundary_notice_panel.add_child(boundary_margin)
+	boundary_notice = Label.new(); boundary_notice.name = "BoundaryNotice"; boundary_margin.add_child(boundary_notice); boundary_notice.add_theme_font_size_override("font_size", 20); boundary_notice.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; boundary_notice.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_event_toast_panel = PanelContainer.new(); _event_toast_panel.name = "EventToastPanel"; add_child(_event_toast_panel); _event_toast_panel.add_theme_stylebox_override("panel", _panel_style); _event_toast_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP); _event_toast_panel.offset_top = 104; _event_toast_panel.offset_bottom = 172; _event_toast_panel.offset_left = -280; _event_toast_panel.offset_right = 280; _event_toast_panel.visible = false
+	var toast_margin := MarginContainer.new(); toast_margin.name = "Margin"; toast_margin.add_theme_constant_override("margin_left", 18); toast_margin.add_theme_constant_override("margin_right", 18); toast_margin.add_theme_constant_override("margin_top", 12); toast_margin.add_theme_constant_override("margin_bottom", 12); _event_toast_panel.add_child(toast_margin)
+	event_toast = Label.new(); event_toast.name = "EventToast"; toast_margin.add_child(event_toast); event_toast.add_theme_font_size_override("font_size", 23); event_toast.add_theme_color_override("font_color", Color(0.97, 0.94, 0.82)); event_toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; event_toast.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_apply_accessibility(get_node("/root/UserExperienceService").preferences)
 
 func _connect_services() -> void:

@@ -4,7 +4,7 @@ Request this batch after Milestone 3 routine readability is approved. Gameplay c
 
 ## Shared production contract
 
-- Godot scale: 1 unit = 1 meter. Resident greybox capsule is 1.05 m tall with 0.32 m radius; model scene scale is currently 0.72.
+- Godot scale: 1 unit = 1 meter. Resident greybox capsule is 1.05 m tall with 0.32 m radius; delivered models are applied at scale 1.0 (`residents/resident_appearance.gd`'s `MODEL_SCALE`), so new deliveries should already be sized to the project's real-world meter scale rather than needing a corrective multiplier.
 - Origin at ground contact; forward is Godot -Z; no root motion.
 - Preserve named sockets for speech/VFX above the head, carried items in front of the torso, and contextual interaction.
 - Deliver GLB models with separate developer-owned collision proxies and materials compatible with the project palette.

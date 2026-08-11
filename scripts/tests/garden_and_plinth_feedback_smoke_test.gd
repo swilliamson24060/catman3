@@ -54,7 +54,7 @@ func _run() -> void:
 	project_service.carried_material = &"reclaimed_wood"
 	project.interaction_anchor.interact(null)
 	await process_frame
-	_check(shell.event_toast.visible and shell.event_toast.text.contains("doesn't need"), "delivering an unneeded material must explain why, not silently do nothing")
+	_check(shell._event_toast_panel.visible and shell.event_toast.text.contains("doesn't need"), "delivering an unneeded material must explain why, not silently do nothing")
 	_check(project_service.carried_material == &"reclaimed_wood", "an unneeded material must stay carried, not vanish silently")
 	_clear_toast(shell)
 
@@ -76,7 +76,7 @@ func _run() -> void:
 	var plinth0: ResonancePlinth = world.get_node("FirstBloomResonanceSite/Plinths/WaterPlinth")
 	plinth0.interaction_anchor.interact(null)
 	await process_frame
-	_check(shell.event_toast.visible and not shell.event_toast.text.is_empty(), "an empty plinth with nothing interpreted yet must explain itself, not fire silently")
+	_check(shell._event_toast_panel.visible and not shell.event_toast.text.is_empty(), "an empty plinth with nothing interpreted yet must explain itself, not fire silently")
 	_check(root.get_node("SeasonalResonanceService").plinth_components[0].is_empty(), "nothing should place without an interpreted component")
 	_clear_toast(shell)
 
@@ -109,7 +109,7 @@ func _run() -> void:
 		quit(1)
 
 func _clear_toast(shell: Node) -> void:
-	shell.event_toast.visible = false
+	shell._event_toast_panel.visible = false
 	shell._event_toast_queue.clear()
 
 func _check(condition: bool, message: String) -> void:

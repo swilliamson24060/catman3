@@ -32,9 +32,28 @@ func _build_placeholder() -> void:
 
 func _on_interaction(_anchor_id: StringName) -> void:
 	var service := get_node("/root/CommunityProjectService")
-	if service.carried_material.is_empty(): service.gather_material(material_id)
-	elif service.carried_material == material_id: service.return_carried_material()
+	if service.carried_material.is_empty():
+		if service.gather_material(material_id):
+			_show_pickup_guidance()
+	elif service.carried_material == material_id:
+		service.return_carried_material()
 	_refresh()
+
+## The founder can only carry one material at a time and nothing previously
+## told the player where it goes -- picking something up looked identical to
+## every other interaction. The first-ever pickup gets the full explanation
+## as a modal (impossible to miss, matches how first-visit anchor intros
+## teach a mechanic once); later pickups get a short reminder toast instead,
+## so returning players aren't stopped by a dialog for a routine action.
+func _show_pickup_guidance() -> void:
+	var shell := get_tree().get_first_node_in_group("reboot_ui_shell")
+	if shell == null:
+		return
+	var experience := get_node("/root/UserExperienceService")
+	if experience.introduce_anchor(&"gather_material"):
+		shell.show_dialog("Carrying %s" % display_name, "You picked up %s. It only sits in your paws until you deliver it -- bring it to the abandoned garden and interact there when you arrive; the prompt will change to \"Deliver\" once you're close enough." % display_name)
+	else:
+		shell.show_event_toast("Carrying %s -- bring it to the abandoned garden." % display_name)
 
 func _on_carried_changed(_material_id: StringName) -> void:
 	_refresh()

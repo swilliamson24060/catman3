@@ -26,6 +26,8 @@ var garden_routine_unlocked: bool = false
 var _score_breakdown: Array[String] = []
 var _stuck_seconds: float = 0.0
 var _last_distance: float = INF
+var _resident_animation_player: AnimationPlayer
+var _current_resident_animation := ""
 
 @onready var navigation_agent: NavigationAgent3D = $NavigationAgent3D
 @onready var model_root: Node3D = $ModelRoot
@@ -49,7 +51,7 @@ func configure(data: Dictionary, saved_state: Dictionary = {}) -> void:
 	interaction_anchor.anchor_id = resident_id
 	interaction_anchor.prompt = "Talk with %s" % display_name()
 	global_position = _vector3(definition.get("home_position", [0.0, 0.2, 0.0]))
-	_apply_color(Color(str(definition.get("color", "ffffff"))))
+	ResidentAppearance.apply_to_resident(self, String(resident_id))
 	restore_state(saved_state)
 	set_period(StringName(str(saved_state.get("routine_period", current_period))))
 
@@ -147,6 +149,7 @@ func _physics_process(delta: float) -> void:
 	rotation.y = lerp_angle(rotation.y, atan2(-direction.x, -direction.z), minf(1.0, delta * 9.0))
 	move_and_slide()
 	model_root.position.y = 0.06 + absf(sin(Time.get_ticks_msec() * 0.012)) * 0.08
+	_play_resident_animation("walk")
 	_stuck_seconds = _stuck_seconds + delta if distance >= _last_distance - 0.01 else 0.0
 	_last_distance = distance
 	if _stuck_seconds >= 5.0:
@@ -154,6 +157,7 @@ func _physics_process(delta: float) -> void:
 		_stuck_seconds = 0.0
 
 func _animate_activity() -> void:
+	_play_resident_animation("idle")
 	if current_state == State.SLEEPING:
 		model_root.rotation.z = lerpf(model_root.rotation.z, -0.18, 0.08)
 		return
@@ -370,12 +374,20 @@ func _on_interaction(_anchor_id: StringName) -> void:
 func _update_debug_label() -> void:
 	debug_label.text = "%s — %s\n%s\n%s" % [display_name(), state_name(), current_activity.get("label", "Waiting"), " | ".join(_score_breakdown)]
 
-func _apply_color(color: Color) -> void:
-	var material := StandardMaterial3D.new()
-	material.albedo_color = color
-	material.roughness = 0.82
-	for descendant: Node in model_root.find_children("*", "MeshInstance3D", true, false):
-		(descendant as MeshInstance3D).material_override = material
+## The model (and its AnimationPlayer) doesn't exist until
+## ResidentAppearance.apply_to_resident() runs -- looked up lazily rather
+## than at _ready(), and re-checked each time since is_instance_valid()
+## catches the old one being freed when the resident's model is reapplied.
+func _play_resident_animation(clip_name: String) -> void:
+	if _resident_animation_player == null or not is_instance_valid(_resident_animation_player):
+		_resident_animation_player = ResidentAppearance.find_animation_player(self)
+	if _resident_animation_player == null:
+		return
+	if clip_name == _current_resident_animation:
+		return
+	if _resident_animation_player.has_animation(clip_name):
+		_resident_animation_player.play(clip_name)
+		_current_resident_animation = clip_name
 
 func _vector3(value: Variant) -> Vector3:
 	if value is Array and value.size() >= 3:
