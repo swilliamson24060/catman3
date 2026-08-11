@@ -101,7 +101,16 @@ func score_activity(candidate: Dictionary) -> Dictionary:
 		var partner_ids: Array = candidate.get("partner_ids", [])
 		for partner_id: Variant in partner_ids:
 			relationship_score += float(relationship_service.bond(resident_id, StringName(str(partner_id)))) * 0.08 + relationship_service.compatibility_score(resident_id, StringName(str(partner_id)))
-	return {"score": schedule_score + specialty_score + aspiration_score + distance_score + weather_score + comfort_score + priority_score + relationship_score, "schedule":schedule_score, "specialty":specialty_score, "aspiration":aspiration_score, "distance":distance_score, "weather":weather_score, "comfort":comfort_score, "priority":priority_score, "relationship":relationship_score}
+	# Which founder is playing subtly biases activity choice -- e.g. Barnaby's
+	# cats.json modifier nudges "specialty:gardening" candidates for everyone,
+	# which in practice only ever matters for Mara since she's the one with
+	# routine candidates tagged that way. Deliberately small relative to
+	# specialty_score/aspiration_score above -- flavor, not identity.
+	var founder_score := 0.0
+	var stats := get_node_or_null("/root/StatsService")
+	if stats != null:
+		founder_score = stats.get_effective("resident_interest", "specialty:%s" % str(candidate.get("specialty", "")), 0.0)
+	return {"score": schedule_score + specialty_score + aspiration_score + distance_score + weather_score + comfort_score + priority_score + relationship_score + founder_score, "schedule":schedule_score, "specialty":specialty_score, "aspiration":aspiration_score, "distance":distance_score, "weather":weather_score, "comfort":comfort_score, "priority":priority_score, "relationship":relationship_score, "founder":founder_score}
 
 func _begin_travel() -> void:
 	var target := activity_position()
@@ -209,6 +218,25 @@ func begin_investigation_meet(target: Vector3) -> void:
 	current_activity = {"id":"investigation_meet", "label":"Meets the founder to study a find", "location":"workshop investigation table", "position":[target.x,target.y,target.z]}
 	_begin_travel()
 
+## Sent out to examine something in the field the founder can't make sense of
+## alone (e.g. a weathered plaque) -- reuses the same travel-then-"project"
+## arrival handling as garden/machine/event work (see begin_machine_activity)
+## rather than a new state, then reports back once ResidentManager's
+## _process_errand judges the reading finished.
+func begin_reading_errand(target: Vector3, label: String) -> void:
+	current_activity = {"id":"reading_errand", "label":label, "location":"the field", "position":[target.x,target.y,target.z], "work_action":"inspect", "project":true, "errand":true}
+	activity_bubble.text = "◉"
+	activity_bubble.visible = false
+	_begin_travel()
+	current_state = State.CONTRIBUTION_TRAVEL
+
+func is_errand_ready() -> bool:
+	return bool(current_activity.get("errand", false)) and current_state == State.CONTRIBUTING
+
+func finish_reading_errand() -> void:
+	activity_bubble.visible = false
+	_select_routine_activity()
+
 func begin_resonance_reaction(tier: int, activation: bool) -> void:
 	current_activity = {"id":"first_bloom_reaction" if activation else "resonance_reaction", "label":"Celebrates The First Bloom" if activation else "Listens to the answering stones", "location":"community garden", "position":[global_position.x,global_position.y,global_position.z], "work_action":"celebrate" if activation else "inspect", "project":true}
 	current_state = State.CONTRIBUTING
@@ -246,6 +274,17 @@ func finish_event_activity() -> void:
 
 func is_social_ready(session_id: StringName) -> bool:
 	return social_session_id == session_id and current_state == State.SOCIALIZING
+
+## Shown once, the very first time the player talks to this resident --
+## before anything else, including an already-pending find only they could
+## help with (see ResidentManager._on_conversation_requested). Built from
+## definition fields (personality_tags, specialty) the same way
+## conversation_text() below builds its lines dynamically, rather than
+## hardcoded per-resident text, so a modded/added resident gets one for free.
+func introduction_text() -> String:
+	var tags: Array = definition.get("personality_tags", [])
+	var trait_text := " and ".join(tags) if not tags.is_empty() else "easygoing"
+	return "We haven't properly met. I'm %s -- %s, and %s is really my focus. If you ever come across something related to that, I'd be glad to take a look." % [display_name(), trait_text, str(definition.get("specialty", ""))]
 
 func conversation_text() -> String:
 	var weather := get_node_or_null("/root/WeatherService")

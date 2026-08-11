@@ -52,6 +52,7 @@ CelebrationService="*res://core/celebration_service.gd"
 UserExperienceService="*res://core/user_experience_service.gd"
 GrowthPlotService="*res://core/growth_plot_service.gd"
 ExpeditionService="*res://core/expedition_service.gd"
+AlmanacNotificationService="*res://core/almanac_notification_service.gd"
 
 [display]
 

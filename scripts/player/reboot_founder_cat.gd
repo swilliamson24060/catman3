@@ -8,15 +8,28 @@ extends CharacterBody3D
 @export var turn_speed: float = 12.0
 @export var interaction_radius: float = 2.4
 
+## The world is several separate hand-authored/generated grounded areas
+## (the clearing, the woodland route, the ruin, exploration areas) rather
+## than one continuous floor, with real gaps between them. Rather than
+## trying to wall off every edge of an evolving, organically-shaped
+## playspace, catch the fall instead: track the last position that had solid
+## ground underfoot, and snap back there if we ever drop below the world.
+const FALL_RECOVERY_Y := -8.0
+
 var input_enabled: bool = true
 var _gravity: float = float(ProjectSettings.get_setting("physics/3d/default_gravity", 9.8))
 var _active_anchor: InteractionAnchor
+var _last_grounded_position: Vector3
+var _cat_animation_player: AnimationPlayer
+var _current_cat_animation := ""
 
 @onready var prompt_label: Label = get_tree().get_first_node_in_group("reboot_interaction_prompt") as Label
 @onready var carried_material_visual: MeshInstance3D = $CarriedItemSocket/CarriedMaterial
 
 func _ready() -> void:
 	add_to_group("reboot_player")
+	add_to_group("player_cat")
+	_last_grounded_position = global_position
 	get_node("/root/CommunityProjectService").carried_material_changed.connect(_on_carried_material_changed)
 	_on_carried_material_changed(get_node("/root/CommunityProjectService").carried_material)
 
@@ -43,6 +56,7 @@ func _physics_process(delta: float) -> void:
 		velocity.y -= _gravity * delta
 	else:
 		velocity.y = 0.0
+		_last_grounded_position = global_position
 	var input_vector := Input.get_vector("move_left", "move_right", "move_forward", "move_back") if input_enabled else Vector2.ZERO
 	var camera := get_viewport().get_camera_3d()
 	var forward := Vector3.FORWARD
@@ -63,7 +77,49 @@ func _physics_process(delta: float) -> void:
 		var target_yaw := atan2(-desired_direction.x, -desired_direction.z)
 		rotation.y = lerp_angle(rotation.y, target_yaw, minf(1.0, turn_speed * delta))
 	move_and_slide()
+	_check_boundary_contact()
+	if global_position.y < FALL_RECOVERY_Y:
+		global_position = _last_grounded_position
+		velocity = Vector3.ZERO
 	get_node("/root/ExpeditionService").notify_founder_moved(global_position)
+	_update_cat_animation()
+
+## The model (and its AnimationPlayer) doesn't exist until CatAppearance.
+## apply_to_player() runs -- looked up lazily rather than at _ready(), and
+## re-checked each time since is_instance_valid() catches the old one being
+## freed when the founder's model is (re)applied.
+func _update_cat_animation() -> void:
+	if _cat_animation_player == null or not is_instance_valid(_cat_animation_player):
+		_cat_animation_player = CatAppearance.find_animation_player(self)
+	if _cat_animation_player == null:
+		return
+	var horizontal_speed := Vector2(velocity.x, velocity.z).length()
+	var target := "run" if horizontal_speed > maximum_speed * 0.65 else ("walk" if horizontal_speed > 0.15 else "idle")
+	if target == _current_cat_animation:
+		return
+	if _cat_animation_player.has_animation(target):
+		_cat_animation_player.play(target)
+		_current_cat_animation = target
+
+## Walls tagged "world_boundary" (see village_clearing.gd's
+## _create_boundary_wall) are otherwise invisible collision -- this is the
+## only thing that tells the player *why* they stopped, rather than leaving
+## them pushing uselessly against nothing.
+func _check_boundary_contact() -> void:
+	for i in get_slide_collision_count():
+		var collider := get_slide_collision(i).get_collider()
+		if collider is Node and (collider as Node).is_in_group("world_boundary"):
+			var shell := get_tree().get_first_node_in_group("reboot_ui_shell")
+			if shell != null and shell.has_method("show_boundary_notice"):
+				shell.show_boundary_notice("You're at the edge of the village.")
+			return
+
+## Called by ExpeditionService right after teleporting the founder (visiting
+## or leaving an exploration area) so the fall-recovery reference point
+## updates to the new position immediately, instead of possibly snapping
+## back to wherever the founder stood before the teleport.
+func reset_fall_recovery() -> void:
+	_last_grounded_position = global_position
 
 func _update_interaction_anchor() -> void:
 	var nearest: InteractionAnchor

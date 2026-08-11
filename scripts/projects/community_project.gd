@@ -13,6 +13,8 @@ signal interaction_requested
 func _ready() -> void:
 	add_to_group("community_projects")
 	set_meta("development_placeholder", true)
+	interaction_anchor.intro_title = "Garden Restoration"
+	interaction_anchor.intro_body = "An abandoned garden the village can restore together. Propose it at the Community Board first, then gather materials nearby and bring them here -- residents will pitch in once enough is delivered."
 	interaction_anchor.activated.connect(_on_interaction)
 	get_node("/root/CommunityProjectService").bind_project_scene(self)
 	_refresh_prompt()
@@ -34,8 +36,15 @@ func contribution_slot_position(index: int) -> Vector3:
 func _on_interaction(_anchor_id: StringName) -> void:
 	interaction_requested.emit()
 	var service := get_node("/root/CommunityProjectService")
-	if not service.carried_material.is_empty():
-		service.deposit_carried_material()
+	var shell := get_tree().get_first_node_in_group("reboot_ui_shell")
+	if not service.active and not service.completed:
+		if shell != null: shell.show_event_toast("Propose this project at the Community Board first.")
+	elif not service.carried_material.is_empty():
+		var material_name: String = service.material_display_name(service.carried_material)
+		if service.deposit_carried_material():
+			if shell != null: shell.show_event_toast("Delivered %s." % material_name)
+		elif shell != null:
+			shell.show_event_toast("The garden doesn't need more %s right now." % material_name)
 	elif service.can_player_contribute():
 		service.contribute(&"founder", true)
 	_refresh_prompt()

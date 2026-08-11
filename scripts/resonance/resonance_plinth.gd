@@ -9,6 +9,9 @@ extends Node3D
 func _ready() -> void:
 	set_meta("development_placeholder", true)
 	interaction_anchor.anchor_id = StringName("resonance_plinth_%d" % plinth_index)
+	interaction_anchor.intro_title = "Resonance Plinth"
+	interaction_anchor.intro_body = "One of three plinths arranged around the old garden tree. Place an interpreted component here -- bring unidentified finds to the investigation table first -- or interact again to retrieve it. Experimenting with what goes where is part of figuring it out."
+	interaction_anchor.intro_key = &"resonance_plinth"
 	interaction_anchor.activated.connect(func(_id: StringName) -> void: get_node("/root/SeasonalResonanceService").handle_plinth_interaction(plinth_index))
 	get_node("/root/SeasonalResonanceService").component_changed.connect(_on_component_changed)
 	refresh_component(get_node("/root/SeasonalResonanceService").plinth_components[plinth_index])

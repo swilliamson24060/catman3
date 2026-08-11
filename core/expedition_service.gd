@@ -13,11 +13,16 @@ const AREA_WIDTH := 8
 const AREA_HEIGHT := 8
 const TICK_INTERVAL := 1.0
 const FOUNDER_REVEAL_RADIUS := 2
+const VISIT_ARRIVAL_OFFSET := Vector3(0.0, 0.2, 2.0)   # relative to the stage root, away from the return anchor
+const HOME_RETURN_POSITION := Vector3(11.0, 0.2, 13.0)  # fallback if we somehow don't know where the founder visited from -- near the expedition post
+const EXPLORATION_STAGE_FALLBACK := VillageClearingBootstrap.EXPLORATION_STAGE_ORIGIN  # only used if _stage_root is somehow unbound; reads the real constant instead of duplicating it so it can't go stale again
 
 var _expeditions: Dictionary = {}    # resident_id (StringName) -> {area_id: StringName, timer: AwayTimer, plot: TileFogPlot, seed: int}
 var _visited_area_id: StringName = &""
 var _stage_root: Node3D
 var _visited_area_node: ExplorationArea
+var _pre_visit_position: Vector3
+var _has_pre_visit_position: bool = false
 var _tick_accum: float = 0.0
 
 func _process(delta: float) -> void:
@@ -132,6 +137,10 @@ func _feed_discoveries(plot: TileFogPlot) -> void:
 		if not bool(tile_def.get("starter", true)):
 			growth.unlock_tile(tile_id)
 
+## Visiting/leaving is a teleport, not a walk -- there's no ground between
+## the main clearing and the exploration stage (they're two separate
+## grounded areas, ~30m apart), and this matches the same "travel montage"
+## framing already used for the resident's own departure/return.
 func visit_area(resident_id: StringName) -> void:
 	if not _expeditions.has(resident_id):
 		return
@@ -139,10 +148,28 @@ func visit_area(resident_id: StringName) -> void:
 		leave_visited_area()
 	_visited_area_id = _expeditions[resident_id].area_id
 	_show_visited_area()
+	_remember_founder_position()
+	_teleport_founder((_stage_root.global_position if _stage_root != null else EXPLORATION_STAGE_FALLBACK) + VISIT_ARRIVAL_OFFSET)
 
 func leave_visited_area() -> void:
 	_clear_visited_node()
 	_visited_area_id = &""
+	_teleport_founder(_pre_visit_position if _has_pre_visit_position else HOME_RETURN_POSITION)
+	_has_pre_visit_position = false
+
+func _remember_founder_position() -> void:
+	var founder := get_tree().get_first_node_in_group("player_cat")
+	if founder != null:
+		_pre_visit_position = founder.global_position
+		_has_pre_visit_position = true
+
+func _teleport_founder(destination: Vector3) -> void:
+	var founder := get_tree().get_first_node_in_group("player_cat")
+	if founder == null:
+		return
+	founder.global_position = destination
+	if founder.has_method("reset_fall_recovery"):
+		founder.reset_fall_recovery()
 
 func _show_visited_area() -> void:
 	if _stage_root == null:

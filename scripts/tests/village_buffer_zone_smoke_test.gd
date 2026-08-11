@@ -1,0 +1,46 @@
+extends SceneTree
+
+const CLEARING := preload("res://scenes/world/village_clearing.tscn")
+
+var _failure := ""
+
+func _initialize() -> void: call_deferred("_run")
+
+func _run() -> void:
+	ProjectSettings.set_setting("feature/reboot_mode", true)
+
+	_check(VillageClearingBootstrap.is_within_buildable_area(Vector3.ZERO), "the village center must be buildable")
+	_check(VillageClearingBootstrap.is_within_buildable_area(Vector3(22.0, 0.0, 22.0)), "just inside the buildable margin should still be buildable")
+	_check(not VillageClearingBootstrap.is_within_buildable_area(Vector3(25.0, 0.0, 0.0)), "the buffer zone itself (between the buildable area and the tree line) must not be buildable")
+	_check(not VillageClearingBootstrap.is_within_buildable_area(Vector3(0.0, 0.0, 26.0)), "the buffer zone must not be buildable on the Z axis either")
+	_check(VillageClearingBootstrap.BUILDABLE_HALF_EXTENT < VillageClearingBootstrap.CLEARING_HALF_EXTENT, "the buildable area must be strictly smaller than the walkable clearing -- otherwise there's no buffer at all")
+
+	var world := CLEARING.instantiate()
+	root.add_child(world)
+	await process_frame
+	await process_frame
+
+	var ground := world.get_node_or_null("TerrainZones/ClearingBase")
+	_check(ground != null, "ClearingBase should exist")
+	if ground != null:
+		var mesh: BoxMesh = ground.get_node("Visual").mesh
+		var expected_span := VillageClearingBootstrap.CLEARING_HALF_EXTENT * 2.0
+		_check(is_equal_approx(mesh.size.x, expected_span) and is_equal_approx(mesh.size.z, expected_span), "the clearing ground should be resized to match CLEARING_HALF_EXTENT: got %s, expected span %f" % [mesh.size, expected_span])
+
+	var north_wall := world.get_node_or_null("PlaceholderProps/BoundaryNorth")
+	_check(north_wall != null, "the north boundary wall should exist")
+	if north_wall != null:
+		_check(is_equal_approx(north_wall.position.z, VillageClearingBootstrap.CLEARING_HALF_EXTENT), "the north wall should sit at the new, larger clearing edge: got z=%f" % north_wall.position.z)
+		_check(north_wall.is_in_group("world_boundary"), "boundary walls must stay tagged for the edge-notice check in reboot_founder_cat.gd")
+
+	world.queue_free()
+	await process_frame
+	if _failure.is_empty():
+		print("VILLAGE_BUFFER_ZONE_SMOKE_TEST_PASS")
+		quit(0)
+	else:
+		push_error(_failure)
+		quit(1)
+
+func _check(condition: bool, message: String) -> void:
+	if not condition and _failure.is_empty(): _failure = message

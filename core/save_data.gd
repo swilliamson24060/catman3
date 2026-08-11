@@ -24,3 +24,4 @@ class_name SaveData
 @export var user_experience_state: Dictionary = {}
 @export var growth_plot_state: Dictionary = {}
 @export var exploration_state: Dictionary = {}
+@export var almanac_notification_state: Dictionary = {}

@@ -45,6 +45,7 @@ func new_game(founder_cat_id: String) -> void:
 	AchievementService.reset_progress()
 	get_node("/root/GrowthPlotService").new_game()
 	get_node("/root/ExpeditionService").new_game()
+	get_node("/root/AlmanacNotificationService").reset()
 
 func save_game(save_path: String = SAVE_PATH) -> bool:
 	var data := {
@@ -69,6 +70,7 @@ func save_game(save_path: String = SAVE_PATH) -> bool:
 		"user_experience_state": get_node("/root/UserExperienceService").serialize_state(),
 		"growth_plot_state": get_node("/root/GrowthPlotService").serialize_state(),
 		"exploration_state": get_node("/root/ExpeditionService").serialize_state(),
+		"almanac_notification_state": get_node("/root/AlmanacNotificationService").serialize_state(),
 		"inventory": Inventory.serialize(),
 		"town_storage": TownStorage.serialize(),
 		"buildings": BuildingManager.serialize(),
@@ -132,6 +134,13 @@ func load_game(save_path: String = SAVE_PATH) -> bool:
 	current = SaveData.new()
 	current.save_generation = save_generation
 	current.founder_cat_id = str(parsed.get("founder_cat_id", ""))
+	# StatsService starts empty on every launch -- a founder's gameplay
+	# modifiers only exist for as long as something re-applies them. Do that
+	# here (idempotent via the "founder" source_id) so they survive a reload,
+	# not just the session where the founder was first picked.
+	var founder_data: Dictionary = get_node("/root/DataRegistry").get_founder_cat(current.founder_cat_id)
+	if not founder_data.is_empty():
+		get_node("/root/DataRegistry").apply_global_bonuses(founder_data.get("modifiers", []), "founder")
 	current.discovered_patterns.assign(_as_string_array(parsed.get("discovered_patterns", [])))
 	current.unlocked_content.assign(_as_string_array(parsed.get("unlocked_content", [])))
 	current.achievement_progress = _as_dictionary(parsed.get("achievement_progress", {}))
@@ -150,6 +159,7 @@ func load_game(save_path: String = SAVE_PATH) -> bool:
 	current.user_experience_state = _as_dictionary(parsed.get("user_experience_state", {}))
 	current.growth_plot_state = _as_dictionary(parsed.get("growth_plot_state", {}))
 	current.exploration_state = _as_dictionary(parsed.get("exploration_state", {}))
+	current.almanac_notification_state = _as_dictionary(parsed.get("almanac_notification_state", {}))
 	AchievementService.set_tracking_enabled(false)
 	AchievementService.restore_progress(current.achievement_progress)
 	WeatherService.restore_state(current.weather_state.merged({"world_seed": current.world_seed}, false))
@@ -169,6 +179,7 @@ func load_game(save_path: String = SAVE_PATH) -> bool:
 	# agent fresh via a normal routine -- this re-flags the correct freshly-
 	# spawned agent as away, overriding that default.
 	get_node("/root/ExpeditionService").restore_state(current.exploration_state)
+	get_node("/root/AlmanacNotificationService").restore_state(current.almanac_notification_state)
 
 	Inventory.restore(_as_array(parsed.get("inventory", [])))
 	TownStorage.restore(_as_array(parsed.get("town_storage", [])))

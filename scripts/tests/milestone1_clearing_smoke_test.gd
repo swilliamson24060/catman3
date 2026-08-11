@@ -17,7 +17,13 @@ func _run() -> void:
 	assert(destinations.size() == 6, "Clearing must expose five village destinations plus the ruin overlook")
 	assert(scene.get_node("TerrainZones/ClearingBase") != null)
 	var clearing_mesh := scene.get_node("TerrainZones/ClearingBase/Visual") as MeshInstance3D
-	assert((clearing_mesh.mesh as BoxMesh).size == Vector3(45.0, 0.25, 45.0), "Clearing footprint must be locked to 45 x 45 meters")
+	# Footprint is intentionally larger than the original 45x45 -- a buffer
+	# zone (VillageClearingBootstrap.BUILD_MARGIN) between the buildable area
+	# and the tree line was added so structures stay easy to see against open
+	# ground. Check against the constant rather than a hardcoded value so
+	# this doesn't go stale again if the span changes further.
+	var expected_span := VillageClearingBootstrap.CLEARING_HALF_EXTENT * 2.0
+	assert((clearing_mesh.mesh as BoxMesh).size == Vector3(expected_span, 0.25, expected_span), "Clearing footprint must match VillageClearingBootstrap.CLEARING_HALF_EXTENT (%.1f)" % expected_span)
 	assert(scene.get_node("WoodlandRoute/MainRoute") != null)
 	assert(scene.get_node("WoodlandRoute/WestBranch") != null)
 	assert(scene.get_node("WoodlandRoute/EastBranch") != null)

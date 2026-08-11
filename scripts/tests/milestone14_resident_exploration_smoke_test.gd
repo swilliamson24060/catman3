@@ -24,6 +24,7 @@ func _run() -> void:
 	_check_project_contribution_exclusion(resident_manager)
 	_check_cap_resolution(expedition)
 	_check_unlock_feed(expedition)
+	_check_visit_teleport(expedition)
 	await _check_restore_ordering(resident_manager, expedition)
 
 	world.queue_free()
@@ -85,6 +86,25 @@ func _check_unlock_feed(expedition: Node) -> void:
 	plot.set_tile_id(Vector2i(0, 0), "expansion_undersea:kelp_bed")
 	expedition._feed_discoveries(plot)
 	_check("expansion_undersea:kelp_bed" in growth.unlocked_tile_ids, "a non-starter tile placed in an exploration area should feed GrowthPlotService's unlocked vocabulary")
+
+## Visiting/leaving an exploration area is a teleport, not a walk (there's
+## no ground between the clearing and the exploration stage) -- confirm both
+## legs actually move the founder, and that leaving returns to where the
+## founder was standing before visiting rather than some fixed point.
+func _check_visit_teleport(expedition: Node) -> void:
+	var founder := get_first_node_in_group("player_cat")
+	_check(founder != null, "the reboot founder cat should exist for the teleport check")
+	if founder == null:
+		return
+	var pre_visit_position: Vector3 = founder.global_position
+	expedition.visit_area(&"resident_elowen")
+	var after_visit_position: Vector3 = founder.global_position
+	_check(after_visit_position.distance_to(pre_visit_position) > 5.0, "visiting an exploration area should teleport the founder there, not leave them where they were: moved %f" % after_visit_position.distance_to(pre_visit_position))
+	_check(after_visit_position.y > -5.0, "the teleported-to position should be on solid ground, not falling")
+
+	expedition.leave_visited_area()
+	var after_leave_position: Vector3 = founder.global_position
+	_check(after_leave_position.distance_to(pre_visit_position) < 0.5, "leaving should return the founder to exactly where they visited from: got %s, expected %s" % [after_leave_position, pre_visit_position])
 
 func _check_restore_ordering(resident_manager: Node, expedition: Node) -> void:
 	var mara_before = resident_manager.get_agent(&"resident_mara")

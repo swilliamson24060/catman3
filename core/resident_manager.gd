@@ -26,6 +26,10 @@ var _active_dialogue_resident: ResidentAgent
 var _social_sessions: Dictionary = {}
 var _next_social_session_index: int = 1
 var _project_session: Dictionary = {}
+var _reading_opportunities: Dictionary = {}  # discovery_id (StringName) -> {specialty: StringName, position: Vector3}
+var _errand_session: Dictionary = {}  # {resident_id, discovery_id, phase, remaining_seconds}
+var _pending_errand_discovery: StringName = &""
+var _pending_ask_resident: ResidentAgent  # who the "what would you like to ask about" list is currently open for, if anyone
 
 var legacy_animal_manager: Node:
 	get: return get_node_or_null("/root/AnimalManager")
@@ -40,6 +44,7 @@ func _process(delta: float) -> void:
 	if _world_root == null or not is_instance_valid(_world_root):
 		return
 	_process_project_contribution(delta)
+	_process_errand(delta)
 	for session_id: StringName in _social_sessions.keys():
 		var session: Dictionary = _social_sessions[session_id]
 		if str(session.get("phase", "traveling")) == "traveling":
@@ -117,6 +122,15 @@ func new_game() -> void:
 	recent_discoveries.clear()
 	cancel_all_social_activities()
 	cancel_project_contribution()
+	cancel_errand()
+	# _reading_opportunities is deliberately untouched -- it's static world
+	# layout (who can read what, where), registered once at spawn, not
+	# session progress. Actual progress lives in DiscoveryService's state,
+	# which callers reset separately; clearing this here would permanently
+	# strand any anchor's reading errand the moment a fresh game starts,
+	# since nothing re-registers it after the world has already booted.
+	_pending_errand_discovery = &""
+	_pending_ask_resident = null
 	_pending_state.clear()
 	if _world_root != null:
 		_spawn_residents()
@@ -172,6 +186,96 @@ func _process_project_contribution(delta: float) -> void:
 			service.contribute(agent.resident_id, false)
 			project_contribution_completed.emit(session)
 			project_coordination_comment.emit(_project_comment(StringName(str(session.phase_id)), agent.display_name()))
+
+## Registers a field discovery that's been found but needs a resident's
+## specialty to make sense of -- e.g. a weathered plaque only history can
+## read. Purely static data (who could read it, where it is); it has no
+## visible effect until DiscoveryService actually marks the discovery found
+## (see _find_reading_opportunity_for), so registering early -- at world
+## spawn, before the player has ever seen the marker -- is harmless.
+func register_reading_opportunity(discovery_id: StringName, resident_specialty: StringName, world_position: Vector3) -> void:
+	_reading_opportunities[discovery_id] = {"specialty":resident_specialty, "position":world_position}
+
+## Every unresolved discovery the player could bring up in conversation --
+## field-bound ones like the plaque included, since the player has no way to
+## know in advance which resident (if any) can actually help; that's part of
+## asking around. Offered as an explicit list (see RebootUIShell.show_ask_about)
+## rather than a resident automatically volunteering, so nothing gets
+## resolved without the player choosing to bring it up.
+func _conversation_topics() -> Array[Dictionary]:
+	var discovery := get_node("/root/DiscoveryService")
+	var result: Array[Dictionary] = []
+	for discovery_id: StringName in discovery.pending_investigations():
+		result.append({"discovery_id":discovery_id, "label":discovery.unidentified_name(discovery_id)})
+	return result
+
+## Called once the player has picked a specific topic from that list.
+## Specialty match decides everything from here: a field-bound discovery gets
+## offered as an errand, a portable one resolves immediately, and a mismatch
+## still names what the resident does know instead of a flat "no."
+func resolve_conversation_topic(resident: ResidentAgent, discovery_id: StringName) -> void:
+	_pending_ask_resident = null
+	var discovery := get_node("/root/DiscoveryService")
+	var specialty := StringName(str(resident.definition.get("specialty", "")))
+	var needed_specialty := StringName(str(discovery.definition(discovery_id).get("resident_specialty", "")))
+	if needed_specialty != specialty:
+		_open_dialogue(resident, "Sorry! I don't know about %s. I mostly know about %s." % [discovery.unidentified_name(discovery_id), specialty])
+		return
+	if _reading_opportunities.has(discovery_id):
+		if not _errand_session.is_empty():
+			_open_dialogue(resident, "Someone's already out looking into something else -- ask me again once they're back.")
+			return
+		_pending_errand_discovery = discovery_id
+		_open_dialogue(resident, "Let me take a look at that for you.")
+		return
+	var result: Dictionary = discovery.investigate(discovery_id, specialty)
+	if result.is_empty():
+		_open_dialogue(resident, resident.conversation_text())
+		return
+	_open_dialogue(resident, "About that %s you found -- %s" % [discovery.unidentified_name(discovery_id), str(result.get("interpretation", ""))])
+
+## The player chose not to bring anything up this time -- falls back to the
+## resident's normal conversation rather than leaving them nothing to say.
+func decline_conversation_topics(resident: ResidentAgent) -> void:
+	_pending_ask_resident = null
+	if resident == null or not resident.is_inside_tree(): return
+	_open_dialogue(resident, resident.conversation_text())
+
+func _begin_reading_errand(resident: ResidentAgent, discovery_id: StringName) -> void:
+	var opportunity: Dictionary = _reading_opportunities.get(discovery_id, {})
+	if opportunity.is_empty(): return
+	_reading_opportunities.erase(discovery_id)
+	resident.begin_reading_errand(opportunity.position, "Reads the weathered marker")
+	_errand_session = {"resident_id":String(resident.resident_id), "discovery_id":String(discovery_id), "phase":"traveling", "remaining_seconds":2.5}
+
+func _process_errand(delta: float) -> void:
+	if _errand_session.is_empty(): return
+	var agent := get_agent(StringName(str(_errand_session.resident_id)))
+	if agent == null:
+		_errand_session.clear()
+		return
+	if str(_errand_session.phase) == "traveling" and agent.is_errand_ready():
+		_errand_session.phase = "reading"
+	elif str(_errand_session.phase) == "reading":
+		_errand_session.remaining_seconds = maxf(float(_errand_session.remaining_seconds) - delta, 0.0)
+		if is_zero_approx(float(_errand_session.remaining_seconds)):
+			var discovery_id := StringName(str(_errand_session.discovery_id))
+			var specialty := StringName(str(agent.definition.get("specialty", "")))
+			agent.finish_reading_errand()
+			_errand_session.clear()
+			# No dialogue here on purpose: unlike resolve_conversation_topic()
+			# above, the player isn't mid-conversation when this fires -- it
+			# completes off-screen, possibly while they're elsewhere entirely.
+			# investigate() below already queues the Almanac's own delayed
+			# notification (AlmanacNotificationService), so the translation
+			# surfaces there instead of interrupting with a popup.
+			get_node("/root/DiscoveryService").investigate(discovery_id, specialty)
+
+func cancel_errand() -> void:
+	if _errand_session.is_empty(): return
+	var agent := get_agent(StringName(str(_errand_session.resident_id)))
+	if agent != null and agent.is_inside_tree(): agent.finish_reading_errand()
+	_errand_session.clear()
 
 func cancel_project_contribution(resume_routine: bool = true) -> void:
 	if _project_session.is_empty(): return
@@ -387,24 +491,56 @@ func close_dialogue() -> void:
 	if _active_dialogue_resident == null:
 		return
 	var resident_id := _active_dialogue_resident.resident_id
+	var resident := _active_dialogue_resident
 	_active_dialogue_resident.end_talking()
 	_active_dialogue_resident = null
 	get_node("/root/CalendarService").pop_modal_pause()
 	dialogue_closed.emit(resident_id)
+	# Deferred until after end_talking()/pop_modal_pause() so the errand's
+	# own travel isn't fighting the dialogue's pause or routine reselection.
+	if not _pending_errand_discovery.is_empty():
+		var discovery_id := _pending_errand_discovery
+		_pending_errand_discovery = &""
+		_begin_reading_errand(resident, discovery_id)
 
-func _on_conversation_requested(resident: ResidentAgent) -> void:
-	if _active_dialogue_resident != null:
-		return
+func _open_dialogue(resident: ResidentAgent, text: String) -> void:
 	_active_dialogue_resident = resident
 	resident.begin_talking()
 	get_node("/root/CalendarService").push_modal_pause()
-	dialogue_requested.emit(resident, resident.conversation_text())
+	dialogue_requested.emit(resident, text)
+
+func _on_conversation_requested(resident: ResidentAgent) -> void:
+	if _active_dialogue_resident != null or _pending_ask_resident != null:
+		return
+	var busy_on_errand := not _errand_session.is_empty() and StringName(str(_errand_session.resident_id)) == resident.resident_id
+	if busy_on_errand:
+		_open_dialogue(resident, "One moment -- I'm still looking that over.")
+		return
+	# A first meeting is just that -- introductions, nothing else -- even if
+	# something's already pending that they could help with. Everything below
+	# only becomes available starting the next time you talk to them.
+	if get_node("/root/UserExperienceService").introduce_anchor(StringName("met_%s" % resident.resident_id)):
+		_open_dialogue(resident, resident.introduction_text())
+		return
+	var topics := _conversation_topics()
+	if not topics.is_empty():
+		_pending_ask_resident = resident
+		resident.begin_talking()
+		var shell := get_tree().get_first_node_in_group("reboot_ui_shell")
+		if shell != null: shell.show_ask_about(resident, topics)
+		return
+	_open_dialogue(resident, resident.conversation_text())
 
 func _on_period_changed(period_id: StringName) -> void:
 	if _active_dialogue_resident != null:
 		close_dialogue()
+	if _pending_ask_resident != null:
+		_pending_ask_resident = null
+		var shell := get_tree().get_first_node_in_group("reboot_ui_shell")
+		if shell != null: shell.close_all()
 	cancel_all_social_activities()
 	cancel_project_contribution()
+	cancel_errand()
 	for agent: ResidentAgent in get_agents():
 		if agent.is_away(): continue
 		agent.set_period(period_id)

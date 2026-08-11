@@ -18,6 +18,7 @@ const DEFAULTS := {
 
 var preferences: Dictionary = DEFAULTS.duplicate(true)
 var completed_lessons: Array[StringName] = []
+var introduced_anchors: Array[StringName] = []
 var hint_level: int = 0
 var last_hint: String = ""
 
@@ -27,16 +28,20 @@ func _ready() -> void:
 
 func reset_story_state() -> void:
 	completed_lessons.clear()
+	introduced_anchors.clear()
 	hint_level = 0
 	last_hint = ""
 
 func serialize_state() -> Dictionary:
-	return {"completed_lessons": completed_lessons, "hint_level": hint_level, "last_hint": last_hint}
+	return {"completed_lessons": completed_lessons, "introduced_anchors": introduced_anchors, "hint_level": hint_level, "last_hint": last_hint}
 
 func restore_state(state: Dictionary) -> void:
 	completed_lessons.clear()
 	for value: Variant in state.get("completed_lessons", []):
 		completed_lessons.append(StringName(str(value)))
+	introduced_anchors.clear()
+	for value: Variant in state.get("introduced_anchors", []):
+		introduced_anchors.append(StringName(str(value)))
 	hint_level = clampi(int(state.get("hint_level", 0)), 0, 3)
 	last_hint = str(state.get("last_hint", ""))
 
@@ -45,6 +50,14 @@ func record_lesson(lesson_id: StringName) -> void:
 		return
 	completed_lessons.append(lesson_id)
 	lesson_recorded.emit(lesson_id)
+
+## True the first time this anchor is introduced -- callers that get true
+## own showing the explanation; false means "already seen, proceed as normal."
+func introduce_anchor(anchor_id: StringName) -> bool:
+	if anchor_id in introduced_anchors:
+		return false
+	introduced_anchors.append(anchor_id)
+	return true
 
 func request_next_hint() -> String:
 	# The ladder is deliberately requested, never pushed. Even its explicit step

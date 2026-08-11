@@ -6,6 +6,7 @@
       "description": "A bonus DLC founder from the Space Mice expansion -- an alien-green tabby in a tiny space helmet, always staring at the stars.",
       "bonus": true,
       "coat": { "pattern": "solid", "body_color": "#3FA34D", "secondary_color": "#1F5C2A", "eye_color": "#7FDBFF" },
+      "model_dir": "res://founder/models/comet",
       "modifiers": [
         { "target": "global_player", "stat": "movement_speed", "modifier_type": "multiplier", "value": 1.10 },
         { "target": "global_mice", "stat": "recruitment_rate", "modifier_type": "multiplier", "value": 1.10 }

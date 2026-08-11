@@ -109,8 +109,7 @@ func return_carried_material() -> bool:
 func deposit_carried_material() -> bool:
 	if carried_material.is_empty() or not active or completed:
 		return false
-	var needs: Dictionary = current_phase().get("material_needs", {})
-	if int(needs.get(carried_material, 0)) <= int(deposited_materials.get(carried_material, 0)):
+	if not _phase_needs_more(carried_material):
 		return false
 	deposited_materials[carried_material] = int(deposited_materials.get(carried_material, 0)) + 1
 	carried_material = &""
@@ -124,6 +123,10 @@ func materials_ready() -> bool:
 		if int(deposited_materials.get(material_id, 0)) < int(current_phase().material_needs[material_id]):
 			return false
 	return true
+
+func _phase_needs_more(material_id: StringName) -> bool:
+	var needs: Dictionary = current_phase().get("material_needs", {})
+	return int(needs.get(material_id, 0)) > int(deposited_materials.get(material_id, 0))
 
 func contribute(contributor_id: StringName, is_player: bool) -> bool:
 	if not active or completed or not materials_ready() or contributor_id in phase_contributors:
@@ -147,12 +150,14 @@ func interaction_prompt() -> String:
 		return "Admire the restored community garden"
 	if not active:
 		return "Propose this project at the Community Board"
-	if not carried_material.is_empty():
+	if not carried_material.is_empty() and _phase_needs_more(carried_material):
 		return "Deliver %s to the garden" % material_display_name(carried_material)
 	if not materials_ready():
 		return "Gather materials: %s" % material_need_summary()
 	if can_player_contribute():
 		return "%s alongside the community" % current_phase_label()
+	if not carried_material.is_empty():
+		return "This phase doesn't need %s -- try direct work instead" % material_display_name(carried_material)
 	return "Check garden progress"
 
 func material_need_summary() -> String:

@@ -65,11 +65,33 @@ func unbind_site(site: Node) -> void:
 
 func handle_plinth_interaction(plinth_index: int) -> bool:
 	if plinth_index < 0 or plinth_index >= 3: return false
-	if not plinth_components[plinth_index].is_empty(): return retrieve_component(plinth_index) != &""
+	if not plinth_components[plinth_index].is_empty():
+		var retrieved := retrieve_component(plinth_index)
+		if retrieved == &"": return false
+		_notify("Retrieved %s." % get_node("/root/DiscoveryService").display_name(retrieved))
+		return true
 	for component_id: StringName in COMPONENT_IDS:
 		if component_id not in plinth_components and get_node("/root/DiscoveryService").state(component_id) == &"interpreted":
-			return place_component(plinth_index, component_id)
+			if not place_component(plinth_index, component_id): return false
+			_notify("Placed %s." % get_node("/root/DiscoveryService").display_name(component_id))
+			return true
+	_notify(_plinth_blocked_reason())
 	return false
+
+## Explains why nothing could be placed -- otherwise interacting with an empty
+## plinth before any component is interpreted fires the anchor's activated
+## signal with no visible result at all.
+func _plinth_blocked_reason() -> String:
+	var discovery := get_node("/root/DiscoveryService")
+	for component_id: StringName in COMPONENT_IDS:
+		if component_id in plinth_components: continue
+		if discovery.state(component_id) in [&"found", &"unidentified", &"investigation_available"]:
+			return "Bring your unidentified find to the investigation table before placing it."
+	return "No interpreted component is ready to place yet."
+
+func _notify(text: String) -> void:
+	var shell := get_tree().get_first_node_in_group("reboot_ui_shell")
+	if shell != null: shell.show_event_toast(text)
 
 func place_component(plinth_index: int, component_id: StringName) -> bool:
 	if plinth_index < 0 or plinth_index >= 3 or component_id not in COMPONENT_IDS: return false

@@ -1,7 +1,6 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/player/reboot_founder_cat.gd" id="1"]
-[ext_resource type="PackedScene" path="res://kenney_cube-pets_1/Models/GLB format/animal-cat.glb" id="2"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape"]
 radius = 0.38
@@ -22,10 +21,6 @@ position = Vector3(0, 0.63, 0)
 shape = SubResource("CapsuleShape")
 
 [node name="VisualRoot" type="Node3D" parent="."]
-
-[node name="CatModel" parent="VisualRoot" instance=ExtResource("2")]
-rotation_degrees = Vector3(0, 180, 0)
-scale = Vector3(1.05, 1.05, 1.05)
 
 [node name="PlaceholderWatermark" type="MeshInstance3D" parent="VisualRoot"]
 position = Vector3(0, 1.65, 0)

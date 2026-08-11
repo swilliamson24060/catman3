@@ -39,7 +39,11 @@ func find(discovery_id: StringName) -> bool:
 	get_node("/root/ResidentManager").record_discovery_context(unidentified_name(discovery_id))
 	return true
 
-func investigate(discovery_id: StringName, resident_specialty: StringName = &"") -> Dictionary:
+## almanac_delay_periods lets a specific resolution path pace its own
+## "something new in the Almanac" notification (see AlmanacNotificationService)
+## differently from the default -- leave at -1 to use the service's own
+## default rather than duplicating that constant here.
+func investigate(discovery_id: StringName, resident_specialty: StringName = &"", almanac_delay_periods: int = -1) -> Dictionary:
 	if state(discovery_id) not in [&"investigation_available", &"investigated"]: return {}
 	_states[discovery_id] = &"investigated"
 	_emit_change(discovery_id)
@@ -50,6 +54,10 @@ func investigate(discovery_id: StringName, resident_specialty: StringName = &"")
 	var result := {"discovery_id":String(discovery_id), "display_name":display_name(discovery_id), "interpretation":str(definition.get("interpretation", "")), "specialist_context":specialist}
 	get_node("/root/ResidentManager").record_discovery_context(display_name(discovery_id))
 	get_node("/root/CalendarService").record_discovery("Interpreted: %s" % display_name(discovery_id))
+	var notification_service := get_node_or_null("/root/AlmanacNotificationService")
+	if notification_service != null:
+		if almanac_delay_periods >= 0: notification_service.schedule(discovery_id, almanac_delay_periods)
+		else: notification_service.schedule(discovery_id)
 	return result
 
 func state(discovery_id: StringName) -> StringName: return StringName(str(_states.get(discovery_id, "hidden")))

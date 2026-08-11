@@ -37,6 +37,7 @@ func _ready() -> void:
 	get_node("/root/CommunityProjectService").project_completed.connect(func(_project_id: StringName) -> void: _refresh_project_status())
 	get_node("/root/RumorService").rumor_acquired.connect(func(_id: StringName, _text: String) -> void: _refresh_almanac())
 	get_node("/root/DiscoveryService").discovery_changed.connect(func(_id: StringName, _state: StringName) -> void: _refresh_almanac())
+	get_node("/root/AlmanacNotificationService").almanac_updated.connect(func(_id: StringName) -> void: _refresh_almanac())
 	get_node("/root/InvestigationService").table_requested.connect(_open_investigation)
 	get_node("/root/SeasonalResonanceService").feedback_changed.connect(func(_result: Dictionary) -> void: _refresh_almanac())
 	get_node("/root/SeasonalResonanceService").activation_completed.connect(func(_pattern_id: StringName) -> void: _refresh_almanac())
@@ -224,6 +225,14 @@ func _on_bond_changed(_resident_a: StringName, _resident_b: StringName, _new_bon
 	relationship_timer.start()
 
 func _refresh_almanac() -> void:
+	var notifications := get_node("/root/AlmanacNotificationService")
+	var active_note_lines: Array[String] = []
+	var archived_note_lines: Array[String] = []
+	for note_id: StringName in notifications.note_ids():
+		var note: Dictionary = notifications.note_definition(note_id)
+		var line := "• [b]%s[/b]\n  %s" % [str(note.get("title", "")), str(note.get("body", ""))]
+		if notifications.is_note_archived(note_id): archived_note_lines.append(line)
+		else: active_note_lines.append(line)
 	var rumor_lines: Array[String] = []
 	for rumor: Dictionary in get_node("/root/RumorService").known_rumors():
 		rumor_lines.append("• %s\n  %s%s" % [rumor.text, rumor.landmark_hint, " [marker requested]" if bool(rumor.marker_enabled) else ""])
@@ -237,7 +246,7 @@ func _refresh_almanac() -> void:
 	var craft_text: String = str(machine.interaction_summary())
 	var celebration := get_node("/root/CelebrationService")
 	var distant_text := "\n".join(celebration.distant_rumors) if not celebration.distant_rumors.is_empty() else "None yet."
-	almanac_text.text = "[b]Rumors[/b]\n%s\n\n[b]Unidentified Finds[/b]\n%s\n\n[b]Interpreted Finds[/b]\n%s\n\n[b]Confirmed Patterns[/b]\n%s%s\n\n[b]Community Capability[/b]\n%s\n\n[b]Village Event[/b]\n%s\n\n[b]Distant Pattern Rumors[/b]\n%s" % ["\n".join(rumor_lines) if not rumor_lines.is_empty() else "None yet.", "\n".join(unidentified_lines) if not unidentified_lines.is_empty() else "None yet.", "\n".join(interpreted_lines) if not interpreted_lines.is_empty() else "None yet.", resonance.confirmed_pattern_text(), experiment_note, craft_text, celebration.status_summary(), distant_text]
+	almanac_text.text = "[b]Notes[/b]\n%s\n\n[b]Archived Notes[/b]\n%s\n\n[b]Rumors[/b]\n%s\n\n[b]Unidentified Finds[/b]\n%s\n\n[b]Interpreted Finds[/b]\n%s\n\n[b]Confirmed Patterns[/b]\n%s%s\n\n[b]Community Capability[/b]\n%s\n\n[b]Village Event[/b]\n%s\n\n[b]Distant Pattern Rumors[/b]\n%s" % ["\n".join(active_note_lines) if not active_note_lines.is_empty() else "Nothing new right now.", "\n".join(archived_note_lines) if not archived_note_lines.is_empty() else "None yet.", "\n".join(rumor_lines) if not rumor_lines.is_empty() else "None yet.", "\n".join(unidentified_lines) if not unidentified_lines.is_empty() else "None yet.", "\n".join(interpreted_lines) if not interpreted_lines.is_empty() else "None yet.", resonance.confirmed_pattern_text(), experiment_note, craft_text, celebration.status_summary(), distant_text]
 
 func _open_investigation(pending: Array[StringName]) -> void:
 	_pending_investigations = pending.duplicate()

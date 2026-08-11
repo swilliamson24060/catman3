@@ -23,6 +23,10 @@ func _run() -> void:
 	var manager := root.get_node("ResidentManager")
 	var service := root.get_node("CommunityProjectService")
 	var project := world.get_node("Projects/RestoreGarden")
+	# This test exercises material/contribution mechanics, not the first-visit
+	# intro dialog (covered separately by anchor_intro_smoke_test.gd) -- mark
+	# the garden's anchor already-seen so interact() below fires immediately.
+	root.get_node("UserExperienceService").introduce_anchor(project.interaction_anchor.anchor_id)
 	manager.project_contribution_started.connect(func(session: Dictionary) -> void: _work_actions[str(session.work_action)] = true)
 	_check(project.phase_presentations.get_child_count() == 5, "garden must expose five replacement-safe phase presentations")
 	_check(project.contribution_slots.get_child_count() >= 2, "garden must expose player and resident contribution slots")

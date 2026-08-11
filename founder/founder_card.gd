@@ -67,9 +67,24 @@ func _ready() -> void:
 
 func _format_modifiers(modifiers: Array) -> String:
 	var lines: Array[String] = []
+	var reboot_mode := bool(ProjectSettings.get_setting("feature/reboot_mode", true))
 	for mod in modifiers:
-		var stat: String = mod.get("stat", "")
+		# Most of these founders' modifiers predate the reboot and target
+		# systems that no longer exist in it (mice recruitment, construction
+		# speed) -- showing them to a reboot player describes a game they
+		# aren't playing. Only modifiers explicitly marked reboot_relevant
+		# (currently just the resident-interest bonus) are shown outside
+		# legacy mode; the legacy founder-select screen still shows
+		# everything, unfiltered, since those systems are real there.
+		if reboot_mode and not bool(mod.get("reboot_relevant", false)):
+			continue
+
 		var target: String = mod.get("target", "")
+		if target == "resident_interest":
+			lines.append(_format_interest_modifier(mod))
+			continue
+
+		var stat: String = mod.get("stat", "")
 		var value: float = mod.get("value", 0.0)
 		var modifier_type: String = mod.get("modifier_type", "multiplier")
 		var display_value: String
@@ -85,3 +100,11 @@ func _format_modifiers(modifiers: Array) -> String:
 		lines.append("%s %s (%s)" % [display_value, readable_stat, readable_target])
 
 	return "\n".join(lines)
+
+## "specialty:gardening" -> "Residents lean toward gardening" -- reads as a
+## flavor/personality nudge rather than a raw stat line, matching how small
+## this bonus actually is relative to a resident's own specialty/aspiration.
+func _format_interest_modifier(mod: Dictionary) -> String:
+	var stat: String = mod.get("stat", "")
+	var specialty := stat.trim_prefix("specialty:")
+	return "Residents lean toward %s" % specialty
