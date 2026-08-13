@@ -1,15 +1,19 @@
 extends Node
 ## Dev tool: renders a front-facing portrait of each non-bonus founder cat
-## (using the same CatAppearance coloring the game applies at selection
-## time) and saves it to res://founder/portraits/<id>.png. founder_card.gd
+## (using the same CatAppearance the game applies at selection time --
+## real per-founder Meshy AI models as of the founder 3D model upgrade, not
+## the old shared/recolored Kenney placeholder this tool originally
+## targeted) and saves it to res://founder/portraits/<id>.png. founder_card.gd
 ## displays these automatically when present, falling back to a flat color
 ## swatch otherwise -- so re-run this after adding/editing a founder in
-## cats.json (or an expansion's founder_cats) to refresh its portrait.
+## cats.json (or an expansion's founder_cats), or after the founder models
+## themselves change, to refresh the portraits.
 ##
 ## Not wired into any scene by default. To run: temporarily add a Node
-## with this script as a child of the root in player.tscn, run the project
-## once, then remove the node again (mirrors tools/generate_cat_textures.py's
-## one-shot workflow).
+## with this script as a child of the root in scenes/world/village_clearing.tscn
+## (the reboot scene -- RebootFounderCat joins the player_cat group this
+## tool looks up), run the project once, then remove the node again (mirrors
+## tools/generate_cat_textures.py's one-shot workflow).
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -24,17 +28,17 @@ func _run() -> void:
 		print("[PortraitGen] No player_cat found!")
 		return
 
-	# The founder-select modal is a CanvasLayer drawn on top of everything;
-	# hide it during capture so the 3D render underneath isn't obscured.
-	var founder_ui := get_tree().current_scene.get_node_or_null("FounderSelectUI")
-	if founder_ui:
-		founder_ui.visible = false
-	var hud := get_tree().current_scene.get_node_or_null("HUD")
-	if hud:
-		hud.visible = false
-	var inv_ui := get_tree().current_scene.get_node_or_null("InventoryUI")
-	if inv_ui:
-		inv_ui.visible = false
+	# Any pre-game modal (the reboot's RebootUIShell top bar, or a
+	# founder-select/resume modal if one happened to be up) is a CanvasLayer
+	# drawn on top of everything; hide it during capture so the 3D render
+	# underneath isn't obscured. get_viewport().get_texture() below captures
+	# the composited frame, UI included, not just the 3D scene.
+	var hidden_ui: Array[Node] = []
+	for node_name in ["RebootUIShell", "FounderSelectUI", "BootResumeUI", "HUD", "InventoryUI"]:
+		var node := get_tree().current_scene.get_node_or_null(node_name)
+		if node != null and node.visible:
+			node.visible = false
+			hidden_ui.append(node)
 
 	var dir := DirAccess.open("res://founder/")
 	if dir and not dir.dir_exists("portraits"):
@@ -48,10 +52,13 @@ func _run() -> void:
 	light.rotation_degrees = Vector3(-40, -30, 0)
 
 	# Dedicated portrait camera, close and level with the model, positioned
-	# to view the model's FRONT (opposite the tail side).
+	# to view the model's FRONT (opposite the tail side). A narrower FOV than
+	# the original 40 -- tuned for the old, much smaller Kenney placeholder --
+	# crops out a village prop that was catching the edge of frame at the
+	# wider angle now that the model fills more of the shot at real scale.
 	var cam := Camera3D.new()
 	get_parent().add_child(cam)
-	cam.fov = 40.0
+	cam.fov = 34.0
 
 	var founders := DataRegistry.get_all_founder_cats()
 	for founder_data in founders:
@@ -82,11 +89,7 @@ func _run() -> void:
 		var err := cropped.save_png(path)
 		print("[PortraitGen] Saved %s -> %s (err=%d)" % [fid, path, err])
 
-	if founder_ui:
-		founder_ui.visible = true
-	if hud:
-		hud.visible = true
-	if inv_ui:
-		inv_ui.visible = true
+	for node in hidden_ui:
+		node.visible = true
 
 	print("[PortraitGen] Done.")

@@ -80,12 +80,12 @@ func _supply_current_materials(world: Node, service: Node, project: Node) -> voi
 		for count in range(int(needs[material_value])):
 			var before := int(service.source_remaining.get(material_id, 0))
 			source._anchor.interact(world.get_node("RebootFounderCat"))
-			_check(service.carried_material == material_id, "source interaction should place one material in founder carry socket")
+			_check(service.carried_count(material_id) == 1, "source interaction should place one material in founder carry socket")
 			var mid_state: Dictionary = service.serialize_state()
 			service.restore_state(mid_state)
 			_check(int(service.source_remaining.get(material_id, 0)) == before - 1, "save restore must not duplicate gathered material")
 			project.interaction_anchor.interact(world.get_node("RebootFounderCat"))
-			_check(service.carried_material.is_empty(), "project delivery should empty founder carry socket")
+			_check(service.carried_count(material_id) == 0, "project delivery should empty founder carry socket")
 			project.interaction_anchor.interact(world.get_node("RebootFounderCat"))
 			_check(int(service.deposited_materials.get(material_id, 0)) == count + 1, "repeat project interaction must not double-deposit material")
 	await process_frame

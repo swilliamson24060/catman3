@@ -255,12 +255,51 @@ func _on_anchor_activated(anchor_id: StringName) -> void:
 		get_node("/root/RumorService").acquire(&"rumor_triangle")
 		get_node("/root/DiscoveryService").reveal_rumor(&"clue_ruin_triangle")
 	elif anchor_id == &"growth_plot":
+		# check_growth()/plant_seed() only mutate GrowthPlotService's state --
+		# nothing here ever told the player what happened, so every visit but
+		# the first (which at least gets intro_title/intro_body) looked like
+		# the interaction did nothing. Report the actual outcome instead, the
+		# same fix already applied to abandoned_garden below.
 		var growth := get_node("/root/GrowthPlotService")
+		var shell := get_tree().get_first_node_in_group("reboot_ui_shell")
+		var was_growing: bool = growth.is_growing()
 		growth.check_growth()
-		if not growth.is_growing():
+		var message: String
+		if growth.is_growing():
+			message = growth.progress_summary()
+		elif was_growing:
+			message = "The growth plot has fully grown! A new seed has been sown to keep it going."
 			growth.plant_seed(randi())
+		else:
+			growth.plant_seed(randi())
+			message = "A new seed has been sown in the growth plot."
+		if shell != null:
+			shell.show_event_toast(message)
 	elif anchor_id == &"expedition_post":
 		get_node("/root/ExpeditionService").request_post()
+	elif anchor_id == &"abandoned_garden":
+		# intro_title/intro_body (set in _spawn_authored_anchors) cover the
+		# first-ever visit as a one-time modal; every visit after that used
+		# to fire this same event silently, since interact() skips straight
+		# to _fire() once the intro has been shown once. Report the shared
+		# CommunityProjectService's current status instead, so repeat visits
+		# give the player something -- and it stays accurate as the garden
+		# restoration actually progresses.
+		var shell := get_tree().get_first_node_in_group("reboot_ui_shell")
+		if shell != null:
+			shell.show_event_toast(get_node("/root/CommunityProjectService").progress_summary())
+	elif anchor_id == &"workshop_edge":
+		# Same repeat-visit silence as abandoned_garden: intro_title/intro_body
+		# only cover the first-ever visit, and this anchor had no branch here
+		# at all, so every later interaction was a total no-op. It sits close
+		# enough to the irrigation machine's own anchor (WorkshopMachineSlot,
+		# ~2.9m away -- under the ~4.8m separation every other anchor keeps,
+		# see the comment above _spawn_expedition_post()) that a player aiming
+		# for the machine and landing here instead would see nothing happen
+		# at all, which reads as the machine itself being broken.
+		var shell := get_tree().get_first_node_in_group("reboot_ui_shell")
+		if shell != null:
+			shell.show_event_toast("Still just a marked-out plot -- nothing built here yet.")
 
 func _spawn_community_board() -> void:
 	_create_block("CommunityBoardPlaceholder", Vector3(2.2, 1.8, 0.25), Vector3(5.5, 0.9, -0.5), Color(0.82, 0.65, 0.28), false)

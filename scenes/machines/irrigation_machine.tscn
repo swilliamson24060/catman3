@@ -138,3 +138,5 @@ position = Vector3(1.15, 1.4, 0)
 position = Vector3(0, 0, 1.6)
 anchor_id = &"irrigation_machine"
 prompt = "Inspect the communal irrigation machine"
+intro_title = "Communal Irrigation Machine"
+intro_body = "A workshop slot for the village's shared machinery. Restoring the garden's irrigation (a phase of the community garden project) recovers the missing assembly for this slot -- once it's installed, interacting here works the machine directly."

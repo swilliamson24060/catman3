@@ -32,19 +32,27 @@ func _build_placeholder() -> void:
 
 func _on_interaction(_anchor_id: StringName) -> void:
 	var service := get_node("/root/CommunityProjectService")
-	if service.carried_material.is_empty():
-		if service.gather_material(material_id):
-			_show_pickup_guidance()
-	elif service.carried_material == material_id:
-		service.return_carried_material()
+	if service.carried_count(material_id) > 0:
+		service.return_carried_material(material_id)
+	elif service.gather_material(material_id):
+		_show_pickup_guidance()
 	_refresh()
 
-## The founder can only carry one material at a time and nothing previously
-## told the player where it goes -- picking something up looked identical to
-## every other interaction. The first-ever pickup gets the full explanation
-## as a modal (impossible to miss, matches how first-visit anchor intros
-## teach a mechanic once); later pickups get a short reminder toast instead,
-## so returning players aren't stopped by a dialog for a routine action.
+## The founder can gather several materials at once (see
+## CommunityProjectService.carried_materials) and nothing previously told
+## the player where any of it goes -- picking something up looked identical
+## to every other interaction. The very first-ever pickup, of any material,
+## gets a full explanation of the general carry/deliver mechanic as a modal
+## (impossible to miss, matches how first-visit anchor intros teach a
+## mechanic once) -- that fires unconditionally, since it's teaching how the
+## system works in general, not directing the player anywhere specific right
+## now. Every later pickup gets a short reminder toast instead, and THAT one
+## does check phase_wants_material(): sources stay gatherable across every
+## phase (a player can stockpile ahead), but the garden only accepts the one
+## material the current phase needs, so a repeat toast that unconditionally
+## says "bring it to the garden" would routinely send a player on a trip
+## just to be turned away with a "doesn't need this" message -- the original
+## reported bug.
 func _show_pickup_guidance() -> void:
 	var shell := get_tree().get_first_node_in_group("reboot_ui_shell")
 	if shell == null:
@@ -52,8 +60,12 @@ func _show_pickup_guidance() -> void:
 	var experience := get_node("/root/UserExperienceService")
 	if experience.introduce_anchor(&"gather_material"):
 		shell.show_dialog("Carrying %s" % display_name, "You picked up %s. It only sits in your paws until you deliver it -- bring it to the abandoned garden and interact there when you arrive; the prompt will change to \"Deliver\" once you're close enough." % display_name)
-	else:
+		return
+	var service := get_node("/root/CommunityProjectService")
+	if service.phase_wants_material(material_id):
 		shell.show_event_toast("Carrying %s -- bring it to the abandoned garden." % display_name)
+	else:
+		shell.show_event_toast("Carrying %s -- the garden doesn't need this yet; hold onto it for a later phase." % display_name)
 
 func _on_carried_changed(_material_id: StringName) -> void:
 	_refresh()
@@ -62,5 +74,6 @@ func _refresh() -> void:
 	if _anchor == null: return
 	var service := get_node("/root/CommunityProjectService")
 	var remaining := int(service.source_remaining.get(material_id, 0))
-	_anchor.enabled = remaining > 0 or service.carried_material == material_id
-	_anchor.prompt = "Return %s" % display_name if service.carried_material == material_id else "Gather %s (%d nearby)" % [display_name, remaining]
+	var carrying: int = service.carried_count(material_id)
+	_anchor.enabled = remaining > 0 or carrying > 0
+	_anchor.prompt = "Return %s" % display_name if carrying > 0 else "Gather %s (%d nearby)" % [display_name, remaining]

@@ -39,12 +39,12 @@ func _on_interaction(_anchor_id: StringName) -> void:
 	var shell := get_tree().get_first_node_in_group("reboot_ui_shell")
 	if not service.active and not service.completed:
 		if shell != null: shell.show_event_toast("Propose this project at the Community Board first.")
-	elif not service.carried_material.is_empty():
-		var material_name: String = service.material_display_name(service.carried_material)
-		if service.deposit_carried_material():
-			if shell != null: shell.show_event_toast("Delivered %s." % material_name)
+	elif service.is_carrying_anything():
+		var deposited: StringName = service.deposit_carried_material()
+		if not deposited.is_empty():
+			if shell != null: shell.show_event_toast("Delivered %s." % service.material_display_name(deposited))
 		elif shell != null:
-			shell.show_event_toast("The garden doesn't need more %s right now." % material_name)
+			shell.show_event_toast("The garden doesn't need what you're carrying (%s) right now." % service.carried_summary())
 	elif service.can_player_contribute():
 		service.contribute(&"founder", true)
 	_refresh_prompt()

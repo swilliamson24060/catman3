@@ -5,6 +5,11 @@ signal project_started(project_id: StringName)
 signal phase_changed(project_id: StringName, phase_id: StringName, phase_index: int)
 signal project_progress_changed(project_id: StringName, summary: String)
 signal project_completed(project_id: StringName)
+## Emitted whenever a single material's carried count changes (gather,
+## return, or deposit of that material) -- not a full-snapshot signal.
+## Listeners that care about the whole carried set (UI, the player's visual)
+## should read carried_materials themselves rather than relying solely on
+## the value passed here.
 signal carried_material_changed(material_id: StringName)
 
 const PROJECT_ID := &"project_restore_garden"
@@ -18,7 +23,14 @@ var phase_index: int = 0
 var phase_contributors: Array[StringName] = []
 var player_participated: bool = false
 var resident_participated: bool = false
-var carried_material: StringName
+## material_id (StringName) -> count currently carried. Previously a single
+## StringName ("carrying at most one thing"), which meant a player who
+## gathered a material the current phase didn't need yet had no way to also
+## pick up one it did need until they walked back and returned the first --
+## a real reported UX dead end. Gathering is now bounded only by each
+## source's own remaining stock (source_remaining below), not by whatever
+## else is already carried.
+var carried_materials: Dictionary = {}
 var deposited_materials: Dictionary = {}
 var source_remaining: Dictionary = {}
 var _project_scene: Node
@@ -46,7 +58,7 @@ func reset() -> void:
 	phase_contributors.clear()
 	player_participated = false
 	resident_participated = false
-	carried_material = &""
+	carried_materials.clear()
 	deposited_materials.clear()
 	source_remaining = MATERIAL_SOURCE_CAPACITY.duplicate()
 	_refresh_scene()
@@ -88,35 +100,63 @@ func required_specialties() -> Array[StringName]:
 		result.append(StringName(str(value)))
 	return result
 
+func carried_count(material_id: StringName) -> int:
+	return int(carried_materials.get(material_id, 0))
+
+func is_carrying_anything() -> bool:
+	for count: Variant in carried_materials.values():
+		if int(count) > 0: return true
+	return false
+
+## Human-readable list of everything currently carried, for messages that
+## need to name it (e.g. "the garden doesn't need what you're carrying").
+func carried_summary() -> String:
+	var parts: Array[String] = []
+	for material_id: Variant in carried_materials.keys():
+		var mid := StringName(str(material_id))
+		if carried_count(mid) > 0:
+			parts.append(material_display_name(mid))
+	return ", ".join(parts) if not parts.is_empty() else "nothing"
+
 func gather_material(material_id: StringName) -> bool:
-	if not carried_material.is_empty() or int(source_remaining.get(material_id, 0)) <= 0:
+	if int(source_remaining.get(material_id, 0)) <= 0:
 		return false
 	source_remaining[material_id] = int(source_remaining.get(material_id, 0)) - 1
-	carried_material = material_id
-	carried_material_changed.emit(carried_material)
+	carried_materials[material_id] = carried_count(material_id) + 1
+	carried_material_changed.emit(material_id)
 	_refresh_scene()
 	return true
 
-func return_carried_material() -> bool:
-	if carried_material.is_empty():
+func return_carried_material(material_id: StringName) -> bool:
+	if carried_count(material_id) <= 0:
 		return false
-	source_remaining[carried_material] = int(source_remaining.get(carried_material, 0)) + 1
-	carried_material = &""
-	carried_material_changed.emit(carried_material)
+	source_remaining[material_id] = int(source_remaining.get(material_id, 0)) + 1
+	carried_materials[material_id] = carried_count(material_id) - 1
+	if carried_materials[material_id] <= 0:
+		carried_materials.erase(material_id)
+	carried_material_changed.emit(material_id)
 	_refresh_scene()
 	return true
 
-func deposit_carried_material() -> bool:
-	if carried_material.is_empty() or not active or completed:
-		return false
-	if not _phase_needs_more(carried_material):
-		return false
-	deposited_materials[carried_material] = int(deposited_materials.get(carried_material, 0)) + 1
-	carried_material = &""
-	carried_material_changed.emit(carried_material)
-	_emit_progress()
-	if materials_ready(): get_node("/root/ResidentManager").consider_project_contributions()
-	return true
+## Delivers one unit of whichever carried material the current phase still
+## needs (the player may be carrying several kinds at once now). Returns the
+## material_id actually deposited, or an empty StringName if nothing carried
+## matches what this phase wants right now.
+func deposit_carried_material() -> StringName:
+	if not active or completed:
+		return &""
+	for material_id: Variant in carried_materials.keys():
+		var mid := StringName(str(material_id))
+		if carried_count(mid) > 0 and _phase_needs_more(mid):
+			deposited_materials[mid] = int(deposited_materials.get(mid, 0)) + 1
+			carried_materials[mid] = carried_count(mid) - 1
+			if carried_materials[mid] <= 0:
+				carried_materials.erase(mid)
+			carried_material_changed.emit(mid)
+			_emit_progress()
+			if materials_ready(): get_node("/root/ResidentManager").consider_project_contributions()
+			return mid
+	return &""
 
 func materials_ready() -> bool:
 	for material_id: Variant in current_phase().get("material_needs", {}):
@@ -127,6 +167,13 @@ func materials_ready() -> bool:
 func _phase_needs_more(material_id: StringName) -> bool:
 	var needs: Dictionary = current_phase().get("material_needs", {})
 	return int(needs.get(material_id, 0)) > int(deposited_materials.get(material_id, 0))
+
+## Public wrapper for _phase_needs_more(), for callers outside this service
+## (e.g. ProjectMaterialSource's pickup guidance) that need to know whether
+## delivering a material right now would actually be accepted, before
+## telling the player to carry it to the garden.
+func phase_wants_material(material_id: StringName) -> bool:
+	return active and not completed and _phase_needs_more(material_id)
 
 func contribute(contributor_id: StringName, is_player: bool) -> bool:
 	if not active or completed or not materials_ready() or contributor_id in phase_contributors:
@@ -150,15 +197,26 @@ func interaction_prompt() -> String:
 		return "Admire the restored community garden"
 	if not active:
 		return "Propose this project at the Community Board"
-	if not carried_material.is_empty() and _phase_needs_more(carried_material):
-		return "Deliver %s to the garden" % material_display_name(carried_material)
+	var deliverable := _carried_and_needed_material()
+	if not deliverable.is_empty():
+		return "Deliver %s to the garden" % material_display_name(deliverable)
 	if not materials_ready():
 		return "Gather materials: %s" % material_need_summary()
 	if can_player_contribute():
 		return "%s alongside the community" % current_phase_label()
-	if not carried_material.is_empty():
-		return "This phase doesn't need %s -- try direct work instead" % material_display_name(carried_material)
+	if is_carrying_anything():
+		return "This phase doesn't need %s -- try direct work instead" % carried_summary()
 	return "Check garden progress"
+
+## The first carried material (if any) the current phase would actually
+## accept a delivery of right now -- used both for the prompt and to decide
+## whether an interaction at the garden has anything to deposit.
+func _carried_and_needed_material() -> StringName:
+	for material_id: Variant in carried_materials.keys():
+		var mid := StringName(str(material_id))
+		if carried_count(mid) > 0 and _phase_needs_more(mid):
+			return mid
+	return &""
 
 func material_need_summary() -> String:
 	var parts: Array[String] = []
@@ -181,7 +239,7 @@ func material_display_name(material_id: StringName) -> String:
 		_: return String(material_id).replace("_", " ")
 
 func serialize_state() -> Dictionary:
-	return {"active":active, "completed":completed, "phase_index":phase_index, "phase_contributors":_strings(phase_contributors), "player_participated":player_participated, "resident_participated":resident_participated, "carried_material":String(carried_material), "deposited_materials":deposited_materials.duplicate(true), "source_remaining":source_remaining.duplicate(true)}
+	return {"active":active, "completed":completed, "phase_index":phase_index, "phase_contributors":_strings(phase_contributors), "player_participated":player_participated, "resident_participated":resident_participated, "carried_materials":carried_materials.duplicate(true), "deposited_materials":deposited_materials.duplicate(true), "source_remaining":source_remaining.duplicate(true)}
 
 func restore_state(state: Dictionary) -> void:
 	active = bool(state.get("active", false))
@@ -191,11 +249,21 @@ func restore_state(state: Dictionary) -> void:
 	for value: Variant in state.get("phase_contributors", []): phase_contributors.append(StringName(str(value)))
 	player_participated = bool(state.get("player_participated", false))
 	resident_participated = bool(state.get("resident_participated", false))
-	carried_material = StringName(str(state.get("carried_material", "")))
+	# Older saves only ever had a single "carried_material" string -- migrate
+	# that into the new count-per-material shape instead of dropping it.
+	if state.has("carried_materials") and state.get("carried_materials", {}) is Dictionary:
+		carried_materials = state.get("carried_materials", {}).duplicate(true)
+	else:
+		carried_materials = {}
+		var legacy := str(state.get("carried_material", ""))
+		if not legacy.is_empty(): carried_materials[StringName(legacy)] = 1
 	deposited_materials = state.get("deposited_materials", {}).duplicate(true) if state.get("deposited_materials", {}) is Dictionary else {}
 	source_remaining = state.get("source_remaining", MATERIAL_SOURCE_CAPACITY).duplicate(true) if state.get("source_remaining", {}) is Dictionary else MATERIAL_SOURCE_CAPACITY.duplicate()
 	_refresh_scene()
-	carried_material_changed.emit(carried_material)
+	if carried_materials.is_empty():
+		carried_material_changed.emit(&"")  # nothing carried after restore -- nudge listeners to clear any stale visual
+	else:
+		for material_id: Variant in carried_materials.keys(): carried_material_changed.emit(StringName(str(material_id)))
 
 func _enter_phase(index: int) -> void:
 	phase_index = index

@@ -306,8 +306,14 @@ func _refresh_status() -> void:
 	status_label.text = "Day %d · %s\nNow: %s · Next: %s" % [calendar.current_day, str(calendar.period_id()).capitalize(), str(weather.weather_id()).capitalize(), str(weather.forecast_for_offset(1)).capitalize()]
 	var residents := get_node("/root/ResidentManager"); var project := get_node("/root/CommunityProjectService")
 	context_label.text = "Community priority: %s\n%s" % [residents.priority_display_name(), project.progress_summary()]
-	var carried: StringName = project.carried_material
-	carried_label.text = "Carrying\n%s" % ("Nothing" if carried.is_empty() else str(carried).trim_prefix("material_").replace("_", " ").capitalize())
+	var carried_parts: Array[String] = []
+	for material_id: Variant in project.carried_materials.keys():
+		var mid := StringName(str(material_id))
+		var count: int = project.carried_count(mid)
+		if count <= 0: continue
+		var label := str(mid).trim_prefix("material_").replace("_", " ").capitalize()
+		carried_parts.append("%s x%d" % [label, count] if count > 1 else label)
+	carried_label.text = "Carrying\n%s" % ("Nothing" if carried_parts.is_empty() else "\n".join(carried_parts))
 
 func _show_almanac() -> void:
 	get_node("/root/AlmanacNotificationService").acknowledge_unread()

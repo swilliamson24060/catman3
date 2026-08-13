@@ -31,17 +31,31 @@ func _ready() -> void:
 	add_to_group("player_cat")
 	_last_grounded_position = global_position
 	get_node("/root/CommunityProjectService").carried_material_changed.connect(_on_carried_material_changed)
-	_on_carried_material_changed(get_node("/root/CommunityProjectService").carried_material)
+	_on_carried_material_changed(&"")
 
+## There is only one physical carry socket on the model, but the founder can
+## now carry several material kinds at once (see CommunityProjectService.
+## carried_materials) -- this shows whichever material the just-changed
+## signal refers to if still carried, falling back to any other carried
+## material so the visual doesn't go empty just because a different item
+## in the same load was the one that changed.
 func _on_carried_material_changed(material_id: StringName) -> void:
-	carried_material_visual.visible = not material_id.is_empty()
-	if material_id.is_empty(): return
+	var service := get_node("/root/CommunityProjectService")
+	var display_id: StringName = material_id if service.carried_count(material_id) > 0 else _any_carried_material(service)
+	carried_material_visual.visible = not display_id.is_empty()
+	if display_id.is_empty(): return
 	var material := StandardMaterial3D.new()
-	match material_id:
+	match display_id:
 		&"reclaimed_wood": material.albedo_color = Color(0.72, 0.42, 0.18)
 		&"smooth_stone": material.albedo_color = Color(0.52, 0.58, 0.62)
 		_: material.albedo_color = Color(0.76, 0.68, 0.22)
 	carried_material_visual.material_override = material
+
+func _any_carried_material(service: Node) -> StringName:
+	for id: Variant in service.carried_materials.keys():
+		var mid := StringName(str(id))
+		if service.carried_count(mid) > 0: return mid
+	return &""
 
 func _unhandled_input(event: InputEvent) -> void:
 	if input_enabled and event.is_action_pressed("interact") and _active_anchor != null:

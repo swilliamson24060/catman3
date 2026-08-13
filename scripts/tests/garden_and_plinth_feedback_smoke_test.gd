@@ -1,5 +1,5 @@
 extends SceneTree
-## Regression guard for two real, reported bugs:
+## Regression guard for four real, reported bugs:
 ## 1) CommunityProjectService.interaction_prompt() used to suggest "Deliver X
 ##    to the garden" even when the current phase didn't need X (e.g. phase 0
 ##    "clear_debris" needs no materials at all) -- a player carrying
@@ -8,6 +8,16 @@ extends SceneTree
 ## 2) SeasonalResonanceService.handle_plinth_interaction() fired the anchor's
 ##    activated signal but did nothing and said nothing when no interpreted
 ##    component was available to place.
+## 3) ProjectMaterialSource._show_pickup_guidance() unconditionally told the
+##    player to "bring it to the abandoned garden" the moment they gathered
+##    ANY material, regardless of whether the current phase actually wanted
+##    it -- gathering out-of-turn sent the player on a trip only to be
+##    refused at the garden with a "doesn't need this" toast that
+##    contradicted the guidance that sent them there.
+## 4) The "abandoned_garden" look-around anchor (village_clearing.gd) had a
+##    one-time intro_title/intro_body but no branch in _on_anchor_activated,
+##    so every inspection after the first was a complete no-op -- no dialog,
+##    no toast, nothing.
 
 const CLEARING := preload("res://scenes/world/village_clearing.tscn")
 
@@ -44,18 +54,18 @@ func _run() -> void:
 	_check(project_service.interaction_prompt() == "Propose this project at the Community Board", "prompt must ask for proposal before the project is active")
 	root.get_node("ResidentManager").propose_priority(&"project_restore_garden")
 	_check(project_service.active and project_service.current_phase_id() == &"clear_debris", "proposing must start the project at clear_debris")
-	project_service.carried_material = &"reclaimed_wood"
+	project_service.carried_materials[&"reclaimed_wood"] = 1
 	_check(not project_service.interaction_prompt().begins_with("Deliver"), "the prompt must not offer to deliver a material the current phase (clear_debris) doesn't need")
-	project_service.carried_material = &""
+	project_service.carried_materials.clear()
 
 	# --- Garden delivery toast for a not-needed material ---
 	var project := world.get_node("Projects/RestoreGarden")
 	root.get_node("UserExperienceService").introduce_anchor(project.interaction_anchor.anchor_id)
-	project_service.carried_material = &"reclaimed_wood"
+	project_service.carried_materials[&"reclaimed_wood"] = 1
 	project.interaction_anchor.interact(null)
 	await process_frame
 	_check(shell._event_toast_panel.visible and shell.event_toast.text.contains("doesn't need"), "delivering an unneeded material must explain why, not silently do nothing")
-	_check(project_service.carried_material == &"reclaimed_wood", "an unneeded material must stay carried, not vanish silently")
+	_check(project_service.carried_count(&"reclaimed_wood") == 1, "an unneeded material must stay carried, not vanish silently")
 	_clear_toast(shell)
 
 	# Move to repair_beds (needs reclaimed_wood) the direct way, then confirm delivery now works and is confirmed on screen.
@@ -64,7 +74,7 @@ func _run() -> void:
 	_check(project_service.interaction_prompt().begins_with("Deliver"), "once the phase needs the carried material, the prompt must say so")
 	project.interaction_anchor.interact(null)
 	await process_frame
-	_check(project_service.carried_material.is_empty(), "delivering a needed material must succeed")
+	_check(not project_service.is_carrying_anything(), "delivering a needed material must succeed")
 	_check(shell.event_toast.text.begins_with("Delivered"), "a successful delivery must be confirmed on screen")
 	_clear_toast(shell)
 
@@ -97,6 +107,57 @@ func _run() -> void:
 	await process_frame
 	_check(root.get_node("SeasonalResonanceService").plinth_components[0] == &"component_rain_lens", "an interpreted component must actually place")
 	_check(shell.event_toast.text.begins_with("Placed"), "a successful placement must be confirmed on screen")
+
+	# --- Pickup guidance must match delivery: don't send the player to the
+	# garden with a material the current phase won't accept. ---
+	_check(project_service.current_phase_id() == &"repair_beds", "sanity: still on repair_beds (needs reclaimed_wood, not smooth_stone) after the delivery checks above")
+	_clear_toast(shell)
+	var stone_source: ProjectMaterialSource = world.get_node("Projects/MaterialSources/SmoothStone")
+	root.get_node("UserExperienceService").introduce_anchor(&"gather_material")  # skip the first-pickup modal, exercise the toast path
+	stone_source._anchor.interact(null)
+	await process_frame
+	_check(shell.event_toast.text.contains("doesn't need this yet"), "pickup guidance for a material the current phase doesn't want must say so, not send the player to the garden")
+	_check(project_service.carried_count(&"smooth_stone") == 1, "the material should still be gathered/carried even when not currently needed (stockpiling ahead is allowed)")
+	_clear_toast(shell)
+
+	# --- Carrying more than one material at once (the actual reported bug):
+	# while still holding the not-yet-needed smooth_stone, gather the
+	# reclaimed_wood repair_beds actually wants right now, and confirm both
+	# are carried together rather than the second gather being blocked or
+	# silently evicting the first. ---
+	var wood_source: ProjectMaterialSource = world.get_node("Projects/MaterialSources/ReclaimedWood")
+	wood_source._anchor.interact(null)
+	await process_frame
+	_check(project_service.carried_count(&"smooth_stone") == 1, "gathering a second, different material must not evict the first")
+	_check(project_service.carried_count(&"reclaimed_wood") == 1, "gathering a second material while already carrying one must succeed")
+	_clear_toast(shell)
+
+	project.interaction_anchor.interact(null)
+	await process_frame
+	_check(shell.event_toast.text == "Delivered reclaimed wood.", "delivery must pick the carried material this phase needs even when something else is also carried")
+	_check(project_service.carried_count(&"reclaimed_wood") == 0, "the delivered material must leave the carry set")
+	_check(project_service.carried_count(&"smooth_stone") == 1, "delivering one carried material must not affect an unrelated one still carried")
+	_clear_toast(shell)
+
+	# Move to restore_irrigation (needs smooth_stone) and confirm guidance now
+	# does send the player to the garden.
+	project_service.return_carried_material(&"smooth_stone")
+	project_service.deposited_materials.clear()
+	project_service.phase_index = 2
+	_check(project_service.current_phase_id() == &"restore_irrigation", "sanity: phase 2 is restore_irrigation")
+	stone_source._anchor.interact(null)
+	await process_frame
+	_check(shell.event_toast.text.contains("bring it to the abandoned garden"), "once the phase needs the material, pickup guidance must send the player to the garden")
+	_clear_toast(shell)
+	project_service.return_carried_material(&"smooth_stone")
+
+	# --- Repeat garden inspection must give feedback, not go silent. ---
+	var garden_anchor: InteractionAnchor = world.get_node("AuthoredInteractionAnchors/AbandonedGardenAnchor")
+	root.get_node("UserExperienceService").introduce_anchor(&"abandoned_garden")  # simulate having already seen the one-time intro
+	garden_anchor.interact(null)
+	await process_frame
+	_check(shell._event_toast_panel.visible and not shell.event_toast.text.is_empty(), "a repeat garden inspection must show feedback, not fire silently")
+	_clear_toast(shell)
 
 	world.queue_free()
 	completed_buildings.queue_free()

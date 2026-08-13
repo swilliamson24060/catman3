@@ -30,6 +30,15 @@ func plot() -> TileFogPlot:
 func is_growing() -> bool:
 	return _timer != null
 
+## Human-readable progress for the currently-growing seed. Empty string if
+## nothing is growing (see is_growing()) -- callers that want a message
+## regardless of state should fall back to their own text in that case.
+func progress_summary() -> String:
+	if _timer == null:
+		return ""
+	var percent := int(round(_timer.credited_seconds() / GROWTH_CAP_SECONDS * 100.0))
+	return "The growth plot is still filling in (%d%% grown) -- it keeps going even while you're away." % percent
+
 func plant_seed(seed_value: int) -> bool:
 	if _timer != null:
 		return false   # one pending growth at a time
