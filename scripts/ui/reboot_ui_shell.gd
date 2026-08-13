@@ -24,6 +24,7 @@ var ask_list_box: VBoxContainer
 var _ask_resident: ResidentAgent
 var almanac_unread_badge: Label
 var archive_note_button: Button
+var quit_confirm_panel: PanelContainer
 var _modal_open := false
 var _capturing_action: StringName = &""
 var _history: Array[String] = []
@@ -137,7 +138,7 @@ func open_screen(screen_name: String) -> void:
 	_open_modal(); $Content/Body/VBox/Close.grab_focus()
 
 func close_all() -> void:
-	menu_panel.visible = false; content_panel.visible = false; hint_panel.visible = false; intro_panel.visible = false; ask_panel.visible = false; _close_legacy_panels(); _close_modal()
+	menu_panel.visible = false; content_panel.visible = false; hint_panel.visible = false; intro_panel.visible = false; ask_panel.visible = false; quit_confirm_panel.visible = false; _close_legacy_panels(); _close_modal()
 
 ## The shared "read this and dismiss" panel -- a centered modal with a title,
 ## a body big enough for real paragraphs, and a "Got it" button, versus
@@ -235,6 +236,7 @@ func _build_theme_shell() -> void:
 		var button := Button.new(); button.text = screen; button.pressed.connect(open_screen.bind(screen)); menu_box.add_child(button)
 	var save := Button.new(); save.text = "Save game"; save.pressed.connect(_quick_save); menu_box.add_child(save)
 	var load := Button.new(); load.text = "Load game"; load.pressed.connect(_quick_load); menu_box.add_child(load)
+	var quit := Button.new(); quit.name = "Quit"; quit.text = "Quit"; quit.pressed.connect(_show_quit_confirm); menu_box.add_child(quit)
 	var close := Button.new(); close.text = "Return to village"; close.pressed.connect(close_all); menu_box.add_child(close); menu_panel.visible = false
 	content_panel = PanelContainer.new(); content_panel.name = "Content"; add_child(content_panel); content_panel.add_theme_stylebox_override("panel", _panel_style); content_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT); content_panel.offset_left = 150; content_panel.offset_top = 105; content_panel.offset_right = -150; content_panel.offset_bottom = -55
 	var content_margin := MarginContainer.new(); content_margin.name = "Body"; content_margin.add_theme_constant_override("margin_left", 24); content_margin.add_theme_constant_override("margin_right", 24); content_margin.add_theme_constant_override("margin_top", 20); content_margin.add_theme_constant_override("margin_bottom", 20); content_panel.add_child(content_margin)
@@ -263,6 +265,14 @@ func _build_theme_shell() -> void:
 	ask_list_box = VBoxContainer.new(); ask_list_box.name = "List"; ask_list_box.add_theme_constant_override("separation", 6); ask_vbox.add_child(ask_list_box)
 	var ask_never_mind := Button.new(); ask_never_mind.name = "NeverMind"; ask_never_mind.text = "Never mind"; ask_never_mind.pressed.connect(_on_ask_never_mind); ask_vbox.add_child(ask_never_mind)
 	ask_panel.visible = false
+	quit_confirm_panel = PanelContainer.new(); quit_confirm_panel.name = "QuitConfirm"; add_child(quit_confirm_panel); quit_confirm_panel.add_theme_stylebox_override("panel", _panel_style); quit_confirm_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER); quit_confirm_panel.position -= Vector2(200, 120); quit_confirm_panel.size = Vector2(400, 240)
+	var quit_margin := MarginContainer.new(); quit_margin.name = "Margin"; quit_margin.add_theme_constant_override("margin_left", 20); quit_margin.add_theme_constant_override("margin_right", 20); quit_margin.add_theme_constant_override("margin_top", 18); quit_margin.add_theme_constant_override("margin_bottom", 18); quit_confirm_panel.add_child(quit_margin)
+	var quit_box := VBoxContainer.new(); quit_box.name = "VBox"; quit_box.add_theme_constant_override("separation", 10); quit_margin.add_child(quit_box)
+	var quit_title := Label.new(); quit_title.text = "Quit Catmando?"; quit_title.add_theme_font_size_override("font_size", 22); quit_box.add_child(quit_title)
+	var quit_save := Button.new(); quit_save.name = "SaveAndQuit"; quit_save.text = "Save and Quit"; quit_save.pressed.connect(_on_save_and_quit); quit_box.add_child(quit_save)
+	var quit_no_save := Button.new(); quit_no_save.name = "QuitWithoutSaving"; quit_no_save.text = "Quit Without Saving"; quit_no_save.pressed.connect(_on_quit_without_saving); quit_box.add_child(quit_no_save)
+	var quit_cancel := Button.new(); quit_cancel.name = "Cancel"; quit_cancel.text = "Cancel"; quit_cancel.pressed.connect(_on_quit_cancel); quit_box.add_child(quit_cancel)
+	quit_confirm_panel.visible = false
 	# Both notices below sit on the shared bordered _panel_style rather than
 	# floating as bare Labels -- unbacked white text over a busy 3D scene has
 	# no visual weight and is easy to miss entirely (see show_event_toast).
@@ -415,6 +425,21 @@ func _on_discovery_changed(discovery_id: StringName, state: StringName) -> void:
 	show_event_toast("Found: %s" % get_node("/root/DiscoveryService").unidentified_name(discovery_id))
 func _quick_save() -> void: _history.append("Game saved." if get_node("/root/SaveService").save_game() else "Save failed; previous data was preserved.")
 func _quick_load() -> void: _history.append("Game loaded." if get_node("/root/SaveService").load_game() else "No compatible save was loaded."); _refresh_status()
+
+func _show_quit_confirm() -> void:
+	menu_panel.visible = false
+	quit_confirm_panel.visible = true
+
+func _on_save_and_quit() -> void:
+	get_node("/root/SaveService").save_game()
+	get_tree().quit()
+
+func _on_quit_without_saving() -> void:
+	get_tree().quit()
+
+func _on_quit_cancel() -> void:
+	quit_confirm_panel.visible = false
+	menu_panel.visible = true
 func _show_onboarding_once() -> void:
 	var service := get_node("/root/UserExperienceService")
 	if &"movement_interaction" in service.completed_lessons: return

@@ -4,6 +4,19 @@ extends Node3D
 const LEGACY_SCENE_PATH := "res://scenes/world/main.tscn"
 const INTERACTION_ANCHOR := preload("res://scenes/world/interaction_anchor.tscn")
 const FOUNDER_SELECT_UI := preload("res://founder/founder_select_ui.tscn")
+const BOOT_RESUME_UI := preload("res://founder/boot_resume_ui.tscn")
+## CLEARING_GRASS_TEXTURE covers the open, unbuilt ground (clearing base,
+## woodland gate path, exploration stage). GRASSY_CENTER_TEXTURE covers
+## buildable areas other than the garden (village center, home edge,
+## workshop edge). GARDEN_PLOT_TEXTURE is the abandoned garden's own tile.
+const CLEARING_GRASS_TEXTURE := preload("res://environment/textures/clearing_grass/clearing_grass.png")
+const GRASSY_CENTER_TEXTURE := preload("res://environment/textures/grassy_center/grassy_center.png")
+const GARDEN_PLOT_TEXTURE := preload("res://environment/textures/garden_plot/garden_plot.png")
+## How many meters of ground one texture tile should cover. The first guess
+## (5.0) stretched each tile across too much ground, blowing up whatever
+## pattern is in the source image into an oversized, repetitive "wallpaper"
+## look -- lower means more, smaller repeats across the same ground span.
+const GROUND_TEXTURE_TILE_METERS := 1.5
 
 const WALL_HEIGHT := 4.0
 const WALL_THICKNESS := 0.6
@@ -73,25 +86,30 @@ func _ready() -> void:
 	_maybe_show_founder_select()
 	print("[Reboot] Milestone 1 clearing booted. Legacy prototype remains at %s" % LEGACY_SCENE_PATH)
 
-## New game -> the founder-select modal (already data-driven and reused
+## No save -> the founder-select modal (already data-driven and reused
 ## as-is from the legacy scenes, see founder/founder_select_ui.gd) picks a
-## founder, applies its coat/modifiers, and unpauses. Continuing game -> no
-## modal at all, just load the save and apply the restored founder's coat
-## (load_game() itself already re-applies the founder's stat modifiers).
+## founder, applies its coat/modifiers, and unpauses. Save exists -> the
+## resume-or-new-game modal (founder/boot_resume_ui.gd) asks first, rather
+## than silently auto-loading -- a returning player had no way to start
+## fresh before except deleting the save file by hand.
 ##
-## Headless + no save is the shape of every existing smoke test that
-## instantiates this scene (none of them expect a founder to have been
-## picked, and several rely on get_tree().create_timer()/_process() running
-## unpaused right after instantiation) -- showing the modal there would pause
-## the whole tree out from under tests that were never written to expect it.
-## There's no interactive player to make a choice in that context anyway, so
-## just skip it; FounderSelectUI itself stays fully testable by instantiating
-## it directly, independent of this boot gate.
+## Headless is the shape of every existing smoke test that instantiates this
+## scene (none of them expect an interactive choice, and several rely on
+## get_tree().create_timer()/_process() running unpaused right after
+## instantiation) -- showing a modal there would pause the whole tree out
+## from under tests that were never written to expect it. There's no
+## interactive player to make a choice in that context anyway, so headless
+## keeps the old silent behavior: auto-load if a save exists, otherwise skip
+## straight into a fresh, unpaused boot. Both modals stay fully testable by
+## instantiating them directly, independent of this boot gate.
 func _maybe_show_founder_select() -> void:
 	var save_service := get_node("/root/SaveService")
-	if FileAccess.file_exists(ProjectSettings.globalize_path(save_service.SAVE_PATH)):
+	var has_save := FileAccess.file_exists(ProjectSettings.globalize_path(save_service.SAVE_PATH))
+	if has_save and DisplayServer.get_name() == "headless":
 		save_service.load_game()
 		_apply_founder_appearance(save_service.current.founder_cat_id)
+	elif has_save:
+		add_child(BOOT_RESUME_UI.instantiate())
 	elif DisplayServer.get_name() != "headless":
 		add_child(FOUNDER_SELECT_UI.instantiate())
 
@@ -117,12 +135,12 @@ func get_authored_destinations() -> Dictionary:
 
 func _build_clearing() -> void:
 	var clearing_span := CLEARING_HALF_EXTENT * 2.0
-	_create_ground("ClearingBase", Vector3(clearing_span, 0.25, clearing_span), Vector3(0.0, -0.125, 0.0), ZONE_COLORS.clearing, true)
-	_create_ground("VillageCenter", Vector3(13.0, 0.12, 11.0), Vector3(0.0, 0.03, 0.0), ZONE_COLORS.village)
-	_create_ground("HomeEdge", Vector3(12.0, 0.1, 16.0), Vector3(-15.5, 0.025, -5.5), ZONE_COLORS.homes)
-	_create_ground("WorkshopEdge", Vector3(11.0, 0.14, 13.0), Vector3(15.5, 0.045, -4.0), ZONE_COLORS.workshop)
-	_create_ground("AbandonedGarden", Vector3(15.0, 0.08, 11.0), Vector3(-7.0, 0.015, 15.0), ZONE_COLORS.garden)
-	_create_ground("WoodlandGatePath", Vector3(6.0, 0.06, 13.0), Vector3(0.0, 0.01, -17.0), ZONE_COLORS.path)
+	_create_ground("ClearingBase", Vector3(clearing_span, 0.25, clearing_span), Vector3(0.0, -0.125, 0.0), ZONE_COLORS.clearing, true, CLEARING_GRASS_TEXTURE, clearing_span / GROUND_TEXTURE_TILE_METERS)
+	_create_ground("VillageCenter", Vector3(13.0, 0.12, 11.0), Vector3(0.0, 0.03, 0.0), ZONE_COLORS.village, false, GRASSY_CENTER_TEXTURE, 13.0 / GROUND_TEXTURE_TILE_METERS)
+	_create_ground("HomeEdge", Vector3(12.0, 0.1, 16.0), Vector3(-15.5, 0.025, -5.5), ZONE_COLORS.homes, false, GRASSY_CENTER_TEXTURE, 16.0 / GROUND_TEXTURE_TILE_METERS)
+	_create_ground("WorkshopEdge", Vector3(11.0, 0.14, 13.0), Vector3(15.5, 0.045, -4.0), ZONE_COLORS.workshop, false, GRASSY_CENTER_TEXTURE, 13.0 / GROUND_TEXTURE_TILE_METERS)
+	_create_ground("AbandonedGarden", Vector3(15.0, 0.08, 11.0), Vector3(-7.0, 0.015, 15.0), ZONE_COLORS.garden, false, GARDEN_PLOT_TEXTURE, 15.0 / GROUND_TEXTURE_TILE_METERS)
+	_create_ground("WoodlandGatePath", Vector3(6.0, 0.06, 13.0), Vector3(0.0, 0.01, -17.0), ZONE_COLORS.path, false, CLEARING_GRASS_TEXTURE, 13.0 / GROUND_TEXTURE_TILE_METERS)
 
 	_create_block("HomeMaraPlaceholder", Vector3(4.2, 3.2, 4.2), Vector3(-17.0, 1.6, -10.0), Color(0.78, 0.51, 0.45))
 	_create_block("HomePipPlaceholder", Vector3(4.2, 3.7, 4.2), Vector3(-12.0, 1.85, -4.5), Color(0.45, 0.64, 0.78))
@@ -325,7 +343,8 @@ func _spawn_expedition_post() -> void:
 ## not just the visual zone-tint _create_ground normally adds on top of an
 ## existing floor.
 func _spawn_exploration_stage() -> void:
-	_create_ground("ExplorationStageGround", Vector3(EXPLORATION_STAGE_HALF_EXTENT * 2.0, 0.25, EXPLORATION_STAGE_HALF_EXTENT * 2.0), EXPLORATION_STAGE_ORIGIN + Vector3(0.0, -0.125, 0.0), ZONE_COLORS.clearing, true)
+	var exploration_span := EXPLORATION_STAGE_HALF_EXTENT * 2.0
+	_create_ground("ExplorationStageGround", Vector3(exploration_span, 0.25, exploration_span), EXPLORATION_STAGE_ORIGIN + Vector3(0.0, -0.125, 0.0), ZONE_COLORS.clearing, true, CLEARING_GRASS_TEXTURE, exploration_span / GROUND_TEXTURE_TILE_METERS)
 
 	# Fully enclosed, no gate needed: the founder only ever arrives here via
 	# ExpeditionService.visit_area()'s teleport (a "travel montage" beat, not
@@ -347,7 +366,7 @@ func _spawn_exploration_stage() -> void:
 	stage.position = EXPLORATION_STAGE_ORIGIN
 	add_child(stage)
 
-func _create_ground(node_name: String, size: Vector3, position: Vector3, color: Color, collision: bool = false) -> void:
+func _create_ground(node_name: String, size: Vector3, position: Vector3, color: Color, collision: bool = false, texture: Texture2D = null, tile_repeats: float = 1.0) -> void:
 	var body := StaticBody3D.new()
 	body.name = node_name
 	body.position = position
@@ -358,7 +377,7 @@ func _create_ground(node_name: String, size: Vector3, position: Vector3, color: 
 	var mesh := BoxMesh.new()
 	mesh.size = size
 	mesh_instance.mesh = mesh
-	mesh_instance.material_override = _material(color)
+	mesh_instance.material_override = _textured_material(texture, tile_repeats) if texture != null else _material(color)
 	body.add_child(mesh_instance)
 	if collision:
 		var shape_node := CollisionShape3D.new()
@@ -458,5 +477,15 @@ func _spawn_treeline(from: Vector3, to: Vector3, outward_offset: Vector3, spacin
 func _material(color: Color) -> StandardMaterial3D:
 	var material := StandardMaterial3D.new()
 	material.albedo_color = color
+	material.roughness = 0.95
+	return material
+
+## uv1_scale repeats the texture tile_repeats times across the BoxMesh's
+## default 0-1 UV range per face; the GPU sampler wraps by default, so this
+## alone is enough to tile rather than stretch one image across the ground.
+func _textured_material(texture: Texture2D, tile_repeats: float) -> StandardMaterial3D:
+	var material := StandardMaterial3D.new()
+	material.albedo_texture = texture
+	material.uv1_scale = Vector3(tile_repeats, tile_repeats, 1.0)
 	material.roughness = 0.95
 	return material

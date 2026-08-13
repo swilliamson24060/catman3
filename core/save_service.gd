@@ -104,6 +104,14 @@ func save_game(save_path: String = SAVE_PATH) -> bool:
 	print("[SaveService] Saved game.")
 	return true
 
+## Reads just the founder id out of a save file without loading it -- lets
+## the resume-or-new-game boot prompt say "Resume X's Village" without the
+## side effects (resetting every service's live state) a full load_game()
+## call has.
+func peek_founder_cat_id(save_path: String = SAVE_PATH) -> String:
+	var parsed := _read_save_dictionary(ProjectSettings.globalize_path(save_path))
+	return str(parsed.get("founder_cat_id", ""))
+
 func load_game(save_path: String = SAVE_PATH) -> bool:
 	var absolute_path := ProjectSettings.globalize_path(save_path)
 	var parsed := _read_save_dictionary(absolute_path)

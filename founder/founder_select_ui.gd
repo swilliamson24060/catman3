@@ -12,6 +12,12 @@ class_name FounderSelectUI
 ## choice. A future dedicated "bonus content" screen can reuse
 ## DataRegistry.get_all_founder_cats() filtered the other way with zero
 ## engine changes; this screen just isn't it.
+##
+## The scene's own layer (30) must stay above RebootUIShell's (20) -- a real
+## bug found the hard way: loading a save replays rumor_acquired for every
+## already-known rumor (see RumorService.restore_state), which fires
+## RebootUIShell's own "Rumor: ..." toast: on the old, lower layer that
+## toast rendered on top of this full-attention modal instead of behind it.
 
 const FOUNDER_CARD_SCENE := preload("res://founder/founder_card.tscn")
 
