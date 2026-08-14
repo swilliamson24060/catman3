@@ -1,0 +1,52 @@
+{
+  "cottage_pieces": [
+    {
+      "id": "elowen_foundation_1",
+      "display_name": "Foundation 1",
+      "role": "foundation",
+      "model_path": "res://cottage/models/elowen/foundation_1.glb"
+    },
+    {
+      "id": "elowen_foundation_2",
+      "display_name": "Foundation 2",
+      "role": "foundation",
+      "model_path": "res://cottage/models/elowen/foundation_2.glb"
+    },
+    {
+      "id": "elowen_foundation_3",
+      "display_name": "Foundation 3",
+      "role": "foundation",
+      "model_path": "res://cottage/models/elowen/foundation_3.glb"
+    },
+    {
+      "id": "elowen_stack_1",
+      "display_name": "Stack 1",
+      "role": "body",
+      "model_path": "res://cottage/models/elowen/stack_1.glb"
+    },
+    {
+      "id": "elowen_stack_2",
+      "display_name": "Stack 2",
+      "role": "body",
+      "model_path": "res://cottage/models/elowen/stack_2.glb"
+    },
+    {
+      "id": "elowen_roof_1",
+      "display_name": "Roof 1",
+      "role": "roof",
+      "model_path": "res://cottage/models/elowen/roof_1.glb"
+    },
+    {
+      "id": "elowen_roof_2",
+      "display_name": "Roof 2",
+      "role": "roof",
+      "model_path": "res://cottage/models/elowen/roof_2.glb"
+    },
+    {
+      "id": "elowen_roof_3",
+      "display_name": "Roof 3",
+      "role": "roof",
+      "model_path": "res://cottage/models/elowen/roof_3.glb"
+    }
+  ]
+}

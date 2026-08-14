@@ -142,8 +142,15 @@ func _build_clearing() -> void:
 	_create_ground("AbandonedGarden", Vector3(15.0, 0.08, 11.0), Vector3(-7.0, 0.015, 15.0), ZONE_COLORS.garden, false, GARDEN_PLOT_TEXTURE, 15.0 / GROUND_TEXTURE_TILE_METERS)
 	_create_ground("WoodlandGatePath", Vector3(6.0, 0.06, 13.0), Vector3(0.0, 0.01, -17.0), ZONE_COLORS.path, false, CLEARING_GRASS_TEXTURE, 13.0 / GROUND_TEXTURE_TILE_METERS)
 
-	_create_block("HomeMaraPlaceholder", Vector3(4.2, 3.2, 4.2), Vector3(-17.0, 1.6, -10.0), Color(0.78, 0.51, 0.45))
-	_create_block("HomePipPlaceholder", Vector3(4.2, 3.7, 4.2), Vector3(-12.0, 1.85, -4.5), Color(0.45, 0.64, 0.78))
+	# Mara/Pip don't have real cottage art yet (Elowen's construction site
+	# uses the real thing -- see CottageSites/ElowenCottageSite), so these
+	# stay flat placeholder blocks. Sized to roughly match the real Elowen
+	# foundation pieces (~1.9m wide/deep, ~0.6m tall -- see
+	# cottage/models/elowen/foundation_*.glb) rather than the old, much
+	# larger guessed box, so the housing section doesn't look wildly
+	# oversized next to the real cottage.
+	_create_block("HomeMaraPlaceholder", Vector3(1.9, 0.6, 1.9), Vector3(-17.0, 0.3, -10.0), Color(0.78, 0.51, 0.45))
+	_create_block("HomePipPlaceholder", Vector3(1.9, 0.6, 1.9), Vector3(-12.0, 0.3, -4.5), Color(0.45, 0.64, 0.78))
 	_create_block("HomeElowenPlaceholder", Vector3(4.2, 3.4, 4.2), Vector3(14.0, 1.7, 8.0), Color(0.6, 0.45, 0.76))
 	_create_block("WorkshopPlaceholder", Vector3(6.0, 4.2, 5.0), Vector3(15.0, 2.1, -5.5), Color(0.88, 0.5, 0.2))
 

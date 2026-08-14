@@ -17,6 +17,7 @@
 [ext_resource type="PackedScene" path="res://scenes/machines/irrigation_machine.tscn" id="15"]
 [ext_resource type="PackedScene" path="res://scenes/events/first_bloom_celebration.tscn" id="16"]
 [ext_resource type="PackedScene" path="res://scenes/ui/reboot_ui_shell.tscn" id="17"]
+[ext_resource type="PackedScene" path="res://scenes/buildings/cottage_construction_site.tscn" id="18"]
 
 [sub_resource type="Environment" id="Environment"]
 background_mode = 1
@@ -305,5 +306,10 @@ label_settings = SubResource("PromptSettings")
 [node name="DaySummary" parent="." instance=ExtResource("9")]
 
 [node name="ResidentHUD" parent="." instance=ExtResource("10")]
+
+[node name="CottageSites" type="Node3D" parent="."]
+
+[node name="ElowenCottageSite" parent="CottageSites" instance=ExtResource("18")]
+position = Vector3(-17, 0, -13)
 
 [node name="RebootUIShell" parent="." instance=ExtResource("17")]
