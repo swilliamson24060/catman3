@@ -11,9 +11,11 @@ Milestone 1 locks the first environment concept-art gate.
 - Occluders must have separable render meshes so trees and buildings can fade without removing collision.
 - Style target: warm toy-like woodland diorama, chunky silhouettes, painted surfaces, restrained detail, and soft shadows.
 
-### Ground zones needing distinct textures
+### Ground zones -- texture request superseded, see Milestone 16 status
 
-The greybox currently tells zones apart with flat placeholder colors only (`village_clearing.gd`'s `ZONE_COLORS`). Six materials are needed -- one base plus five overlaid patches, each with its own footprint and approximate world position (village center at the origin):
+**Update (2026-08-16): this section's texture request is dropped, not fulfilled.** A tileable texture per zone was produced and wired up (`clearing_grass`/`grassy_center`/`garden_plot`, referenced below), but read as visual noise once tiled across a ground this size, and a follow-up attempt to source replacement textures from the Stylized Nature MegaKit found the kit ships no tileable ground texture at all (its "diffuse" maps are per-model UV atlases for individual rocks/pebbles). Ground is flat per-zone color again (`ZONE_COLORS`, unchanged from the original greybox), with real visual coverage instead coming from a dense real-3D-model grass/vegetation carpet -- see `docs/CATMANDO_REBOOT_PROJECT_PLAN.md`'s Milestone 16 status entry and `scripts/world/nature_props.gd`. If a future art pass still wants a textured ground (soil variation, worn paths, etc.), it should be a hand-authored or licensed tileable texture made for this purpose, not a repurposed prop atlas -- the table below is kept for that footprint/position reference, not as an active request.
+
+The greybox currently tells zones apart with flat placeholder colors only (`village_clearing.gd`'s `ZONE_COLORS`). Six materials were requested -- one base plus five overlaid patches, each with its own footprint and approximate world position (village center at the origin):
 
 | Zone | Footprint | Position (x, z) | Placeholder color reads as | Likely material |
 |---|---|---|---|---|

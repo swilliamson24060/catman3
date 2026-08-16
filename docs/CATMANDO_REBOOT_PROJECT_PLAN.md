@@ -790,6 +790,12 @@ Two further gaps surfaced from actually playing the result. First, picking up a 
 
 **Goal:** Replace placeholders without destabilizing gameplay.
 
+**Status (2026-08-16): In progress — terrain and vegetation (implementation-order steps 2 and 5) started.** The clearing's procedural box/sphere trees (village clearing boundary/treeline, woodland route) are replaced with real Stylized Nature MegaKit models (CC0, `WFC sprites/Stylized Nature MegaKit/License_Standard.txt`), imported into `environment/models/nature/` and driven by a new shared `NatureProps` helper (`scripts/world/nature_props.gd`). Tree species are weighted-random per placement — common/pine trees common, twisted/dead trees kept rare since the kit's twisted-tree foliage texture is a saturated autumn red that reads as a jarring accent at full frequency — each measured against its own AABB (the kit's raw meshes are inconsistently scaled relative to each other) and scaled to a consistent height band, grounded at y=0, with a trunk-only collision cylinder so the crown doesn't block movement.
+
+Ground *texturing* (the `docs/environment_art_brief.md` request below, and the tileable `clearing_grass`/`grassy_center`/`garden_plot` art added for it) is dropped rather than fulfilled: the MegaKit ships no tileable ground texture at all (its "diffuse" maps are per-model UV atlases for individual rocks/pebbles, not authored to repeat), and the game's own painterly grass texture read as visual noise once tiled across a ground this large regardless of mipmap/tile-size tuning. Ground is flat per-zone color instead (reverting to the pre-texture design), with real visual coverage coming from `NatureProps.build_grass_carpet()` — a dense `MultiMeshInstance3D` grass/clover layer across the entire clearing (~15k GPU-instanced tufts, one draw call per species, since individual scene-node instances at that density would be its own performance problem) — plus clustered ferns/mushrooms/flowers/bushes and scattered boulders/pebbles around trees for natural-looking undergrowth patches. All of it is skipped when `DisplayServer.get_name() == "headless"` (pure visual dressing, no gameplay effect, and it would otherwise add real wall-clock time to every smoke/regression test that boots this scene).
+
+Not yet started: residents/buildings/UI replacement (steps 3, 4, 6), interaction audio/feel (step 7), and asset budget profiling (step 8).
+
 Implementation order:
 
 1. Lock camera, scale, palette, texel density, shader approach, and import rules in an art bible.
