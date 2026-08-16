@@ -72,6 +72,16 @@ func _run() -> void:
 	_check(shell.ask_title_label.text.contains(mara.display_name()), "the choice prompt should name the resident being asked: got '%s'" % shell.ask_title_label.text)
 	_check(shell.ask_list_box.get_child_count() == 1 and str((shell.ask_list_box.get_child(0) as Button).text) == root.get_node("DiscoveryService").unidentified_name(&"component_rain_lens"), "the pending find must appear in the topic list by its unidentified name")
 
+	# Escape/ui_menu routes through close_all(). Canceling the picker must
+	# release both the manager guard and Mara's TALKING state, so the next
+	# interaction can offer the same unresolved topic again.
+	shell.close_all()
+	await process_frame
+	_check(mara.current_state != ResidentAgent.State.TALKING, "closing the topic picker must release the resident's TALKING state")
+	mara.interaction_anchor.interact(null)
+	await process_frame
+	_check(shell.ask_panel.visible, "closing the topic picker must not soft-lock later resident conversations")
+
 	# Declining ("never mind") must fall back to her normal conversation, not silence.
 	shell._on_ask_never_mind()
 	await process_frame

@@ -15,6 +15,7 @@ extends RefCounted
 ## cottage pieces (see cottage_build_service.gd/cottage_construction_site.gd).
 
 const MODEL_DIR := "res://environment/models/nature/"
+const GRASS_CARPET_SHADER := preload("res://environment/shaders/grass_carpet.gdshader")
 
 ## {prefix, count, scale, weight} -- CommonTree/Pine measure close to a
 ## natural ~7m tree already (scale 1.0); TwistedTree's raw mesh is a huge
@@ -62,14 +63,14 @@ const GRASS_CARPET_MODELS := [
 ]
 
 const GROUND_DECOR_MODELS := [
-	{"path": "Grass_Common_Short", "scale": 0.26}, {"path": "Grass_Common_Tall", "scale": 0.33},
-	{"path": "Grass_Wispy_Short", "scale": 0.27}, {"path": "Grass_Wispy_Tall", "scale": 0.33},
-	{"path": "Clover_1", "scale": 0.19}, {"path": "Clover_2", "scale": 0.19},
-	{"path": "Flower_3_Group", "scale": 0.24}, {"path": "Flower_3_Single", "scale": 0.3},
-	{"path": "Flower_4_Group", "scale": 0.24}, {"path": "Flower_4_Single", "scale": 0.3},
-	{"path": "Fern_1", "scale": 0.6},
-	{"path": "Mushroom_Common", "scale": 0.54}, {"path": "Mushroom_Laetiporus", "scale": 0.45},
-	{"path": "Bush_Common", "scale": 0.63}, {"path": "Bush_Common_Flowers", "scale": 0.63},
+	{"path": "Grass_Common_Short", "scale": 0.26, "weight": 6.0}, {"path": "Grass_Common_Tall", "scale": 0.33, "weight": 4.0},
+	{"path": "Grass_Wispy_Short", "scale": 0.27, "weight": 6.0}, {"path": "Grass_Wispy_Tall", "scale": 0.33, "weight": 4.0},
+	{"path": "Clover_1", "scale": 0.19, "weight": 5.0}, {"path": "Clover_2", "scale": 0.19, "weight": 5.0},
+	{"path": "Flower_3_Group", "scale": 0.24, "weight": 1.4}, {"path": "Flower_3_Single", "scale": 0.3, "weight": 0.8},
+	{"path": "Flower_4_Group", "scale": 0.24, "weight": 1.4}, {"path": "Flower_4_Single", "scale": 0.3, "weight": 0.8},
+	{"path": "Fern_1", "scale": 0.6, "weight": 3.5},
+	{"path": "Mushroom_Common", "scale": 0.54, "weight": 1.1}, {"path": "Mushroom_Laetiporus", "scale": 0.45, "weight": 0.8},
+	{"path": "Bush_Common", "scale": 0.52, "weight": 0.35}, {"path": "Bush_Common_Flowers", "scale": 0.48, "weight": 0.18},
 ]
 
 ## A real tree, real collision (StaticBody3D + trunk-sized CollisionShape3D so
@@ -124,7 +125,7 @@ static func spawn_rock(node_name: String, position: Vector3, extra_scale: float,
 ## collision, matching _spawn_treeline's established "the founder walks
 ## through it" convention for anything this small.
 static func spawn_ground_decor(node_name: String, position: Vector3, extra_scale: float, rng: RandomNumberGenerator) -> Node3D:
-	var entry: Dictionary = GROUND_DECOR_MODELS[rng.randi_range(0, GROUND_DECOR_MODELS.size() - 1)]
+	var entry := _pick_ground_decor(rng)
 	var path := MODEL_DIR + str(entry["path"]) + ".gltf"
 	var result := _grounded_instance(path, float(entry["scale"]) * extra_scale)
 	if result.is_empty():
@@ -135,6 +136,17 @@ static func spawn_ground_decor(node_name: String, position: Vector3, extra_scale
 	wrapper.rotation.y = rng.randf_range(0.0, TAU)
 	wrapper.add_child(result["node"])
 	return wrapper
+
+static func _pick_ground_decor(rng: RandomNumberGenerator) -> Dictionary:
+	var total := 0.0
+	for candidate: Dictionary in GROUND_DECOR_MODELS:
+		total += float(candidate.weight)
+	var roll := rng.randf_range(0.0, total)
+	for candidate: Dictionary in GROUND_DECOR_MODELS:
+		roll -= float(candidate.weight)
+		if roll <= 0.0:
+			return candidate
+	return GROUND_DECOR_MODELS[0]
 
 ## Real ground-carpet coverage: one MultiMeshInstance3D per GRASS_CARPET_MODELS
 ## species, `points` distributed randomly across them. MultiMesh renders every
@@ -172,12 +184,18 @@ static func build_grass_carpet(points: Array, rng: RandomNumberGenerator) -> Nod
 		mm.instance_count = bucket.size()
 		for j in bucket.size():
 			var pos: Vector3 = bucket[j]
-			var instance_scale := base_scale * rng.randf_range(1.1, 1.7)
+			var instance_scale := base_scale * rng.randf_range(0.88, 1.32)
 			var basis := Basis(Vector3.UP, rng.randf_range(0.0, TAU)).scaled(Vector3.ONE * instance_scale)
 			mm.set_instance_transform(j, Transform3D(basis, pos))
 		var mmi := MultiMeshInstance3D.new()
 		mmi.name = str(entry["path"])
 		mmi.multimesh = mm
+		var source_material := mesh.surface_get_material(0) as StandardMaterial3D
+		if source_material != null and source_material.albedo_texture != null:
+			var carpet_material := ShaderMaterial.new()
+			carpet_material.shader = GRASS_CARPET_SHADER
+			carpet_material.set_shader_parameter("grass_atlas", source_material.albedo_texture)
+			mmi.material_override = carpet_material
 		carpet.add_child(mmi)
 	return carpet
 

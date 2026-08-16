@@ -5,6 +5,7 @@ const LEGACY_SCENE_PATH := "res://scenes/world/main.tscn"
 const INTERACTION_ANCHOR := preload("res://scenes/world/interaction_anchor.tscn")
 const FOUNDER_SELECT_UI := preload("res://founder/founder_select_ui.tscn")
 const BOOT_RESUME_UI := preload("res://founder/boot_resume_ui.tscn")
+const CLEARING_GROUND_SHADER := preload("res://environment/shaders/clearing_ground.gdshader")
 ## The ground is a flat per-zone color, not a texture -- the game's own
 ## painterly grass art read as visual noise once tiled across a ground this
 ## large, and the Stylized Nature MegaKit has no tileable ground texture to
@@ -33,6 +34,7 @@ var _nature_rng := RandomNumberGenerator.new()
 ## sparser rock scatter both draw positions from this same wild band.
 const WOODLAND_GATE_PATH_HALF_WIDTH := 3.5
 const WOODLAND_GATE_PATH_MIN_Z := -23.5
+const WOODLAND_GATE_PATH_MAX_Z := -10.5
 
 ## The walkable clearing extends to CLEARING_HALF_EXTENT, but nothing should
 ## ever be built within BUILD_MARGIN of the tree line -- keeps structures
@@ -437,7 +439,15 @@ func _create_ground(node_name: String, size: Vector3, position: Vector3, color: 
 	var mesh := BoxMesh.new()
 	mesh.size = size
 	mesh_instance.mesh = mesh
-	mesh_instance.material_override = _material(color)
+	if node_name == "ClearingBase" or node_name == "ExplorationStageGround":
+		var terrain_material := ShaderMaterial.new()
+		terrain_material.shader = CLEARING_GROUND_SHADER
+		mesh_instance.material_override = terrain_material
+	else:
+		# Retain named zone nodes as authored layout markers, but render their
+		# wear/soil through the continuous world-space terrain shader above.
+		# The old raised colored rectangles were the main greybox look.
+		mesh_instance.visible = false
 	body.add_child(mesh_instance)
 	if collision:
 		var shape_node := CollisionShape3D.new()
@@ -473,50 +483,53 @@ func _create_block(node_name: String, size: Vector3, position: Vector3, color: C
 func _create_tree(node_name: String, position: Vector3, scale_factor: float) -> void:
 	$PlaceholderProps.add_child(NatureProps.spawn_tree(node_name, position, scale_factor, _nature_rng))
 
-## Real ground coverage: a dense MultiMesh grass/clover carpet (see
-## NatureProps.build_grass_carpet) across the ENTIRE clearing -- not just the
-## wild band. The buildable zones (village center, home edge, workshop edge,
-## garden) each sit on their own slightly-raised ground box (see
-## _build_clearing's _create_ground calls), and the space between them is
-## just bare ClearingBase, so a carpet limited to "wild band + those four
-## named rects" left a large uncovered gap in between (this is what a
-## reference screenshot request revealed -- the ground in view was mostly
-## that gap, not any zone this function used to know about). Simplest fix:
-## drop the zone bookkeeping and scatter across the whole square, using
-## _ground_y_at() to land each point on whichever ground box is actually
-## under it. Only the woodland gate path itself stays bare, matching the
-## reference image's own exposed dirt path. Skipped in headless for the same
-## reason _scatter_ground_decoration() below is.
+## MegaKit grass/clover coverage is intentionally uneven. Wild ground stays
+## lush, homes and the garden are partly overgrown, the lived-in village is
+## sparse, and the workshop/path remain visibly worn. Besides reading more
+## naturally than a uniform lawn, this preserves the authored zone colors as
+## useful wayfinding. `_ground_y_at()` lands each tuft on the raised zone box.
+## Skipped in headless for the same reason as ground decoration below.
 func _build_grass_carpet() -> void:
 	if DisplayServer.get_name() == "headless":
 		return
 	var points: Array = []
 	var half := CLEARING_HALF_EXTENT - 0.5
-	var target := 15000
+	var target := 8000
 	var attempts := 0
-	while points.size() < target and attempts < target * 4:
+	while points.size() < target and attempts < target * 8:
 		attempts += 1
 		var x := _nature_rng.randf_range(-half, half)
 		var z := _nature_rng.randf_range(-half, half)
-		if absf(x) <= WOODLAND_GATE_PATH_HALF_WIDTH and z <= WOODLAND_GATE_PATH_MIN_Z:
+		if _nature_rng.randf() > _grass_density_at(x, z):
 			continue
 		points.append(Vector3(x, _ground_y_at(x, z) + 0.01, z))
 	add_child(NatureProps.build_grass_carpet(points, _nature_rng))
+
+## Acceptance probability for the carpet sampler. Keep this separate from
+## geometry/height lookup: zone heights and visual wear are related but not
+## the same concern, and explicit values make art tuning straightforward.
+func _grass_density_at(x: float, z: float) -> float:
+	var path_center := sin((z + 17.0) * 0.22) * 0.8
+	if z >= -27.0 and z <= 9.0 and absf(x - path_center) <= 3.15:
+		return 0.0
+	if absf(x - 15.5) <= 5.5 and absf(z + 4.0) <= 6.5:
+		return 0.04   # WorkshopEdge: almost entirely worked ground.
+	if absf(x) <= 6.5 and absf(z) <= 5.5:
+		return 0.18   # VillageCenter: short growth around a worn social space.
+	if absf(x + 15.5) <= 6.0 and absf(z + 5.5) <= 8.0:
+		return 0.48   # HomeEdge: maintained, but softer around cottage plots.
+	if absf(x + 7.0) <= 7.5 and absf(z - 15.0) <= 5.5:
+		return 0.3    # AbandonedGarden: visible soil with volunteer growth.
+	return 0.82     # ClearingBase: lushest away from daily foot traffic.
 
 ## The top surface Y of whichever ground box sits under (x, z) -- mirrors the
 ## size/position pairs passed to _create_ground in _build_clearing exactly,
 ## since none of that geometry is queryable at runtime (plain BoxMesh
 ## StaticBody3Ds, not a shape registry).
-func _ground_y_at(x: float, z: float) -> float:
-	if absf(x) <= 6.5 and absf(z) <= 5.5:
-		return 0.09    # VillageCenter
-	if absf(x - (-15.5)) <= 6.0 and absf(z - (-5.5)) <= 8.0:
-		return 0.075   # HomeEdge
-	if absf(x - 15.5) <= 5.5 and absf(z - (-4.0)) <= 6.5:
-		return 0.115   # WorkshopEdge
-	if absf(x - (-7.0)) <= 7.5 and absf(z - 15.0) <= 5.5:
-		return 0.055   # AbandonedGarden
-	return 0.0   # ClearingBase
+func _ground_y_at(_x: float, _z: float) -> float:
+	# All visible terrain is now one continuous surface. Named zone boxes are
+	# retained as hidden layout markers rather than raised visual plates.
+	return 0.0
 
 ## Boulders plus clustered patches of ferns/flowers/mushrooms/bush across the
 ## wild ground outside the buildable footprint -- the same band the boundary
@@ -539,9 +552,9 @@ func _scatter_ground_decoration() -> void:
 	add_child(decoration)
 	var placed_rocks := 0
 	var attempts := 0
-	while placed_rocks < 40 and attempts < 800:
+	while placed_rocks < 48 and attempts < 900:
 		attempts += 1
-		var pos: Variant = _random_wild_ground_point(CLEARING_HALF_EXTENT - 1.5)
+		var pos: Variant = _random_path_edge_point() if placed_rocks < 30 else _random_wild_ground_point(CLEARING_HALF_EXTENT - 1.5)
 		if pos == null:
 			continue
 		var rock := NatureProps.spawn_rock("WildRock_%d" % placed_rocks, pos, _nature_rng.randf_range(0.7, 1.3), _nature_rng)
@@ -552,9 +565,9 @@ func _scatter_ground_decoration() -> void:
 	var placed_decor := 0
 	var placed_clusters := 0
 	attempts = 0
-	while placed_clusters < 110 and attempts < 1200:
+	while placed_clusters < 115 and attempts < 1400:
 		attempts += 1
-		var center: Variant = _random_wild_ground_point(CLEARING_HALF_EXTENT - 1.0)
+		var center: Variant = _random_path_edge_point() if placed_clusters < 55 else _random_wild_ground_point(CLEARING_HALF_EXTENT - 1.0)
 		if center == null:
 			continue
 		placed_clusters += 1
@@ -574,8 +587,18 @@ func _random_wild_ground_point(half_extent: float) -> Variant:
 	var z := _nature_rng.randf_range(-half_extent, half_extent)
 	if absf(x) <= BUILDABLE_HALF_EXTENT and absf(z) <= BUILDABLE_HALF_EXTENT:
 		return null
-	if absf(x) <= WOODLAND_GATE_PATH_HALF_WIDTH and z <= WOODLAND_GATE_PATH_MIN_Z:
+	if absf(x) <= WOODLAND_GATE_PATH_HALF_WIDTH and z >= WOODLAND_GATE_PATH_MIN_Z and z <= WOODLAND_GATE_PATH_MAX_Z:
 		return null
+	return Vector3(x, 0.0, z)
+
+## Pulls MegaKit rocks, ferns, flowers, and mushrooms into the camera's
+## useful middle ground. Alternating sides frame the winding route instead
+## of leaving all interesting undergrowth in the distant buffer ring.
+func _random_path_edge_point() -> Vector3:
+	var z := _nature_rng.randf_range(-24.0, 7.0)
+	var path_center := sin((z + 17.0) * 0.22) * 0.8
+	var side := -1.0 if _nature_rng.randf() < 0.5 else 1.0
+	var x := path_center + side * _nature_rng.randf_range(3.4, 6.2)
 	return Vector3(x, 0.0, z)
 
 ## No visible mesh -- collision only. Tagged "world_boundary" so

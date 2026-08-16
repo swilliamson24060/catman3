@@ -138,6 +138,9 @@ func open_screen(screen_name: String) -> void:
 	_open_modal(); $Content/Body/VBox/Close.grab_focus()
 
 func close_all() -> void:
+	if ask_panel.visible:
+		get_node("/root/ResidentManager").cancel_conversation_topics()
+		_ask_resident = null
 	menu_panel.visible = false; content_panel.visible = false; hint_panel.visible = false; intro_panel.visible = false; ask_panel.visible = false; quit_confirm_panel.visible = false; _close_legacy_panels(); _close_modal()
 
 ## The shared "read this and dismiss" panel -- a centered modal with a title,

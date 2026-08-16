@@ -26,6 +26,11 @@ ambient_light_source = 3
 ambient_light_color = Color(0.78, 0.82, 0.75, 1)
 ambient_light_energy = 0.82
 tonemap_mode = 2
+tonemap_exposure = 0.88
+adjustment_enabled = true
+adjustment_brightness = 0.96
+adjustment_contrast = 1.04
+adjustment_saturation = 0.88
 
 [sub_resource type="StyleBoxFlat" id="PromptPanel"]
 bg_color = Color(0.08, 0.1, 0.09, 0.82)
@@ -83,6 +88,7 @@ environment = SubResource("Environment")
 transform = Transform3D(0.8480481, 0.44939703, -0.28081444, 0, 0.52991927, 0.8480481, 0.52991927, -0.7191856, 0.44939703, 0, 0, 0)
 light_energy = 1.15
 shadow_enabled = true
+shadow_blur = 1.8
 directional_shadow_max_distance = 80.0
 
 [node name="TerrainZones" type="Node3D" parent="." unique_id=695564246]

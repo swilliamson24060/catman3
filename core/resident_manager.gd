@@ -241,10 +241,18 @@ func decline_conversation_topics(resident: ResidentAgent) -> void:
 	if resident == null or not resident.is_inside_tree(): return
 	_open_dialogue(resident, resident.conversation_text())
 
+## Dismisses the topic picker without replacing it with dialogue. Used by
+## the UI's general cancel action (Escape / ui_menu), which must release both
+## the manager's pending-conversation guard and the resident's TALKING state.
+func cancel_conversation_topics() -> void:
+	var resident := _pending_ask_resident
+	_pending_ask_resident = null
+	if resident != null and resident.is_inside_tree():
+		resident.end_talking()
+
 func _begin_reading_errand(resident: ResidentAgent, discovery_id: StringName) -> void:
 	var opportunity: Dictionary = _reading_opportunities.get(discovery_id, {})
 	if opportunity.is_empty(): return
-	_reading_opportunities.erase(discovery_id)
 	resident.begin_reading_errand(opportunity.position, "Reads the weathered marker")
 	_errand_session = {"resident_id":String(resident.resident_id), "discovery_id":String(discovery_id), "phase":"traveling", "remaining_seconds":2.5}
 
@@ -481,6 +489,17 @@ func serialize_state() -> Dictionary:
 	return {"current_priority":String(current_priority), "recent_discoveries":recent_discoveries.duplicate(), "residents":resident_states, "social_sessions":_social_sessions.values()}
 
 func restore_state(data: Dictionary) -> void:
+	# Save data only persists completed resident state and social sessions.
+	# Tear down live, unsaved work before replacing the agents; otherwise a
+	# quick-load can leave project/errand sessions pointing at newly spawned
+	# routine agents, or append restored social sessions to the live set.
+	_pending_errand_discovery = &""
+	if _active_dialogue_resident != null:
+		close_dialogue()
+	cancel_conversation_topics()
+	cancel_all_social_activities()
+	cancel_project_contribution()
+	cancel_errand()
 	_pending_state = data.duplicate(true)
 	current_priority = StringName(str(data.get("current_priority", "")))
 	recent_discoveries.assign(_string_array(data.get("recent_discoveries", [])))

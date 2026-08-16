@@ -89,6 +89,15 @@ func _run() -> void:
 	await process_frame
 	_check(bool(elowen.current_activity.get("errand", false)), "Elowen must actually be sent on the reading errand, not just told about it")
 
+	# Period changes and fresh-game resets cancel in-flight errands. That must
+	# not consume the static world opportunity, or this one interruption would
+	# leave the plaque found but permanently impossible to interpret.
+	manager.cancel_errand()
+	manager.resolve_conversation_topic(elowen, &"discovery_old_plaque")
+	manager.close_dialogue()
+	await process_frame
+	_check(bool(elowen.current_activity.get("errand", false)), "a canceled plaque errand must remain available to start again")
+
 	# Fast-forward her travel and reading (same pattern milestone5/14's tests
 	# use for resident work: teleport to the target once she's traveling,
 	# then pump ResidentManager._process to drain the timed "reading" phase).

@@ -2,10 +2,10 @@ class_name DayEnvironmentController
 extends Node
 
 const PERIOD_PRESENTATION := {
-	&"morning": {"sky": Color(0.72, 0.82, 0.78), "ambient": Color(0.86, 0.8, 0.67), "energy": 0.95, "light": Color(1.0, 0.82, 0.62)},
-	&"afternoon": {"sky": Color(0.45, 0.66, 0.75), "ambient": Color(0.78, 0.82, 0.75), "energy": 1.15, "light": Color(1.0, 0.96, 0.82)},
-	&"evening": {"sky": Color(0.52, 0.32, 0.46), "ambient": Color(0.66, 0.42, 0.45), "energy": 0.72, "light": Color(1.0, 0.55, 0.34)},
-	&"night": {"sky": Color(0.055, 0.075, 0.16), "ambient": Color(0.18, 0.24, 0.42), "energy": 0.28, "light": Color(0.48, 0.58, 0.86)},
+	&"morning": {"sky": Color(0.72, 0.86, 0.92), "ambient": Color(0.9, 0.86, 0.7), "ambient_energy": 0.9, "energy": 1.12, "light": Color(1.0, 0.84, 0.61)},
+	&"afternoon": {"sky": Color(0.58, 0.8, 0.94), "ambient": Color(0.82, 0.9, 0.78), "ambient_energy": 0.84, "energy": 1.32, "light": Color(1.0, 0.96, 0.78)},
+	&"evening": {"sky": Color(0.55, 0.34, 0.48), "ambient": Color(0.7, 0.45, 0.46), "ambient_energy": 0.72, "energy": 0.78, "light": Color(1.0, 0.57, 0.34)},
+	&"night": {"sky": Color(0.055, 0.075, 0.16), "ambient": Color(0.18, 0.24, 0.42), "ambient_energy": 0.52, "energy": 0.28, "light": Color(0.48, 0.58, 0.86)},
 }
 
 @onready var world_environment: WorldEnvironment = get_parent().get_node("WorldEnvironment")
@@ -37,6 +37,7 @@ func _on_period_changed(day: int, period_id: StringName) -> void:
 	var environment := world_environment.environment
 	environment.background_color = state.sky
 	environment.ambient_light_color = state.ambient
+	environment.ambient_light_energy = float(state.ambient_energy)
 	sunlight.light_color = state.light
 	sunlight.light_energy = float(state.energy) * (0.72 if get_node("/root/WeatherService").is_raining() else 1.0)
 	period_label.text = "Day %d — %s" % [day, String(period_id).capitalize()]
