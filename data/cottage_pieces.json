@@ -19,16 +19,88 @@
       "model_path": "res://cottage/models/elowen/foundation_3.glb"
     },
     {
-      "id": "elowen_stack_1",
-      "display_name": "Stack 1",
+      "id": "elowen_stack_cube_blue",
+      "display_name": "Stack Cube (Blue)",
       "role": "body",
-      "model_path": "res://cottage/models/elowen/stack_1.glb"
+      "model_path": "res://cottage/models/elowen/stack_cube_blue.glb",
+      "scale": 0.45
     },
     {
-      "id": "elowen_stack_2",
-      "display_name": "Stack 2",
+      "id": "elowen_stack_cube_green",
+      "display_name": "Stack Cube (Green)",
       "role": "body",
-      "model_path": "res://cottage/models/elowen/stack_2.glb"
+      "model_path": "res://cottage/models/elowen/stack_cube_green.glb",
+      "scale": 0.45
+    },
+    {
+      "id": "elowen_stack_cube_peach",
+      "display_name": "Stack Cube (Peach)",
+      "role": "body",
+      "model_path": "res://cottage/models/elowen/stack_cube_peach.glb",
+      "scale": 0.45
+    },
+    {
+      "id": "elowen_stack_cylinder_blue",
+      "display_name": "Stack Cylinder (Blue)",
+      "role": "body",
+      "model_path": "res://cottage/models/elowen/stack_cylinder_blue.glb",
+      "scale": 0.45
+    },
+    {
+      "id": "elowen_stack_cylinder_green",
+      "display_name": "Stack Cylinder (Green)",
+      "role": "body",
+      "model_path": "res://cottage/models/elowen/stack_cylinder_green.glb",
+      "scale": 0.45
+    },
+    {
+      "id": "elowen_stack_cylinder_peach",
+      "display_name": "Stack Cylinder (Peach)",
+      "role": "body",
+      "model_path": "res://cottage/models/elowen/stack_cylinder_peach.glb",
+      "scale": 0.45
+    },
+    {
+      "id": "elowen_stack_keystone_blue",
+      "display_name": "Stack Keystone (Blue)",
+      "role": "body",
+      "model_path": "res://cottage/models/elowen/stack_keystone_blue.glb",
+      "scale": 0.45
+    },
+    {
+      "id": "elowen_stack_keystone_green",
+      "display_name": "Stack Keystone (Green)",
+      "role": "body",
+      "model_path": "res://cottage/models/elowen/stack_keystone_green.glb",
+      "scale": 0.45
+    },
+    {
+      "id": "elowen_stack_keystone_peach",
+      "display_name": "Stack Keystone (Peach)",
+      "role": "body",
+      "model_path": "res://cottage/models/elowen/stack_keystone_peach.glb",
+      "scale": 0.45
+    },
+    {
+      "id": "elowen_stack_twist_blue",
+      "display_name": "Stack Twist (Blue)",
+      "role": "body",
+      "model_path": "res://cottage/models/elowen/stack_twist_blue.glb",
+      "scale": 0.45
+    },
+    {
+      "id": "elowen_stack_twist_green",
+      "display_name": "Stack Twist (Green)",
+      "role": "body",
+      "model_path": "res://cottage/models/elowen/stack_twist_green.glb",
+      "scale": 0.45
+    },
+    {
+      "id": "elowen_stack_twist_peach",
+      "display_name": "Stack Twist (Peach)",
+      "role": "body",
+      "model_path": "res://cottage/models/elowen/stack_twist_peach.glb",
+      "scale": 0.45
     },
     {
       "id": "elowen_roof_1",

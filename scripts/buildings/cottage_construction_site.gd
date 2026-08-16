@@ -149,6 +149,18 @@ func _rebuild_visuals() -> void:
 		tier_y += tier_height
 
 func _build_piece_node(piece: Dictionary) -> Node3D:
+	var node := _build_piece_node_unscaled(piece)
+	# Optional per-piece uniform scale, applied before the caller measures
+	# this node's AABB -- lets a piece authored at a mismatched real-world
+	# size (e.g. a generic primitive not modeled to this cottage's ~2m grid)
+	# fit the footprint without needing new art. Defaults to 1.0 (no-op) for
+	# pieces already modeled at the right scale.
+	var piece_scale: float = float(piece.get("scale", 1.0))
+	if piece_scale != 1.0:
+		node.scale = Vector3.ONE * piece_scale
+	return node
+
+func _build_piece_node_unscaled(piece: Dictionary) -> Node3D:
 	var model_path := str(piece.get("model_path", ""))
 	if not model_path.is_empty() and ResourceLoader.exists(model_path, "PackedScene"):
 		var packed: PackedScene = load(model_path)

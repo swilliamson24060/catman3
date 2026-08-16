@@ -218,7 +218,7 @@ func _run() -> void:
 	forced_state["grid"] = {
 		Vector2i(0, 0): "elowen_foundation_1",
 		Vector2i(0, 1): "elowen_foundation_2",
-		Vector2i(1, 0): "elowen_stack_1",
+		Vector2i(1, 0): "elowen_stack_cube_blue",
 	}
 	site_scene._rebuild_visuals()
 	var stack_node: Node3D = site_scene.get_node("Stack")
@@ -226,8 +226,9 @@ func _run() -> void:
 	var foundation_a: Node3D = stack_node.get_node("elowen_foundation_1")
 	var foundation_b: Node3D = stack_node.get_node("elowen_foundation_2")
 	_check(foundation_a.position.x != foundation_b.position.x, "two different foundation slots must be placed side by side (different X), not stacked on each other")
-	var body_node: Node3D = stack_node.get_node("elowen_stack_1")
+	var body_node: Node3D = stack_node.get_node("elowen_stack_cube_blue")
 	_check(body_node.position.y > foundation_a.position.y, "a tier-1 piece must sit above the foundation tier, using the foundation's own measured height")
+	_check(is_equal_approx(body_node.scale.x, 0.45), "a piece with a scale override in cottage_pieces.json must have that scale applied to its rendered node")
 
 	site_scene.queue_free()
 	completed_buildings.queue_free()
