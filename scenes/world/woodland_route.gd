@@ -1,11 +1,19 @@
 class_name WoodlandRouteGreybox
 extends Node3D
 
+## Fixed seed, same reasoning as village_clearing.gd's NATURE_RNG_SEED -- the
+## route's trees are re-generated fresh every boot, so a fixed seed keeps
+## their species stable across sessions.
+const NATURE_RNG_SEED := 20260816
+var _nature_rng := RandomNumberGenerator.new()
+
 func _ready() -> void:
+	_nature_rng.seed = NATURE_RNG_SEED
 	_create_path("MainRoute", Vector3(5.5, 0.2, 28.0), Vector3(0.0, -0.1, -14.0))
 	_create_path("WestBranch", Vector3(12.0, 0.2, 4.5), Vector3(-6.0, -0.1, -12.0))
 	_create_path("EastBranch", Vector3(13.0, 0.2, 4.5), Vector3(6.5, -0.1, -19.0))
 	_create_path("RuinBranch", Vector3(7.0, 0.2, 8.0), Vector3(0.0, 0.0, -30.0))
+	var tree_positions: Array[Vector3] = []
 	for data: Array in [
 		[Vector3(-4.0, 0.0, -4.0), 1.0], [Vector3(4.0, 0.0, -7.0), 1.1],
 		[Vector3(-4.5, 0.0, -16.0), 1.2], [Vector3(4.5, 0.0, -14.0), 0.9],
@@ -13,6 +21,8 @@ func _ready() -> void:
 		[Vector3(-11.0, 0.0, -12.0), 0.85], [Vector3(12.0, 0.0, -19.0), 0.9],
 	]:
 		_create_tree(data[0], data[1])
+		tree_positions.append(data[0])
+	_scatter_undergrowth(tree_positions)
 	_spawn_discovery("RainLensSite", &"component_rain_lens", &"rumor_rain_lens", Vector3(-8.5, 0.25, -13.5), Color(0.2, 0.8, 1.0), "Inspect the glint beside the split stump")
 	_spawn_discovery("CopperGearSite", &"component_copper_gear", &"rumor_copper_gear", Vector3(10.5, 0.25, -19.0), Color(0.85, 0.42, 0.12), "Inspect the blue-twine root")
 	_spawn_discovery("HeirloomSeedsSite", &"component_heirloom_seeds", &"rumor_heirloom_seeds", Vector3(3.0, 0.25, -6.5), Color(0.85, 0.75, 0.18), "Inspect the fallen-log hollow")
@@ -47,36 +57,31 @@ func _create_path(node_name: String, size: Vector3, position: Vector3) -> void:
 	add_child(body)
 
 func _create_tree(position: Vector3, scale_factor: float) -> void:
-	var body := StaticBody3D.new()
-	body.name = "RouteTree"
-	body.position = position
-	body.collision_layer = 5
-	body.set_meta("development_placeholder", true)
-	var trunk := MeshInstance3D.new()
-	var trunk_mesh := CylinderMesh.new()
-	trunk_mesh.top_radius = 0.25 * scale_factor
-	trunk_mesh.bottom_radius = 0.38 * scale_factor
-	trunk_mesh.height = 3.4 * scale_factor
-	trunk.mesh = trunk_mesh
-	trunk.position.y = 1.7 * scale_factor
-	trunk.material_override = _material(Color(0.27, 0.15, 0.07))
-	body.add_child(trunk)
-	var crown := MeshInstance3D.new()
-	var crown_mesh := SphereMesh.new()
-	crown_mesh.radius = 1.25 * scale_factor
-	crown_mesh.height = 2.5 * scale_factor
-	crown.mesh = crown_mesh
-	crown.position.y = 3.7 * scale_factor
-	crown.material_override = _material(Color(0.12, 0.33, 0.16))
-	body.add_child(crown)
-	var collision := CollisionShape3D.new()
-	var shape := CylinderShape3D.new()
-	shape.radius = 0.42 * scale_factor
-	shape.height = 3.4 * scale_factor
-	collision.shape = shape
-	collision.position.y = 1.7 * scale_factor
-	body.add_child(collision)
-	add_child(body)
+	add_child(NatureProps.spawn_tree("RouteTree", position, scale_factor, _nature_rng))
+
+## Small clumps of ferns/mushrooms/grass/rocks around each tree's base --
+## clustering on trees (already placed off the paths) sidesteps needing to
+## know each branching path's exact footprint to avoid it.
+func _scatter_undergrowth(tree_positions: Array[Vector3]) -> void:
+	if DisplayServer.get_name() == "headless":
+		return
+	var undergrowth := Node3D.new()
+	undergrowth.name = "Undergrowth"
+	add_child(undergrowth)
+	var index := 0
+	for base: Vector3 in tree_positions:
+		var clump_size := _nature_rng.randi_range(2, 4)
+		for i in range(clump_size):
+			var offset := Vector3(_nature_rng.randf_range(-1.6, 1.6), 0.0, _nature_rng.randf_range(-1.6, 1.6))
+			var prop := NatureProps.spawn_ground_decor("Undergrowth_%d" % index, base + offset, _nature_rng.randf_range(0.8, 1.3), _nature_rng)
+			index += 1
+			if prop != null:
+				undergrowth.add_child(prop)
+		if _nature_rng.randf() < 0.5:
+			var rock := NatureProps.spawn_rock("UndergrowthRock_%d" % index, base + Vector3(_nature_rng.randf_range(-1.8, 1.8), 0.0, _nature_rng.randf_range(-1.8, 1.8)), _nature_rng.randf_range(0.7, 1.1), _nature_rng)
+			index += 1
+			if rock != null:
+				undergrowth.add_child(rock)
 
 func _material(color: Color) -> StandardMaterial3D:
 	var material := StandardMaterial3D.new()

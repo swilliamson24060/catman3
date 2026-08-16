@@ -5,23 +5,34 @@ const LEGACY_SCENE_PATH := "res://scenes/world/main.tscn"
 const INTERACTION_ANCHOR := preload("res://scenes/world/interaction_anchor.tscn")
 const FOUNDER_SELECT_UI := preload("res://founder/founder_select_ui.tscn")
 const BOOT_RESUME_UI := preload("res://founder/boot_resume_ui.tscn")
-## CLEARING_GRASS_TEXTURE covers the open, unbuilt ground (clearing base,
-## woodland gate path, exploration stage). GRASSY_CENTER_TEXTURE covers
-## buildable areas other than the garden (village center, home edge,
-## workshop edge). GARDEN_PLOT_TEXTURE is the abandoned garden's own tile.
-const CLEARING_GRASS_TEXTURE := preload("res://environment/textures/clearing_grass/clearing_grass.png")
-const GRASSY_CENTER_TEXTURE := preload("res://environment/textures/grassy_center/grassy_center.png")
-const GARDEN_PLOT_TEXTURE := preload("res://environment/textures/garden_plot/garden_plot.png")
-## How many meters of ground one texture tile should cover. The first guess
-## (5.0) stretched each tile across too much ground, blowing up whatever
-## pattern is in the source image into an oversized, repetitive "wallpaper"
-## look -- lower means more, smaller repeats across the same ground span.
-const GROUND_TEXTURE_TILE_METERS := 1.5
+## The ground is a flat per-zone color, not a texture -- the game's own
+## painterly grass art read as visual noise once tiled across a ground this
+## large, and the Stylized Nature MegaKit has no tileable ground texture to
+## fall back on either (its "diffuse" maps are all per-model UV atlases for
+## individual rocks/pebbles, authored to wrap one prop, not to repeat).
+## Real coverage of the ground comes from _scatter_ground_decoration()'s
+## actual 3D grass/clover/moss/pebble models instead -- using the kit's
+## assets the way they were actually built, rather than forcing a 2D image
+## meant for one model's UVs to double as a tiling ground fill.
 
 const WALL_HEIGHT := 4.0
 const WALL_THICKNESS := 0.6
 const CLEARING_HALF_EXTENT := 27.5
 const GATE_HALF_WIDTH := 4.0   # opening in the south wall for the woodland path
+
+## Fixed seed -- trees, rocks, and ground decoration are rebuilt fresh every
+## boot (none of it is saved), so a fixed seed keeps species/positions
+## stable across sessions instead of the whole clearing subtly reshuffling
+## on every load, matching every other hand-placed prop here.
+const NATURE_RNG_SEED := 20260815
+var _nature_rng := RandomNumberGenerator.new()
+
+## Kept clear of everything a building/anchor could sit on: outside
+## BUILDABLE_HALF_EXTENT (so decoration never overlaps a cottage plot), and
+## clear of the south gate/woodland path opening. Ground decoration and the
+## sparser rock scatter both draw positions from this same wild band.
+const WOODLAND_GATE_PATH_HALF_WIDTH := 3.5
+const WOODLAND_GATE_PATH_MIN_Z := -23.5
 
 ## The walkable clearing extends to CLEARING_HALF_EXTENT, but nothing should
 ## ever be built within BUILD_MARGIN of the tree line -- keeps structures
@@ -73,7 +84,10 @@ const ZONE_COLORS := {
 func _ready() -> void:
 	if not bool(ProjectSettings.get_setting("feature/reboot_mode", true)):
 		push_warning("[Reboot] village_clearing.tscn was opened while reboot mode is disabled.")
+	_nature_rng.seed = NATURE_RNG_SEED
 	_build_clearing()
+	_build_grass_carpet()
+	_scatter_ground_decoration()
 	_spawn_authored_anchors()
 	_spawn_community_board()
 	_spawn_investigation_table()
@@ -135,12 +149,12 @@ func get_authored_destinations() -> Dictionary:
 
 func _build_clearing() -> void:
 	var clearing_span := CLEARING_HALF_EXTENT * 2.0
-	_create_ground("ClearingBase", Vector3(clearing_span, 0.25, clearing_span), Vector3(0.0, -0.125, 0.0), ZONE_COLORS.clearing, true, CLEARING_GRASS_TEXTURE, clearing_span / GROUND_TEXTURE_TILE_METERS)
-	_create_ground("VillageCenter", Vector3(13.0, 0.12, 11.0), Vector3(0.0, 0.03, 0.0), ZONE_COLORS.village, false, GRASSY_CENTER_TEXTURE, 13.0 / GROUND_TEXTURE_TILE_METERS)
-	_create_ground("HomeEdge", Vector3(12.0, 0.1, 16.0), Vector3(-15.5, 0.025, -5.5), ZONE_COLORS.homes, false, GRASSY_CENTER_TEXTURE, 16.0 / GROUND_TEXTURE_TILE_METERS)
-	_create_ground("WorkshopEdge", Vector3(11.0, 0.14, 13.0), Vector3(15.5, 0.045, -4.0), ZONE_COLORS.workshop, false, GRASSY_CENTER_TEXTURE, 13.0 / GROUND_TEXTURE_TILE_METERS)
-	_create_ground("AbandonedGarden", Vector3(15.0, 0.08, 11.0), Vector3(-7.0, 0.015, 15.0), ZONE_COLORS.garden, false, GARDEN_PLOT_TEXTURE, 15.0 / GROUND_TEXTURE_TILE_METERS)
-	_create_ground("WoodlandGatePath", Vector3(6.0, 0.06, 13.0), Vector3(0.0, 0.01, -17.0), ZONE_COLORS.path, false, CLEARING_GRASS_TEXTURE, 13.0 / GROUND_TEXTURE_TILE_METERS)
+	_create_ground("ClearingBase", Vector3(clearing_span, 0.25, clearing_span), Vector3(0.0, -0.125, 0.0), ZONE_COLORS.clearing, true)
+	_create_ground("VillageCenter", Vector3(13.0, 0.12, 11.0), Vector3(0.0, 0.03, 0.0), ZONE_COLORS.village)
+	_create_ground("HomeEdge", Vector3(12.0, 0.1, 16.0), Vector3(-15.5, 0.025, -5.5), ZONE_COLORS.homes)
+	_create_ground("WorkshopEdge", Vector3(11.0, 0.14, 13.0), Vector3(15.5, 0.045, -4.0), ZONE_COLORS.workshop)
+	_create_ground("AbandonedGarden", Vector3(15.0, 0.08, 11.0), Vector3(-7.0, 0.015, 15.0), ZONE_COLORS.garden)
+	_create_ground("WoodlandGatePath", Vector3(6.0, 0.06, 13.0), Vector3(0.0, 0.01, -17.0), ZONE_COLORS.path)
 
 	# Mara/Pip don't have real cottage art yet (Elowen's construction site
 	# uses the real thing -- see CottageSites/ElowenCottageSite), so these
@@ -390,7 +404,7 @@ func _spawn_expedition_post() -> void:
 ## existing floor.
 func _spawn_exploration_stage() -> void:
 	var exploration_span := EXPLORATION_STAGE_HALF_EXTENT * 2.0
-	_create_ground("ExplorationStageGround", Vector3(exploration_span, 0.25, exploration_span), EXPLORATION_STAGE_ORIGIN + Vector3(0.0, -0.125, 0.0), ZONE_COLORS.clearing, true, CLEARING_GRASS_TEXTURE, exploration_span / GROUND_TEXTURE_TILE_METERS)
+	_create_ground("ExplorationStageGround", Vector3(exploration_span, 0.25, exploration_span), EXPLORATION_STAGE_ORIGIN + Vector3(0.0, -0.125, 0.0), ZONE_COLORS.clearing, true)
 
 	# Fully enclosed, no gate needed: the founder only ever arrives here via
 	# ExpeditionService.visit_area()'s teleport (a "travel montage" beat, not
@@ -412,7 +426,7 @@ func _spawn_exploration_stage() -> void:
 	stage.position = EXPLORATION_STAGE_ORIGIN
 	add_child(stage)
 
-func _create_ground(node_name: String, size: Vector3, position: Vector3, color: Color, collision: bool = false, texture: Texture2D = null, tile_repeats: float = 1.0) -> void:
+func _create_ground(node_name: String, size: Vector3, position: Vector3, color: Color, collision: bool = false) -> void:
 	var body := StaticBody3D.new()
 	body.name = node_name
 	body.position = position
@@ -423,7 +437,7 @@ func _create_ground(node_name: String, size: Vector3, position: Vector3, color: 
 	var mesh := BoxMesh.new()
 	mesh.size = size
 	mesh_instance.mesh = mesh
-	mesh_instance.material_override = _textured_material(texture, tile_repeats) if texture != null else _material(color)
+	mesh_instance.material_override = _material(color)
 	body.add_child(mesh_instance)
 	if collision:
 		var shape_node := CollisionShape3D.new()
@@ -457,36 +471,112 @@ func _create_block(node_name: String, size: Vector3, position: Vector3, color: C
 	$PlaceholderProps.add_child(body)
 
 func _create_tree(node_name: String, position: Vector3, scale_factor: float) -> void:
-	var body := StaticBody3D.new()
-	body.name = node_name
-	body.position = position
-	body.collision_layer = 5
-	body.set_meta("development_placeholder", true)
-	var trunk := MeshInstance3D.new()
-	var trunk_mesh := CylinderMesh.new()
-	trunk_mesh.top_radius = 0.28 * scale_factor
-	trunk_mesh.bottom_radius = 0.42 * scale_factor
-	trunk_mesh.height = 3.0 * scale_factor
-	trunk.mesh = trunk_mesh
-	trunk.position.y = 1.5 * scale_factor
-	trunk.material_override = _material(Color(0.3, 0.17, 0.08))
-	body.add_child(trunk)
-	var crown := MeshInstance3D.new()
-	var crown_mesh := SphereMesh.new()
-	crown_mesh.radius = 1.35 * scale_factor
-	crown_mesh.height = 2.5 * scale_factor
-	crown.mesh = crown_mesh
-	crown.position.y = 3.4 * scale_factor
-	crown.material_override = _material(Color(0.17, 0.43, 0.2))
-	body.add_child(crown)
-	var collision := CollisionShape3D.new()
-	var shape := CylinderShape3D.new()
-	shape.radius = 0.45 * scale_factor
-	shape.height = 3.0 * scale_factor
-	collision.shape = shape
-	collision.position.y = 1.5 * scale_factor
-	body.add_child(collision)
-	$PlaceholderProps.add_child(body)
+	$PlaceholderProps.add_child(NatureProps.spawn_tree(node_name, position, scale_factor, _nature_rng))
+
+## Real ground coverage: a dense MultiMesh grass/clover carpet (see
+## NatureProps.build_grass_carpet) across the ENTIRE clearing -- not just the
+## wild band. The buildable zones (village center, home edge, workshop edge,
+## garden) each sit on their own slightly-raised ground box (see
+## _build_clearing's _create_ground calls), and the space between them is
+## just bare ClearingBase, so a carpet limited to "wild band + those four
+## named rects" left a large uncovered gap in between (this is what a
+## reference screenshot request revealed -- the ground in view was mostly
+## that gap, not any zone this function used to know about). Simplest fix:
+## drop the zone bookkeeping and scatter across the whole square, using
+## _ground_y_at() to land each point on whichever ground box is actually
+## under it. Only the woodland gate path itself stays bare, matching the
+## reference image's own exposed dirt path. Skipped in headless for the same
+## reason _scatter_ground_decoration() below is.
+func _build_grass_carpet() -> void:
+	if DisplayServer.get_name() == "headless":
+		return
+	var points: Array = []
+	var half := CLEARING_HALF_EXTENT - 0.5
+	var target := 15000
+	var attempts := 0
+	while points.size() < target and attempts < target * 4:
+		attempts += 1
+		var x := _nature_rng.randf_range(-half, half)
+		var z := _nature_rng.randf_range(-half, half)
+		if absf(x) <= WOODLAND_GATE_PATH_HALF_WIDTH and z <= WOODLAND_GATE_PATH_MIN_Z:
+			continue
+		points.append(Vector3(x, _ground_y_at(x, z) + 0.01, z))
+	add_child(NatureProps.build_grass_carpet(points, _nature_rng))
+
+## The top surface Y of whichever ground box sits under (x, z) -- mirrors the
+## size/position pairs passed to _create_ground in _build_clearing exactly,
+## since none of that geometry is queryable at runtime (plain BoxMesh
+## StaticBody3Ds, not a shape registry).
+func _ground_y_at(x: float, z: float) -> float:
+	if absf(x) <= 6.5 and absf(z) <= 5.5:
+		return 0.09    # VillageCenter
+	if absf(x - (-15.5)) <= 6.0 and absf(z - (-5.5)) <= 8.0:
+		return 0.075   # HomeEdge
+	if absf(x - 15.5) <= 5.5 and absf(z - (-4.0)) <= 6.5:
+		return 0.115   # WorkshopEdge
+	if absf(x - (-7.0)) <= 7.5 and absf(z - 15.0) <= 5.5:
+		return 0.055   # AbandonedGarden
+	return 0.0   # ClearingBase
+
+## Boulders plus clustered patches of ferns/flowers/mushrooms/bush across the
+## wild ground outside the buildable footprint -- the same band the boundary
+## treeline already dresses, so nothing here ever risks overlapping a cottage
+## plot or an anchor. Clustering (pick a patch center, scatter a handful of
+## items within a short radius of it) reads as natural undergrowth clumped
+## around trees/rocks, matching how these actually grow, instead of a
+## uniform sprinkle across open ground.
+## Purely visual dressing with no gameplay effect -- skipped in headless
+## (every existing smoke/regression test boots this scene, several of them
+## twice, and hundreds of extra model loads/instantiations per boot adds
+## real wall-clock time across the whole suite for zero test-observable
+## benefit), matching the same headless special-case _maybe_show_founder_select
+## already uses.
+func _scatter_ground_decoration() -> void:
+	if DisplayServer.get_name() == "headless":
+		return
+	var decoration := Node3D.new()
+	decoration.name = "GroundDecoration"
+	add_child(decoration)
+	var placed_rocks := 0
+	var attempts := 0
+	while placed_rocks < 40 and attempts < 800:
+		attempts += 1
+		var pos: Variant = _random_wild_ground_point(CLEARING_HALF_EXTENT - 1.5)
+		if pos == null:
+			continue
+		var rock := NatureProps.spawn_rock("WildRock_%d" % placed_rocks, pos, _nature_rng.randf_range(0.7, 1.3), _nature_rng)
+		if rock == null:
+			continue
+		decoration.add_child(rock)
+		placed_rocks += 1
+	var placed_decor := 0
+	var placed_clusters := 0
+	attempts = 0
+	while placed_clusters < 110 and attempts < 1200:
+		attempts += 1
+		var center: Variant = _random_wild_ground_point(CLEARING_HALF_EXTENT - 1.0)
+		if center == null:
+			continue
+		placed_clusters += 1
+		var cluster_size := _nature_rng.randi_range(3, 7)
+		for i in cluster_size:
+			var offset := Vector3(_nature_rng.randf_range(-1.1, 1.1), 0.0, _nature_rng.randf_range(-1.1, 1.1))
+			var prop := NatureProps.spawn_ground_decor("WildDecor_%d" % placed_decor, center + offset, _nature_rng.randf_range(0.8, 1.3), _nature_rng)
+			placed_decor += 1
+			if prop != null:
+				decoration.add_child(prop)
+
+## Returns a random point in the wild ground band (outside the buildable
+## square, inside the clearing, clear of the woodland gate path) or null if
+## the sampled point landed somewhere excluded -- callers just retry.
+func _random_wild_ground_point(half_extent: float) -> Variant:
+	var x := _nature_rng.randf_range(-half_extent, half_extent)
+	var z := _nature_rng.randf_range(-half_extent, half_extent)
+	if absf(x) <= BUILDABLE_HALF_EXTENT and absf(z) <= BUILDABLE_HALF_EXTENT:
+		return null
+	if absf(x) <= WOODLAND_GATE_PATH_HALF_WIDTH and z <= WOODLAND_GATE_PATH_MIN_Z:
+		return null
+	return Vector3(x, 0.0, z)
 
 ## No visible mesh -- collision only. Tagged "world_boundary" so
 ## reboot_founder_cat.gd can tell "I bumped a world edge" apart from bumping
@@ -518,20 +608,10 @@ func _spawn_treeline(from: Vector3, to: Vector3, outward_offset: Vector3, spacin
 	for i in range(count + 1):
 		var t := float(i) / float(count)
 		var pos := from.lerp(to, t) + outward_offset
-		_create_tree("BoundaryTreeline_%d_%d_%d" % [int(from.x), int(from.z), i], pos, randf_range(0.85, 1.25))
+		_create_tree("BoundaryTreeline_%d_%d_%d" % [int(from.x), int(from.z), i], pos, _nature_rng.randf_range(0.85, 1.25))
 
 func _material(color: Color) -> StandardMaterial3D:
 	var material := StandardMaterial3D.new()
 	material.albedo_color = color
-	material.roughness = 0.95
-	return material
-
-## uv1_scale repeats the texture tile_repeats times across the BoxMesh's
-## default 0-1 UV range per face; the GPU sampler wraps by default, so this
-## alone is enough to tile rather than stretch one image across the ground.
-func _textured_material(texture: Texture2D, tile_repeats: float) -> StandardMaterial3D:
-	var material := StandardMaterial3D.new()
-	material.albedo_texture = texture
-	material.uv1_scale = Vector3(tile_repeats, tile_repeats, 1.0)
 	material.roughness = 0.95
 	return material
