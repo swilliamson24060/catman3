@@ -36,6 +36,15 @@ func _initialize() -> void: call_deferred("_run")
 func _run() -> void:
 	var service: Node = root.get_node("CottageBuildService")
 	service.new_game()
+	var roof_definitions: Array[Dictionary] = service._roof_pool()
+	_check(roof_definitions.size() == 9, "the three replacement roof shapes must each expose peach, baby-blue, and mint variants")
+	var roof_paths: Dictionary = {}
+	var roof_tints: Dictionary = {}
+	for roof: Dictionary in roof_definitions:
+		roof_paths[str(roof.model_path)] = true
+		roof_tints[str(roof.tint_color)] = true
+	_check(roof_paths.size() == 3, "roof variants must share exactly three replacement GLB shapes, not duplicate geometry")
+	_check(roof_tints.keys().all(func(tint: String) -> bool: return tint in ["f6bfa6", "b9ddf2", "bfe8cf"]), "roof variants must use only the requested pastel peach, baby blue, and mint palette")
 
 	# --- Foundation footprint: 1-4 pieces, contiguous, independently styled,
 	# placed immediately (no build-step delay). Sample many seeds since the

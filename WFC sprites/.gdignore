@@ -1,0 +1,3 @@
+# Source-asset staging area only. Production assets are copied into their
+# runtime res:// directories before use; importing this entire pack doubles
+# large GLB work and produces case-sensitive path warnings on export.

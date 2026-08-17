@@ -12,3 +12,10 @@
 /debug_*.png
 /debug_*.png.import
 /body_mesh_dump*.json
+
+# Godot extracts textures embedded in the replacement roof GLBs beside the
+# source models during import. The GLBs remain authoritative; these large,
+# deterministic temporary PNGs are regenerated locally and must not be
+# committed as duplicate asset payloads.
+/cottage/models/elowen/roof_*_tmp*.png
+/cottage/models/elowen/roof_*_tmp*.png.import

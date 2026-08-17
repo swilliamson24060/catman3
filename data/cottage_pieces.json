@@ -103,22 +103,67 @@
       "scale": 0.45
     },
     {
-      "id": "elowen_roof_1",
-      "display_name": "Roof 1",
+      "id": "elowen_roof_northwest_lodge_peach",
+      "display_name": "Northwest Lodge Roof (Pastel Peach)",
       "role": "roof",
-      "model_path": "res://cottage/models/elowen/roof_1.glb"
+      "model_path": "res://cottage/models/elowen/roof_northwest_lodge.glb",
+      "tint_color": "f6bfa6"
     },
     {
-      "id": "elowen_roof_2",
-      "display_name": "Roof 2",
+      "id": "elowen_roof_northwest_lodge_blue",
+      "display_name": "Northwest Lodge Roof (Baby Blue)",
       "role": "roof",
-      "model_path": "res://cottage/models/elowen/roof_2.glb"
+      "model_path": "res://cottage/models/elowen/roof_northwest_lodge.glb",
+      "tint_color": "b9ddf2"
     },
     {
-      "id": "elowen_roof_3",
-      "display_name": "Roof 3",
+      "id": "elowen_roof_northwest_lodge_mint",
+      "display_name": "Northwest Lodge Roof (Mint Green)",
       "role": "roof",
-      "model_path": "res://cottage/models/elowen/roof_3.glb"
+      "model_path": "res://cottage/models/elowen/roof_northwest_lodge.glb",
+      "tint_color": "bfe8cf"
+    },
+    {
+      "id": "elowen_roof_minaret_peach",
+      "display_name": "Minaret Roof (Pastel Peach)",
+      "role": "roof",
+      "model_path": "res://cottage/models/elowen/roof_minaret.glb",
+      "tint_color": "f6bfa6"
+    },
+    {
+      "id": "elowen_roof_minaret_blue",
+      "display_name": "Minaret Roof (Baby Blue)",
+      "role": "roof",
+      "model_path": "res://cottage/models/elowen/roof_minaret.glb",
+      "tint_color": "b9ddf2"
+    },
+    {
+      "id": "elowen_roof_minaret_mint",
+      "display_name": "Minaret Roof (Mint Green)",
+      "role": "roof",
+      "model_path": "res://cottage/models/elowen/roof_minaret.glb",
+      "tint_color": "bfe8cf"
+    },
+    {
+      "id": "elowen_roof_pyramid_peach",
+      "display_name": "Pyramid Roof (Pastel Peach)",
+      "role": "roof",
+      "model_path": "res://cottage/models/elowen/roof_pyramid.glb",
+      "tint_color": "f6bfa6"
+    },
+    {
+      "id": "elowen_roof_pyramid_blue",
+      "display_name": "Pyramid Roof (Baby Blue)",
+      "role": "roof",
+      "model_path": "res://cottage/models/elowen/roof_pyramid.glb",
+      "tint_color": "b9ddf2"
+    },
+    {
+      "id": "elowen_roof_pyramid_mint",
+      "display_name": "Pyramid Roof (Mint Green)",
+      "role": "roof",
+      "model_path": "res://cottage/models/elowen/roof_pyramid.glb",
+      "tint_color": "bfe8cf"
     }
   ]
 }

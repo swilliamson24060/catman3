@@ -19,6 +19,10 @@ const CLEARING_GROUND_SHADER := preload("res://environment/shaders/clearing_grou
 const WALL_HEIGHT := 4.0
 const WALL_THICKNESS := 0.6
 const CLEARING_HALF_EXTENT := 27.5
+## Visual-only terrain continues well behind the boundary treeline so camera
+## angles never reveal the diorama ending at the trees. Navigation remains
+## constrained by CLEARING_HALF_EXTENT's collision floor and boundary walls.
+const VISUAL_GROUND_HALF_EXTENT := 38.0
 const GATE_HALF_WIDTH := 4.0   # opening in the south wall for the woodland path
 
 ## Fixed seed -- trees, rocks, and ground decoration are rebuilt fresh every
@@ -151,6 +155,11 @@ func get_authored_destinations() -> Dictionary:
 
 func _build_clearing() -> void:
 	var clearing_span := CLEARING_HALF_EXTENT * 2.0
+	var visual_span := VISUAL_GROUND_HALF_EXTENT * 2.0
+	# Slightly below the walkable floor: a purely visual continuation under
+	# and beyond the treeline. It deliberately has no collision, so the only
+	# way through the otherwise closed boundary remains the south gate path.
+	_create_ground("ForestFloorApron", Vector3(visual_span, 0.12, visual_span), Vector3(0.0, -0.07, 0.0), ZONE_COLORS.clearing)
 	_create_ground("ClearingBase", Vector3(clearing_span, 0.25, clearing_span), Vector3(0.0, -0.125, 0.0), ZONE_COLORS.clearing, true)
 	_create_ground("VillageCenter", Vector3(13.0, 0.12, 11.0), Vector3(0.0, 0.03, 0.0), ZONE_COLORS.village)
 	_create_ground("HomeEdge", Vector3(12.0, 0.1, 16.0), Vector3(-15.5, 0.025, -5.5), ZONE_COLORS.homes)
@@ -439,7 +448,7 @@ func _create_ground(node_name: String, size: Vector3, position: Vector3, color: 
 	var mesh := BoxMesh.new()
 	mesh.size = size
 	mesh_instance.mesh = mesh
-	if node_name == "ClearingBase" or node_name == "ExplorationStageGround":
+	if node_name == "ForestFloorApron" or node_name == "ClearingBase" or node_name == "ExplorationStageGround":
 		var terrain_material := ShaderMaterial.new()
 		terrain_material.shader = CLEARING_GROUND_SHADER
 		mesh_instance.material_override = terrain_material
@@ -493,8 +502,8 @@ func _build_grass_carpet() -> void:
 	if DisplayServer.get_name() == "headless":
 		return
 	var points: Array = []
-	var half := CLEARING_HALF_EXTENT - 0.5
-	var target := 8000
+	var half := VISUAL_GROUND_HALF_EXTENT - 0.5
+	var target := 13000
 	var attempts := 0
 	while points.size() < target and attempts < target * 8:
 		attempts += 1
@@ -509,6 +518,8 @@ func _build_grass_carpet() -> void:
 ## geometry/height lookup: zone heights and visual wear are related but not
 ## the same concern, and explicit values make art tuning straightforward.
 func _grass_density_at(x: float, z: float) -> float:
+	if absf(x) > CLEARING_HALF_EXTENT or absf(z) > CLEARING_HALF_EXTENT:
+		return 0.9   # Dense forest-floor continuation beyond the treeline.
 	var path_center := sin((z + 17.0) * 0.22) * 0.8
 	if z >= -27.0 and z <= 9.0 and absf(x - path_center) <= 3.15:
 		return 0.0

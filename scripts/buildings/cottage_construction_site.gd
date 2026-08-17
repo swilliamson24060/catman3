@@ -42,6 +42,7 @@ extends Node3D
 @export var debug_fast_forward: bool = false
 
 const PLACEHOLDER_FOOTPRINT := 3.4   # meters -- only used for placeholder fallback pieces
+const ROOF_TINT_SHADER := preload("res://cottage/roof_tint.gdshader")
 const PLACEHOLDER_HEIGHT := {"foundation": 0.4, "roof": 0.9}
 const PLACEHOLDER_DEFAULT_HEIGHT := 0.9
 const DEBUG_FAST_FORWARD_INTERVAL := 10.0   # real seconds per forced step
@@ -168,8 +169,36 @@ func _build_piece_node_unscaled(piece: Dictionary) -> Node3D:
 			var instance := packed.instantiate() as Node3D
 			if instance != null:
 				instance.name = str(piece.get("id", "Piece"))
+				_apply_piece_tint(instance, str(piece.get("tint_color", "")))
 				return instance
 	return _build_placeholder_piece(piece)
+
+## Color variants share one GLB per roof shape. Duplicate surface materials
+## per instance before tinting so one generated cottage cannot recolor a
+## different piece (or the imported source resource) through shared state.
+## Setting albedo_color preserves any embedded albedo/normal/roughness maps;
+## Godot multiplies the texture by this pastel color at render time.
+func _apply_piece_tint(node: Node, tint_hex: String) -> void:
+	if tint_hex.is_empty():
+		return
+	var tint := Color(tint_hex)
+	_apply_piece_tint_recursive(node, tint)
+
+func _apply_piece_tint_recursive(node: Node, tint: Color) -> void:
+	if node is MeshInstance3D:
+		var mesh_instance := node as MeshInstance3D
+		if mesh_instance.mesh != null:
+			for surface_index in mesh_instance.mesh.get_surface_count():
+				var source := mesh_instance.get_active_material(surface_index) as BaseMaterial3D
+				var tinted := ShaderMaterial.new()
+				tinted.shader = ROOF_TINT_SHADER
+				tinted.set_shader_parameter("tint", tint)
+				if source != null and source.albedo_texture != null:
+					tinted.set_shader_parameter("source_albedo", source.albedo_texture)
+					tinted.set_shader_parameter("has_albedo_texture", true)
+				mesh_instance.set_surface_override_material(surface_index, tinted)
+	for child: Node in node.get_children():
+		_apply_piece_tint_recursive(child, tint)
 
 ## Fallback for a piece with no (or a failed) model_path -- a plain colored
 ## primitive, matching this project's established dev-placeholder look.
