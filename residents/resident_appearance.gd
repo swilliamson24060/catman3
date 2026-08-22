@@ -47,7 +47,8 @@ static func apply_to_resident(resident: Node, resident_id: String) -> void:
 	for child in model_root.get_children():
 		child.queue_free()
 
-	var idle_path := _find_file(model_dir, FILE_SUFFIXES.idle)
+	var model_file: String = str(resident_data.get("model_file", ""))
+	var idle_path := "%s/%s" % [model_dir, model_file] if not model_file.is_empty() else _find_file(model_dir, FILE_SUFFIXES.idle)
 	if idle_path.is_empty():
 		push_warning("[ResidentAppearance] No base model found for resident '%s' at %s" % [resident_id, model_dir])
 		return
@@ -58,19 +59,26 @@ static func apply_to_resident(resident: Node, resident_id: String) -> void:
 	var model := base_packed.instantiate() as Node3D
 	model.name = "ResidentModel"
 	model.rotation_degrees.y = MODEL_ROTATION_Y_DEGREES
-	model.scale = Vector3.ONE * MODEL_SCALE
+	var model_scale: float = float(resident_data.get("model_scale", MODEL_SCALE))
+	model.scale = Vector3.ONE * model_scale
 	model_root.add_child(model)
 
 	var anim_player := _find_animation_player(model)
 	if anim_player == null:
 		return
 	var combined := AnimationLibrary.new()
-	_copy_first_animation(anim_player, combined, "idle")
-	_graft_animation(combined, "walk", _find_file(model_dir, FILE_SUFFIXES.walk))
-	_graft_animation(combined, "run", _find_file(model_dir, FILE_SUFFIXES.run))
-	var casual_walk_path := _find_file(model_dir, FILE_SUFFIXES.casual_walk)
-	if not casual_walk_path.is_empty():
-		_graft_animation(combined, "casual_walk", casual_walk_path)
+	if bool(resident_data.get("use_embedded_movement_animation", false)):
+		combined.add_animation("idle", Animation.new())
+		_copy_first_animation(anim_player, combined, "walk")
+		_copy_first_animation(anim_player, combined, "run")
+		_copy_first_animation(anim_player, combined, "casual_walk")
+	else:
+		_copy_first_animation(anim_player, combined, "idle")
+		_graft_animation(combined, "walk", _find_file(model_dir, FILE_SUFFIXES.walk))
+		_graft_animation(combined, "run", _find_file(model_dir, FILE_SUFFIXES.run))
+		var casual_walk_path := _find_file(model_dir, FILE_SUFFIXES.casual_walk)
+		if not casual_walk_path.is_empty():
+			_graft_animation(combined, "casual_walk", casual_walk_path)
 	if anim_player.has_animation_library(""):
 		anim_player.remove_animation_library("")
 	anim_player.add_animation_library("", combined)

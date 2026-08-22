@@ -55,6 +55,9 @@
       "aspiration_id": "aspiration_decode_ruin",
       "aspiration_steps": ["Record the ruin's repeating marks", "Compare the garden and ruin histories", "Interpret the first complete pattern"],
       "model_dir": "res://residents/models/elowen",
+      "model_file": "Elowen.glb",
+      "use_embedded_movement_animation": true,
+      "model_scale": 0.28,
       "relationship_seeds": {"resident_mara": 8, "resident_pip": 6},
       "routines": {
         "morning": [{"id":"village_notes", "label":"Collects village stories", "location":"village center", "position":[2.0,0.2,1.0], "specialty":"history"}],

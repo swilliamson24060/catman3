@@ -46,9 +46,9 @@ func _run() -> void:
 	_check(roof_paths.size() == 3, "roof variants must share exactly three replacement GLB shapes, not duplicate geometry")
 	_check(roof_tints.keys().all(func(tint: String) -> bool: return tint in ["f6bfa6", "b9ddf2", "bfe8cf"]), "roof variants must use only the requested pastel peach, baby blue, and mint palette")
 
-	# --- Foundation footprint: 1-4 pieces, contiguous, independently styled,
-	# placed immediately (no build-step delay). Sample many seeds since the
-	# count/layout/style are all randomized. ---
+	# --- Foundation footprint: 1-4 pieces, contiguous, matching foundation 2
+	# or foundation 3 style, placed immediately (no build-step delay). Sample
+	# many seeds since the count/layout/style are all randomized. ---
 	for seed_value in range(30):
 		service.start_build(SITE, 3, seed_value)
 		var slots: Dictionary = service.foundation_slots(SITE)
@@ -63,7 +63,10 @@ func _run() -> void:
 		_check(valid_layout, "the occupied foundation slots must form one of the known contiguous layouts: got %s (seed %d)" % [occupied, seed_value])
 		for slot: Variant in slots.keys():
 			var piece: Dictionary = service.piece_definition(str(slots[slot]))
-			_check(str(piece.get("role", "")) == "foundation", "every occupied foundation slot must hold a real foundation piece (seed %d)" % seed_value)
+			_check(str(piece.get("id", "")) in ["elowen_foundation_2", "elowen_foundation_3"], "every occupied foundation slot must use foundation 2 or 3 (seed %d)" % seed_value)
+		if slots.size() > 1:
+			var foundation_ids: Array = slots.values()
+			_check(foundation_ids.all(func(piece_id: String) -> bool: return piece_id == foundation_ids[0]), "all foundation slots must use the same piece style (seed %d)" % seed_value)
 	_check(int(service.piece_count(SITE)) == 0, "the foundation footprint must not count toward piece_count/build-step progress")
 	_check(not bool(service.is_complete(SITE)), "a fresh 3-build-step site must not be complete before any build steps resolve")
 
@@ -74,7 +77,7 @@ func _run() -> void:
 	# deterministic rather than searching for a matching random seed. ---
 	service.start_build(SITE, 6, 1)
 	var site_state: Dictionary = service._sites[SITE]
-	site_state["grid"] = {Vector2i(0, 0): "elowen_foundation_1"}   # force: single foundation at slot 0
+	site_state["grid"] = {Vector2i(0, 0): "elowen_foundation_2"}   # force: single foundation at slot 0
 	var timer: AwayTimer = site_state["timer"]
 
 	timer.started_at = Time.get_unix_time_from_system() - STEP_INTERVAL_SECONDS
@@ -111,7 +114,7 @@ func _run() -> void:
 	# ONE of them needs a stackable before tier 2 can open up anywhere. ---
 	service.start_build(SITE, 6, 2)
 	var multi_state: Dictionary = service._sites[SITE]
-	multi_state["grid"] = {Vector2i(0, 0): "elowen_foundation_1", Vector2i(0, 2): "elowen_foundation_2"}   # two foundations, slots 0 and 2 (adjacent)
+	multi_state["grid"] = {Vector2i(0, 0): "elowen_foundation_2", Vector2i(0, 2): "elowen_foundation_2"}   # two matching foundations, slots 0 and 2 (adjacent)
 	var multi_timer: AwayTimer = multi_state["timer"]
 	var eligible0: Array = service._eligible_cells(multi_state["grid"])
 	var eligible0_set := {}
@@ -138,7 +141,7 @@ func _run() -> void:
 	for seed_value in range(40):
 		service.start_build(SITE, 2, 100 + seed_value)
 		var bug_state: Dictionary = service._sites[SITE]
-		bug_state["grid"] = {Vector2i(0, 0): "elowen_foundation_1", Vector2i(0, 2): "elowen_foundation_2"}
+		bug_state["grid"] = {Vector2i(0, 0): "elowen_foundation_2", Vector2i(0, 2): "elowen_foundation_2"}
 		var bug_timer: AwayTimer = bug_state["timer"]
 		bug_timer.started_at = Time.get_unix_time_from_system() - (STEP_INTERVAL_SECONDS * 10.0)
 		service.check_build(SITE)
@@ -225,15 +228,20 @@ func _run() -> void:
 	# real-time gate.
 	var forced_state: Dictionary = service._sites[SITE]
 	forced_state["grid"] = {
-		Vector2i(0, 0): "elowen_foundation_1",
+		Vector2i(0, 0): "elowen_foundation_2",
 		Vector2i(0, 1): "elowen_foundation_2",
 		Vector2i(1, 0): "elowen_stack_cube_blue",
 	}
 	site_scene._rebuild_visuals()
 	var stack_node: Node3D = site_scene.get_node("Stack")
 	_check(stack_node.get_child_count() == 3, "the visual grid should have one node per filled cell")
-	var foundation_a: Node3D = stack_node.get_node("elowen_foundation_1")
-	var foundation_b: Node3D = stack_node.get_node("elowen_foundation_2")
+	var foundation_nodes: Array[Node3D] = []
+	for child: Node in stack_node.get_children():
+		if child.name == "elowen_foundation_2":
+			foundation_nodes.append(child as Node3D)
+	_check(foundation_nodes.size() == 2, "the visual grid should render both matching foundation pieces")
+	var foundation_a: Node3D = foundation_nodes[0]
+	var foundation_b: Node3D = foundation_nodes[1]
 	_check(foundation_a.position.x != foundation_b.position.x, "two different foundation slots must be placed side by side (different X), not stacked on each other")
 	var body_node: Node3D = stack_node.get_node("elowen_stack_cube_blue")
 	_check(body_node.position.y > foundation_a.position.y, "a tier-1 piece must sit above the foundation tier, using the foundation's own measured height")

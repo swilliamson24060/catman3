@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c6n8ce8ey3lg4"
-path="res://.godot/imported/foundation_2_base_color.jpg-4a0ea2ef68727d018e68b9d30d5659eb.ctex"
+path.s3tc="res://.godot/imported/foundation_2_base_color.jpg-4a0ea2ef68727d018e68b9d30d5659eb.s3tc.ctex"
+path.etc2="res://.godot/imported/foundation_2_base_color.jpg-4a0ea2ef68727d018e68b9d30d5659eb.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "107d08059bad7a48758e2fc2773cf4dc"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://cottage/models/elowen/foundation_2_base_color.jpg"
-dest_files=["res://.godot/imported/foundation_2_base_color.jpg-4a0ea2ef68727d018e68b9d30d5659eb.ctex"]
+dest_files=["res://.godot/imported/foundation_2_base_color.jpg-4a0ea2ef68727d018e68b9d30d5659eb.s3tc.ctex", "res://.godot/imported/foundation_2_base_color.jpg-4a0ea2ef68727d018e68b9d30d5659eb.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -40,4 +42,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=1
+detect_3d/compress_to=0

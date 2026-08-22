@@ -4,8 +4,8 @@ extends Node
 ## tiers tall as build_steps allows.
 ##
 ## Tier 0 (the foundation) is a random 1-4 piece footprint (up to a 2x2
-## grid, styles independently chosen and not required to match), placed all
-## at once at start_build(). Every tier above it is resolved one piece per
+## grid, using one randomly chosen foundation style for every occupied slot),
+## placed all at once at start_build(). Every tier above it is resolved one piece per
 ## real-world 15 minutes, gated by a support rule:
 ##   - a cell (tier, slot) can be filled once the cell directly BELOW it
 ##     (tier-1, same slot) is filled -- ordinary vertical stacking, OR
@@ -102,8 +102,8 @@ func _load_pieces() -> void:
 			_pieces.append(entry as Dictionary)
 
 ## Starts a new site: lays down a random 1-4 piece foundation footprint
-## immediately (each occupied slot's style independently chosen -- they
-## don't have to match) and starts the real-time clock for `build_steps`
+## immediately (all occupied slots use the same randomly chosen foundation 2
+## or foundation 3 style) and starts the real-time clock for `build_steps`
 ## random additions above it. Calling this again for an existing site_id
 ## restarts it from scratch.
 func start_build(site_id: StringName, initial_build_steps: int, rng_seed: int) -> void:
@@ -127,12 +127,12 @@ func _roll_foundation_footprint(rng: RandomNumberGenerator) -> Dictionary:
 	var foundations := _foundation_pool()
 	if foundations.is_empty():
 		return grid
+	var chosen_foundation: Dictionary = foundations[rng.randi() % foundations.size()]
 	var slot_count: int = 1 + rng.randi() % 4
 	var slot_options: Array = FOUNDATION_SLOT_SETS_BY_COUNT[slot_count]
 	var chosen_slots: Array = slot_options[rng.randi() % slot_options.size()]
 	for slot: Variant in chosen_slots:
-		var piece: Dictionary = foundations[rng.randi() % foundations.size()]
-		grid[Vector2i(0, int(slot))] = str(piece.get("id", ""))
+		grid[Vector2i(0, int(slot))] = str(chosen_foundation.get("id", ""))
 	return grid
 
 ## Occupied foundation slot index -> piece id (tier 0 only). Fixed for the
@@ -305,7 +305,7 @@ func _seconds_until_next_step(site_id: StringName) -> float:
 func _foundation_pool() -> Array[Dictionary]:
 	var pool: Array[Dictionary] = []
 	for piece: Dictionary in _pieces:
-		if str(piece.get("role", "")) == "foundation":
+		if str(piece.get("id", "")) in ["elowen_foundation_2", "elowen_foundation_3"]:
 			pool.append(piece)
 	return pool
 
